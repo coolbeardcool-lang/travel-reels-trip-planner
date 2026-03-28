@@ -1,3 +1,5 @@
+import { CITY_ALIASES } from "./city-aliases.js";
+
 const PLATFORM_MAP = {
   "instagram.com": "Instagram",
   "threads.net": "Threads",
@@ -9,34 +11,13 @@ const PLATFORM_MAP = {
   "x.com": "Twitter",
 };
 
-const CITY_MAP = {
-  東京: "tokyo",
-  京都: "kyoto",
-  大阪: "osaka",
-  奈良: "nara",
-  沖繩: "okinawa",
-  北海道: "hokkaido",
-  福岡: "fukuoka",
-  台北: "taipei",
-  台中: "taichung",
-  台南: "tainan",
-  高雄: "kaohsiung",
-  首爾: "seoul",
-  釜山: "busan",
-  tokyo: "tokyo",
-  kyoto: "kyoto",
-  osaka: "osaka",
-  nara: "nara",
-  okinawa: "okinawa",
-  hokkaido: "hokkaido",
-  fukuoka: "fukuoka",
-  taipei: "taipei",
-  taichung: "taichung",
-  tainan: "tainan",
-  kaohsiung: "kaohsiung",
-  seoul: "seoul",
-  busan: "busan",
-};
+const CITY_ALIAS_MAP = CITY_ALIASES.reduce((acc, entry) => {
+  const alias = String(entry?.alias || "").trim().toLowerCase();
+  const slug = String(entry?.slug || "").trim().toLowerCase();
+  if (alias && slug) acc[alias] = slug;
+  if (slug) acc[slug] = slug;
+  return acc;
+}, {});
 
 const EVENT_KEYWORDS = [
   "活動",
@@ -239,14 +220,33 @@ async function scrapeUrl(url) {
   return result;
 }
 
-function inferCitySlug(text, cityHint) {
-  if (cityHint) return cityHint;
+function normalizeCitySlug(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+}
 
-  for (const [keyword, slug] of Object.entries(CITY_MAP)) {
-    if (text.includes(keyword.toLowerCase())) {
+function inferCitySlug(text, cityHint) {
+  const normalizedHint = normalizeCitySlug(cityHint);
+  if (normalizedHint) {
+    return CITY_ALIAS_MAP[normalizedHint] || normalizedHint;
+  }
+
+  const normalizedText = String(text || "").toLowerCase();
+  for (const [keyword, slug] of Object.entries(CITY_ALIAS_MAP)) {
+    if (normalizedText.includes(keyword.toLowerCase())) {
       return slug;
     }
   }
+
+  const cityTokenMatch = normalizedText.match(
+    /([\u4e00-\u9fff]{2,8})(?:市|縣|鄉|鎮|區)/
+  );
+  if (cityTokenMatch) {
+    return normalizeCitySlug(cityTokenMatch[1]);
+  }
+
   return null;
 }
 
@@ -300,6 +300,34 @@ function detectItemKindFromText(text, fallback) {
   return fallback === "mixed" ? "source_only" : fallback;
 }
 
+function inferSpotCategory(text) {
+  const v = String(text || "").toLowerCase();
+  if (/(咖啡|cafe|coffee)/i.test(v)) return "咖啡";
+  if (/(甜點|蛋糕|dessert)/i.test(v)) return "甜點";
+  if (/(夜市)/i.test(v)) return "夜市";
+  if (/(餐廳|restaurant|食堂|火鍋|燒肉|壽司|牛排)/i.test(v)) return "餐廳";
+  if (/(小吃|麵|肉圓|羊肉|滷肉飯|豆花|米糕|鹽酥雞|food)/i.test(v)) return "小吃";
+  return "景點";
+}
+
+function inferAreaFromText(text) {
+  const match = String(text || "").match(/([\u4e00-\u9fff]{2,8}(?:鄉|鎮|市|區))/);
+  return match ? match[1] : null;
+}
+
+function inferThumbnailByCategory(category, itemKind) {
+  const map = {
+    餐廳: "🍽️",
+    小吃: "🍢",
+    咖啡: "☕",
+    甜點: "🍰",
+    夜市: "🏮",
+    景點: "📍",
+    活動: "🎫",
+  };
+  return map[category] || (itemKind === "event" ? "🎫" : "📍");
+}
+
 function normalizeCandidateName(value) {
   return String(value || "")
     .replace(/https?:\/\/\S+/gi, " ")
@@ -327,6 +355,11 @@ function extractCandidatesFromText(mergedText) {
     candidates.push(match[1]);
   }
 
+  const inlineNumberedRegex = /(?:^|\s)\d{1,2}[.)、]\s*([^0-9]{2,80}?)(?=(?:\s+\d{1,2}[.)、])|$)/g;
+  while ((match = inlineNumberedRegex.exec(text))) {
+    candidates.push(match[1]);
+  }
+
   return candidates;
 }
 
@@ -346,18 +379,26 @@ function buildHeuristicItems({ mergedText, contentKind, citySlug, area, confiden
 
     const itemKind = detectItemKindFromText(name, contentKind);
     const inferredCity = inferCitySlug(lower, citySlug);
+    const category = itemKind === "event" ? "活動" : inferSpotCategory(name);
+    const areaFromText = inferAreaFromText(name);
+    const tags = [category];
+    if (areaFromText) tags.push(areaFromText);
+    if (inferredCity) tags.push(inferredCity);
+    const mapQuery = encodeURIComponent(
+      [name, areaFromText || "", inferredCity || ""].filter(Boolean).join(" ")
+    );
 
     items.push({
       id: `heuristic-item-${items.length + 1}`,
       name,
       itemKind,
       item_kind: itemKind,
-      category: itemKind === "event" ? "活動" : itemKind === "spot" ? "景點" : "",
+      category,
       description: "",
-      tags: [],
+      tags,
       citySlug: inferredCity || null,
       city_slug: inferredCity || null,
-      area: area || null,
+      area: areaFromText || area || null,
       best_time: null,
       stay_minutes: null,
       starts_on: null,
@@ -366,12 +407,12 @@ function buildHeuristicItems({ mergedText, contentKind, citySlug, area, confiden
       end_time: "",
       lat: null,
       lng: null,
-      map_url: null,
+      map_url: mapQuery ? `https://www.google.com/maps/search/?api=1&query=${mapQuery}` : null,
       official_url: null,
       venue_name: null,
       price_note: null,
       ticket_type: null,
-      thumbnail: null,
+      thumbnail: inferThumbnailByCategory(category, itemKind),
       itemConfidence: Math.min(confidence, 0.58),
       item_confidence: Math.min(confidence, 0.58),
       sourceCredibility: "low",
