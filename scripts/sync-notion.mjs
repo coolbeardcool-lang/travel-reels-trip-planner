@@ -43,7 +43,9 @@ async function notionFetch(url, options = {}) {
   return response.json();
 }
 
-async function queryAllRows(dataSourceId) {
+// useDatabase=true 用 /databases/{id}/query（標準 API）
+// useDatabase=false 用 /data_sources/{id}/query（Notion 內部 API）
+async function queryAllRows(dataSourceId, useDatabase = false) {
   let results = [];
   let hasMore = true;
   let startCursor = undefined;
@@ -55,10 +57,11 @@ async function queryAllRows(dataSourceId) {
       ...(startCursor ? { start_cursor: startCursor } : {}),
     };
 
-    const data = await notionFetch(
-      `${NOTION_BASE_URL}/data_sources/${dataSourceId}/query`,
-      { method: "POST", body: JSON.stringify(body) }
-    );
+    const url = useDatabase
+      ? `${NOTION_BASE_URL}/databases/${dataSourceId}/query`
+      : `${NOTION_BASE_URL}/data_sources/${dataSourceId}/query`;
+
+    const data = await notionFetch(url, { method: "POST", body: JSON.stringify(body) });
 
     results = results.concat(data.results || []);
     hasMore = Boolean(data.has_more);
@@ -76,20 +79,20 @@ function getPlainText(value) {
 function getPropertyValue(prop) {
   if (!prop || !prop.type) return null;
   switch (prop.type) {
-    case "title":       return getPlainText(prop.title);
-    case "rich_text":   return getPlainText(prop.rich_text);
-    case "number":      return prop.number;
-    case "url":         return prop.url || "";
-    case "checkbox":    return Boolean(prop.checkbox);
-    case "select":      return prop.select?.name || "";
-    case "status":      return prop.status?.name || "";
+    case "title":        return getPlainText(prop.title);
+    case "rich_text":    return getPlainText(prop.rich_text);
+    case "number":       return prop.number;
+    case "url":          return prop.url || "";
+    case "checkbox":     return Boolean(prop.checkbox);
+    case "select":       return prop.select?.name || "";
+    case "status":       return prop.status?.name || "";
     case "multi_select": return (prop.multi_select || []).map((item) => item.name);
-    case "date":        return prop.date ? { start: prop.date.start || null, end: prop.date.end || null } : null;
-    case "relation":    return (prop.relation || []).map((item) => item.id);
-    case "email":       return prop.email || "";
+    case "date":         return prop.date ? { start: prop.date.start || null, end: prop.date.end || null } : null;
+    case "relation":     return (prop.relation || []).map((item) => item.id);
+    case "email":        return prop.email || "";
     case "phone_number": return prop.phone_number || "";
-    case "formula":     return getFormulaValue(prop.formula);
-    default:            return null;
+    case "formula":      return getFormulaValue(prop.formula);
+    default:             return null;
   }
 }
 
@@ -116,7 +119,6 @@ function ensureArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-// rich_text 欄位轉成 array（用於 Tags 等原本是 multi_select 但改成 rich_text 的欄位）
 function richTextToArray(value) {
   if (Array.isArray(value)) return value;
   if (typeof value === "string" && value.trim()) {
@@ -150,6 +152,10 @@ function normalizeCity(page) {
 
 function normalizeSource(page) {
   const name = getProp(page, "Name", "");
+  const relatedSpotsRaw = getProp(page, "RelatedSpots", "") || "";
+  const relatedEventsRaw = getProp(page, "RelatedEvents", "") || "";
+  const relatedCitiesRaw = getProp(page, "RelatedCities", "") || "";
+
   return {
     id: page.id,
     title: name,
@@ -160,27 +166,20 @@ function normalizeSource(page) {
     note: getProp(page, "Note", "") || "",
     capturedAt: getProp(page, "CapturedAt", null)?.start || null,
     authorOrAccount: getProp(page, "AuthorOrAccount", "") || "",
-    // CityHints 是 multi_select
     cityHints: ensureArray(getProp(page, "CityHints", [])),
-    // RelatedCities/Spots/Events 是 rich_text，存的是 ID 字串
-    relatedCityIds: getProp(page, "RelatedCities", "") ? [getProp(page, "RelatedCities", "")] : [],
-    relatedSpotIds: getProp(page, "RelatedSpots", "") ? getProp(page, "RelatedSpots", "").split(",").map(s => s.trim()).filter(Boolean) : [],
-    relatedEventIds: getProp(page, "RelatedEvents", "") ? getProp(page, "RelatedEvents", "").split(",").map(s => s.trim()).filter(Boolean) : [],
+    relatedCityIds: relatedCitiesRaw ? [relatedCitiesRaw] : [],
+    relatedSpotIds: relatedSpotsRaw ? relatedSpotsRaw.split(",").map((s) => s.trim()).filter(Boolean) : [],
+    relatedEventIds: relatedEventsRaw ? relatedEventsRaw.split(",").map((s) => s.trim()).filter(Boolean) : [],
     published: Boolean(getProp(page, "Published", false)),
     lastReviewedAt: getProp(page, "LastReviewedAt", null)?.start || null,
   };
 }
 
 function normalizeSpot(page, sourcesById) {
-  // City 是 select，CitySlug 也是 select
   const cityLabel = getProp(page, "City", "") || "";
   const citySlug = getProp(page, "CitySlug", "") || slugify(cityLabel);
-
-  // SourceLinks 是 rich_text，存的是 source page ID
   const sourceId = getProp(page, "SourceLinks", "") || "";
   const source = sourceId ? sourcesById.get(sourceId.trim()) : null;
-
-  // Tags 是 rich_text，逗號分隔
   const tagsRaw = getProp(page, "Tags", "") || "";
   const tags = richTextToArray(tagsRaw);
 
@@ -211,15 +210,10 @@ function normalizeSpot(page, sourcesById) {
 }
 
 function normalizeEvent(page, sourcesById) {
-  // CitySlug 是 rich_text，City 是 rich_text
   const citySlug = getProp(page, "CitySlug", "") || "";
   const cityLabel = getProp(page, "City", "") || "";
-
-  // SourceLinks 是 rich_text，存的是 source page ID
   const sourceId = getProp(page, "SourceLinks", "") || "";
   const source = sourceId ? sourcesById.get(sourceId.trim()) : null;
-
-  // Tags 是 rich_text，逗號分隔
   const tagsRaw = getProp(page, "Tags", "") || "";
   const tags = richTextToArray(tagsRaw);
 
@@ -269,8 +263,9 @@ async function writeJsonFile(filepath, data) {
 }
 
 async function main() {
+  // Cities 用標準 databases API，其他三張用 data_sources API
   const [citiesPages, sourcesPages, spotsPages, eventsPages] = await Promise.all([
-    queryAllRows(NOTION_CITIES_DATA_SOURCE_ID),
+    queryAllRows(NOTION_CITIES_DATA_SOURCE_ID, true),
     queryAllRows(NOTION_SOURCES_DATA_SOURCE_ID),
     queryAllRows(NOTION_SPOTS_DATA_SOURCE_ID),
     queryAllRows(NOTION_EVENTS_DATA_SOURCE_ID),
