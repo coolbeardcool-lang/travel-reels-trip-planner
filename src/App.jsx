@@ -1,19 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const BASE_URL = (() => {
-  try {
-    if (
-      typeof import.meta !== "undefined" &&
-      import.meta &&
-      import.meta.env &&
-      typeof import.meta.env.BASE_URL === "string" &&
-      import.meta.env.BASE_URL.length > 0
-    ) {
-      return import.meta.env.BASE_URL;
-    }
-  } catch (_error) {}
-  return "/";
-})();
+const BASE_URL = import.meta.env.BASE_URL;
 
 const ANALYZE_API_PATH = `${BASE_URL}api/analyze-url`;
 const CONFIRM_ANALYSIS_API_PATH = `${BASE_URL}api/confirm-analysis`;
@@ -113,7 +100,13 @@ const EVENTS_SEED = [
 function normalizeCitySlugValue(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
-  const aliasMap = { 京都: "kyoto", 大阪: "osaka", 東京: "tokyo", 福岡: "fukuoka", 沖繩: "okinawa", 全部: "all", all: "all" };
+  const aliasMap = {
+    京都: "kyoto", 大阪: "osaka", 東京: "tokyo", 福岡: "fukuoka", 沖繩: "okinawa",
+    奈良: "nara", 北海道: "hokkaido",
+    台北: "taipei", 台中: "taichung", 台南: "tainan", 高雄: "kaohsiung",
+    首爾: "seoul", 釜山: "busan",
+    全部: "all", all: "all",
+  };
   return aliasMap[raw] || raw.toLowerCase();
 }
 
@@ -229,13 +222,13 @@ function normalizeCityPayload(payload, fallbackSlug, cityIndex) {
 }
 
 async function fetchCityIndex() {
-  const response = await fetch(cityIndexPath() + "?t=" + Date.now(), { headers: { Accept: "application/json" } });
+  const response = await fetch(cityIndexPath(), { headers: { Accept: "application/json" } });
   if (!response.ok) throw new Error(`無法載入城市索引`);
   return normalizeCityIndexPayload(await response.json());
 }
 
 async function fetchCityIndexMeta() {
-  const response = await fetch(cityIndexPath() + "?t=" + Date.now(), { headers: { Accept: "application/json" } });
+  const response = await fetch(cityIndexPath(), { headers: { Accept: "application/json" } });
   if (!response.ok) return null;
   const data = await response.json();
   return data?.meta?.lastSyncedAt || null;
@@ -245,7 +238,7 @@ async function fetchCityDataset(citySlug, cityIndex) {
   const paths = cityDataPaths(citySlug);
   if (!paths.length) return { city: normalizeCity({ slug: "unselected" }, 0), spots: [], events: [], sources: [] };
   for (const path of paths) {
-    const response = await fetch(path + "?t=" + Date.now(), { headers: { Accept: "application/json" } });
+    const response = await fetch(path, { headers: { Accept: "application/json" } });
     if (response.ok) return normalizeCityPayload(await response.json(), normalizeCitySlugValue(citySlug), cityIndex);
   }
   throw new Error(`無法載入城市資料：${citySlug}`);
@@ -612,7 +605,7 @@ export default function App() {
   async function handleManualSync() {
     setSyncing(true);
     try {
-      const r = await fetch(cityIndexPath() + "?t=" + Date.now());
+      const r = await fetch(cityIndexPath(), { cache: "no-store" });
       const data = await r.json();
       const newTime = data?.meta?.lastSyncedAt || null;
       if (newTime && newTime !== lastSyncedAt) {
