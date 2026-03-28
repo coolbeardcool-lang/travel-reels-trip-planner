@@ -89,7 +89,7 @@ export async function onRequestPost(context) {
       }
     }
 
-    if (sourcePageId && (spotPageIds.length > 0 || eventPageIds.length > 0)) {
+    if (sourcePageId && (spotPageIds.length > 0 || eventPageIds.length > 0 || citySlug)) {
       await updateSourceRelations(env, sourcePageId, spotPageIds, eventPageIds, citySlug);
     }
 
@@ -104,19 +104,20 @@ export async function onRequestPost(context) {
   }
 }
 
-// ── 回寫 Source 的 relation 欄位 ──────────────────────────
+// ── 回寫 Source 的關聯欄位 ────────────────────────────────
 async function updateSourceRelations(env, sourcePageId, spotIds, eventIds, citySlug) {
   try {
     const properties = {};
 
     if (spotIds.length > 0) {
-      properties.RelatedSpots = { relation: spotIds.map((id) => ({ id })) };
+      properties.RelatedSpots = { rich_text: [{ text: { content: spotIds.join(", ") } }] };
     }
     if (eventIds.length > 0) {
-      properties.RelatedEvents = { relation: eventIds.map((id) => ({ id })) };
+      properties.RelatedEvents = { rich_text: [{ text: { content: eventIds.join(", ") } }] };
     }
     if (citySlug) {
       properties.CityHints = { multi_select: [{ name: citySlug }] };
+      properties.RelatedCities = { rich_text: [{ text: { content: citySlug } }] };
     }
 
     if (Object.keys(properties).length === 0) return;
@@ -131,7 +132,7 @@ async function updateSourceRelations(env, sourcePageId, spotIds, eventIds, cityS
       body: JSON.stringify({ properties }),
     });
   } catch {
-    // relation 回寫失敗不中斷主流程
+    // 回寫失敗不中斷主流程
   }
 }
 
@@ -275,7 +276,7 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
   };
 
   if (sourcePageId) {
-    properties.SourceLinks = { relation: [{ id: sourcePageId }] };
+    properties.SourceLinks = { rich_text: [{ text: { content: String(sourcePageId) } }] };
   }
 
   return await notionCreatePage(env, {
@@ -322,7 +323,7 @@ async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, s
   };
 
   if (sourcePageId) {
-    properties.SourceLinks = { relation: [{ id: sourcePageId }] };
+    properties.SourceLinks = { rich_text: [{ text: { content: String(sourcePageId) } }] };
   }
 
   return await notionCreatePage(env, {
