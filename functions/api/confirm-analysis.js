@@ -220,7 +220,7 @@ async function ensureCityExists(env, citySlug) {
           SortOrder:     { number: city.sort },
           DefaultMapLat: { number: city.lat },
           DefaultMapLng: { number: city.lng },
-          Published:     { checkbox: false },
+          Published:     { checkbox: true },
         },
       }),
     });
