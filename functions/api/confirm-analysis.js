@@ -93,32 +93,32 @@ export async function onRequestPost(context) {
       await updateSourceRelations(env, sourcePageId, spotPageIds, eventPageIds, citySlug);
     }
 
-let dispatched = false;
-let dispatchError = null;
-if (env.GITHUB_TOKEN && env.GITHUB_OWNER && env.GITHUB_REPO) {
-  try {
-    const resp = await fetch(
-      `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/dispatches`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-          Accept: "application/vnd.github+json",
-          "Content-Type": "application/json",
-          "User-Agent": "TravelReelsBot/1.0",
-        },
-        body: JSON.stringify({ event_type: "sync_notion_after_reel_submit" }),
+    let dispatched = false;
+    let dispatchError = null;
+    if (env.GITHUB_TOKEN && env.GITHUB_OWNER && env.GITHUB_REPO) {
+      try {
+        const resp = await fetch(
+          `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/dispatches`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+              Accept: "application/vnd.github+json",
+              "Content-Type": "application/json",
+              "User-Agent": "TravelReelsBot/1.0",
+            },
+            body: JSON.stringify({ event_type: "sync_notion_after_reel_submit" }),
+          }
+        );
+        const respText = await resp.text();
+        dispatched = resp.ok;
+        if (!resp.ok) dispatchError = `${resp.status}: ${respText}`;
+      } catch (e) {
+        dispatchError = e?.message || String(e);
       }
-    );
-    const respText = await resp.text();
-    dispatched = resp.ok;
-    if (!resp.ok) dispatchError = `${resp.status}: ${respText}`;
-  } catch (e) {
-    dispatchError = e?.message || String(e);
-  }
-}
+    }
 
-return json({ message: "已確認寫入。", created, dispatched, cityEnsureError, dispatchError });
+    return json({ message: "已確認寫入。", created, dispatched, cityEnsureError, dispatchError });
   } catch (error) {
     return json({ message: error instanceof Error ? error.message : "確認寫入失敗。" }, 500);
   }
