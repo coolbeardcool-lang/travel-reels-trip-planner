@@ -263,42 +263,6 @@
   ],
   "sources": [
     {
-      "id": "33124c5d-f0b3-8167-824f-fa9b55291a50",
-      "title": "測試dispatch",
-      "url": "https://www.instagram.com/reel/testdispatch/",
-      "platform": "Instagram",
-      "sourceType": "手動整理",
-      "status": "已匯入",
-      "note": "測試dispatch",
-      "capturedAt": null,
-      "authorOrAccount": "",
-      "cityHints": [],
-      "relatedCityIds": [],
-      "relatedSpotIds": [],
-      "relatedEventIds": [],
-      "published": true,
-      "lastReviewedAt": null
-    },
-    {
-      "id": "33124c5d-f0b3-81c0-a343-c2ba54c92b36",
-      "title": "首爾・弘大美味韓牛餐廳推薦",
-      "url": "https://www.instagram.com/reel/DWWiMwgkycB/",
-      "platform": "Instagram",
-      "sourceType": "景點美食",
-      "status": "已匯入",
-      "note": "弘大美味韓牛餐廳推薦",
-      "capturedAt": null,
-      "authorOrAccount": "",
-      "cityHints": [
-        "seoul"
-      ],
-      "relatedCityIds": [],
-      "relatedSpotIds": [],
-      "relatedEventIds": [],
-      "published": true,
-      "lastReviewedAt": null
-    },
-    {
       "id": "33124c5d-f0b3-8177-8967-dba34be66dbd",
       "title": "京都夜櫻活動範例",
       "url": "https://example.com/kyoto-night-event",
@@ -407,7 +371,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T11:44:35.147Z",
+    "lastSyncedAt": "2026-03-28T11:51:55.950Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
