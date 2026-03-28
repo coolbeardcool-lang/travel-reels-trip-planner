@@ -36,66 +36,6 @@ const CATEGORY_THEME = {
   活動: { bg: "#ffedd5", color: "#c2410c" },
 };
 
-const CITY_INDEX_SEED = [
-  {
-    slug: "kyoto", label: "京都", emoji: "⛩️", region: "關西",
-    description: "寺社、散步、甜點與選物密度高，適合慢節奏安排。",
-    heroArea: "佛光寺周邊", spotlight: ["寺社", "甜點", "散步"],
-  },
-  {
-    slug: "osaka", label: "大阪", emoji: "🍢", region: "關西",
-    description: "小吃、商圈與夜間行程豐富，適合美食導向安排。",
-    heroArea: "新世界／通天閣", spotlight: ["小吃", "商圈", "夜生活"],
-  },
-];
-
-const SOURCES_SEED = [
-  {
-    id: "src-osaka-gyutan", title: "大阪牛舌 Reel",
-    url: "https://www.instagram.com/reel/DWOiXYxkf97/",
-    platform: "Instagram Reel", status: "已匯入", note: "已整理成大阪牛舌相關景點。",
-  },
-  {
-    id: "src-kyoto-hidden-list", title: "京都私藏清單 Reel",
-    url: "https://www.instagram.com/reel/DWWQYkuAfHD/",
-    platform: "Instagram Reel", status: "已匯入", note: "已整理成京都選店與寺社點位。",
-  },
-];
-
-const SPOTS_SEED = [
-  {
-    id: "osaka-nonkiya", city: "大阪", citySlug: "osaka", area: "新世界／通天閣",
-    name: "Nonkiya のんきや", category: "小吃",
-    description: "新世界人氣立食關東煮與土手燒。",
-    sourceId: "src-osaka-gyutan", sourceUrl: "https://www.instagram.com/reel/DWOiXYxkf97/",
-    bestTime: "下午", stayMinutes: 35, tags: ["關東煮", "立食"],
-    lat: 34.6529, lng: 135.5057, thumbnail: "🍢",
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=Nonkiya+大阪",
-  },
-  {
-    id: "kyoto-bukkouji-dd", city: "京都", citySlug: "kyoto", area: "佛光寺周邊",
-    name: "D&DEPARTMENT KYOTO", category: "逛街",
-    description: "位在佛光寺境內的京都選物店。",
-    sourceId: "src-kyoto-hidden-list", sourceUrl: "https://www.instagram.com/reel/DWWQYkuAfHD/",
-    bestTime: "下午", stayMinutes: 50, tags: ["選物店", "散步"],
-    lat: 35.0018, lng: 135.7596, thumbnail: "🛍️",
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=D%26DEPARTMENT+KYOTO",
-  },
-];
-
-const EVENTS_SEED = [
-  {
-    id: "evt-kyoto-sakura-night", city: "京都", citySlug: "kyoto", area: "東山周邊",
-    name: "京都夜櫻點燈示意活動", category: "活動",
-    description: "示意活動資料。",
-    sourceId: "src-kyoto-hidden-list", sourceUrl: "https://www.instagram.com/reel/DWWQYkuAfHD/",
-    tags: ["夜櫻", "春季"], lat: 35.0037, lng: 135.7788, thumbnail: "🌸",
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=東山+京都",
-    startsOn: "2026-03-25", endsOn: "2026-04-10",
-    startTime: "18:00", endTime: "21:00", ticketType: "現場購票", priceNote: "示意資料",
-  },
-];
-
 // ── 資料處理 ───────────────────────────────────────────────
 function normalizeCitySlugValue(value) {
   const raw = String(value || "").trim();
@@ -148,10 +88,6 @@ function filterByCitySlug(items, citySlug) {
   return items.filter((item) => item.citySlug === citySlug);
 }
 
-function filterSourcesByLinkedIds(items, sources) {
-  const sourceIds = new Set(items.map((item) => item.sourceId).filter(Boolean));
-  return sources.filter((source) => sourceIds.has(source.id));
-}
 
 function normalizeSpot(spot, index, cityIndex) {
   const cityLabel = spot.city || cityIndex.find((c) => c.slug === spot.citySlug)?.label || "未分類";
@@ -217,7 +153,7 @@ function normalizeCityPayload(payload, fallbackSlug, cityIndex) {
     city: normalizeCity(payload?.city || { slug: fallbackSlug }, 0),
     spots,
     events,
-    sources: sources.length ? sources : filterSourcesByLinkedIds([...spots, ...events], SOURCES_SEED),
+    sources,
   };
 }
 
@@ -485,12 +421,17 @@ function SuccessView({ result, onReset }) {
 // ── 主元件 ────────────────────────────────────────────────
 export default function App() {
   const isMobile = useResponsiveColumns();
-  const [cityIndex, setCityIndex] = useState(CITY_INDEX_SEED);
+  const [cityIndex, setCityIndex] = useState([]);
   const [selectedCitySlug, setSelectedCitySlug] = useState("unselected");
   const [selectedContentMode, setSelectedContentMode] = useState("spots");
-  const [sources, setSources] = useState(SOURCES_SEED);
+  const [sources, setSources] = useState([]);
   const [loadedSpots, setLoadedSpots] = useState([]);
   const [loadedEvents, setLoadedEvents] = useState([]);
+  const [globalStats, setGlobalStats] = useState({ spots: 0, events: 0 });
+  const [submittedUrls, setSubmittedUrls] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("trt:submittedUrls") || "[]")); }
+    catch { return new Set(); }
+  });
   const [search, setSearch] = useState("");
   const [timeOfDay, setTimeOfDay] = useState("下午");
   const [baseArea, setBaseArea] = useState("");
@@ -527,41 +468,45 @@ export default function App() {
         const meta = await fetchCityIndexMeta();
         if (!cancelled) setLastSyncedAt(meta);
       } catch {
-        if (!cancelled) setCityIndex(CITY_INDEX_SEED);
+        // 載入失敗時保持空陣列，不用 seed 資料
       }
     }
     loadIndex();
     return () => { cancelled = true; };
   }, [reloadKey]);
 
+  // 載入全域統計
+  useEffect(() => {
+    fetch(`${BASE_URL}data/all.json`, { headers: { Accept: "application/json" } })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) setGlobalStats({
+          spots: Array.isArray(data.spots) ? data.spots.length : 0,
+          events: Array.isArray(data.events) ? data.events.length : 0,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
   // 載入城市資料
   useEffect(() => {
     let cancelled = false;
     async function loadCityData() {
       if (!hasCitySelected) {
-        setLoadedSpots([]); setLoadedEvents([]); setSources(SOURCES_SEED);
+        setLoadedSpots([]); setLoadedEvents([]); setSources([]);
         setActiveItemId(null); setBaseArea(""); setSelectedCategories([]);
         return;
       }
       try {
         const payload = await fetchCityDataset(selectedCitySlug, cityIndex);
         if (cancelled) return;
-        const fallbackSpots = filterByCitySlug(SPOTS_SEED, selectedCitySlug);
-        const fallbackEvents = filterByCitySlug(EVENTS_SEED, selectedCitySlug);
-        const safeSpots = payload.spots.length ? payload.spots : fallbackSpots;
-        const safeEvents = payload.events.length ? payload.events : fallbackEvents;
-        const safeSources = payload.sources.length ? payload.sources : filterSourcesByLinkedIds([...safeSpots, ...safeEvents], SOURCES_SEED);
-        setLoadedSpots(safeSpots); setLoadedEvents(safeEvents); setSources(safeSources);
-        setBaseArea(safeSpots[0]?.area || safeEvents[0]?.area || payload.city.heroArea || "");
-        setActiveItemId((selectedContentMode === "events" ? safeEvents[0]?.id : safeSpots[0]?.id) || null);
+        setLoadedSpots(payload.spots); setLoadedEvents(payload.events); setSources(payload.sources);
+        setBaseArea(payload.spots[0]?.area || payload.events[0]?.area || payload.city.heroArea || "");
+        setActiveItemId((selectedContentMode === "events" ? payload.events[0]?.id : payload.spots[0]?.id) || null);
       } catch {
         if (cancelled) return;
-        const fallbackSpots = filterByCitySlug(SPOTS_SEED, selectedCitySlug);
-        const fallbackEvents = filterByCitySlug(EVENTS_SEED, selectedCitySlug);
-        setLoadedSpots(fallbackSpots); setLoadedEvents(fallbackEvents);
-        setSources(filterSourcesByLinkedIds([...fallbackSpots, ...fallbackEvents], SOURCES_SEED));
-        setBaseArea(fallbackSpots[0]?.area || fallbackEvents[0]?.area || "");
-        setActiveItemId((selectedContentMode === "events" ? fallbackEvents[0]?.id : fallbackSpots[0]?.id) || null);
+        setLoadedSpots([]); setLoadedEvents([]); setSources([]);
+        setBaseArea(""); setActiveItemId(null);
       }
     }
     loadCityData();
@@ -677,6 +622,15 @@ export default function App() {
       if (!response.ok) throw new Error(payload?.message || `寫入失敗，HTTP ${response.status}`);
       setConfirmResult(payload);
       setShowSuccess(true);
+      const confirmedUrl = submitUrl.trim();
+      if (confirmedUrl) {
+        setSubmittedUrls((prev) => {
+          const next = new Set(prev);
+          next.add(confirmedUrl);
+          try { localStorage.setItem("trt:submittedUrls", JSON.stringify([...next])); } catch {}
+          return next;
+        });
+      }
       setSubmitUrl(""); setSubmitTitle(""); setSubmitType("auto"); setSubmitCitySlug(""); setSubmitNotes("");
       setAnalysisPreview(null);
       setSubmitStatus({ kind: "idle", message: "" });
@@ -693,10 +647,12 @@ export default function App() {
       ? { background: COLORS.errorBg, color: COLORS.errorText }
       : { background: COLORS.infoBg, color: COLORS.infoText };
 
+  const isDuplicateUrl = Boolean(submitUrl.trim() && submittedUrls.has(submitUrl.trim()));
+
   const cityStats = {
     cities: cityIndex.length,
-    spots: loadedSpots.length || SPOTS_SEED.length,
-    events: loadedEvents.length || EVENTS_SEED.length,
+    spots: hasCitySelected ? loadedSpots.length : globalStats.spots,
+    events: hasCitySelected ? loadedEvents.length : globalStats.events,
     picks: recommendations.length,
   };
 
@@ -778,7 +734,12 @@ export default function App() {
             <div style={{ marginTop: 8, fontSize: 30, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
             <form onSubmit={handleAnalyzeUrl} style={{ marginTop: 16, display: "grid", gap: 12 }}>
               <input value={submitUrl} onChange={(e) => setSubmitUrl(e.target.value)} placeholder="只貼 Instagram Reel / Threads / 網址 就可以"
-                style={{ width: "100%", borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
+                style={{ width: "100%", borderRadius: 18, border: `1px solid ${isDuplicateUrl ? "#fb923c" : "rgba(255,255,255,0.15)"}`, background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
+              {isDuplicateUrl && (
+                <div style={{ borderRadius: 14, padding: "8px 14px", background: COLORS.warningBg, color: COLORS.warningText, fontSize: 12, fontWeight: 600 }}>
+                  ⚠️ 此網址已提交過，如有需要仍可繼續送出。
+                </div>
+              )}
               <input value={submitTitle} onChange={(e) => setSubmitTitle(e.target.value)} placeholder="可選：人工補充標題提示"
                 style={{ width: "100%", borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
               <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
@@ -893,12 +854,53 @@ export default function App() {
         {/* 城市入口 */}
         <div style={{ marginTop: 20 }}>
           <SectionCard title="城市入口">
-            <div style={{ display: "grid", gap: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
-              {cityIndex.map((city) => {
-                const active = selectedCitySlug === city.slug;
-                return (
+            {hasCitySelected ? (
+              <div style={{ display: "grid", gap: 14 }}>
+                {cityIndex.filter((c) => c.slug === selectedCitySlug).map((city) => (
+                  <button key={city.slug} type="button" onClick={() => setSelectedCitySlug("unselected")}
+                    style={{ width: "100%", textAlign: "left", border: `2px solid ${COLORS.primary}`, borderRadius: 28, background: "#fff", boxShadow: "0 10px 26px rgba(0,0,0,0.08)", padding: 24, cursor: "pointer" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ fontSize: 40 }}>{city.emoji}</div>
+                      <div>
+                        <div style={{ fontSize: 26, fontWeight: 900 }}>{city.label}</div>
+                        <div style={{ fontSize: 13, color: COLORS.subtext }}>{city.region}</div>
+                      </div>
+                      <div style={{ marginLeft: "auto", fontSize: 12, color: COLORS.subtext, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "6px 12px" }}>點此取消選擇</div>
+                    </div>
+                    <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.8, color: COLORS.subtext }}>{city.description}</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 16 }}>
+                      {[
+                        { label: "景點數", value: loadedSpots.length },
+                        { label: "活動數", value: loadedEvents.length },
+                        { label: "來源數", value: sources.length },
+                      ].map(({ label, value }) => (
+                        <div key={label} style={{ background: COLORS.cardMuted, borderRadius: 16, padding: "12px 14px", border: `1px solid ${COLORS.border}` }}>
+                          <div style={{ fontSize: 11, color: COLORS.subtext }}>{label}</div>
+                          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{value}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+                      {city.spotlight.map((item) => <span key={item} style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{item}</span>)}
+                    </div>
+                  </button>
+                ))}
+                <div style={{ display: "grid", gap: 10, gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(140px, 1fr))" }}>
+                  {cityIndex.filter((c) => c.slug !== selectedCitySlug).map((city) => (
+                    <button key={city.slug} type="button" onClick={() => setSelectedCitySlug(city.slug)}
+                      style={{ textAlign: "left", border: `1px solid ${COLORS.border}`, borderRadius: 18, background: COLORS.cardMuted, padding: "14px 16px", cursor: "pointer" }}>
+                      <div style={{ fontSize: 26 }}>{city.emoji}</div>
+                      <div style={{ marginTop: 6, fontSize: 15, fontWeight: 800 }}>{city.label}</div>
+                      <div style={{ marginTop: 2, fontSize: 12, color: COLORS.subtext }}>{city.region}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
+                {cityIndex.map((city) => (
                   <button key={city.slug} type="button" onClick={() => setSelectedCitySlug(city.slug)}
-                    style={{ textAlign: "left", border: `1px solid ${active ? COLORS.primary : COLORS.border}`, borderRadius: 28, background: active ? "#fff" : COLORS.card, boxShadow: active ? "0 10px 26px rgba(0,0,0,0.08)" : "0 6px 18px rgba(0,0,0,0.04)", padding: 20, cursor: "pointer" }}>
+                    style={{ textAlign: "left", border: `1px solid ${COLORS.border}`, borderRadius: 28, background: COLORS.card, boxShadow: "0 6px 18px rgba(0,0,0,0.04)", padding: 20, cursor: "pointer" }}>
                     <div style={{ fontSize: 34 }}>{city.emoji}</div>
                     <div style={{ marginTop: 8, fontSize: 24, fontWeight: 900 }}>{city.label}</div>
                     <div style={{ marginTop: 4, fontSize: 13, color: COLORS.subtext }}>{city.region}</div>
@@ -907,9 +909,9 @@ export default function App() {
                       {city.spotlight.map((item) => <span key={item} style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{item}</span>)}
                     </div>
                   </button>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </SectionCard>
         </div>
 
