@@ -1,0 +1,41 @@
+{
+  "cities": [
+    {
+      "slug": "kyoto",
+      "label": "京都",
+      "emoji": "⛩️",
+      "region": "關西",
+      "description": "寺社、散步、甜點與選物密度高，適合慢節奏安排。",
+      "status": "active",
+      "spotlight": [],
+      "heroArea": "佛光寺周邊",
+      "coverImageUrl": "",
+      "timezone": "Asia/Tokyo",
+      "defaultMapLat": 35.0116,
+      "defaultMapLng": 135.7681,
+      "lastReviewedAt": "2026-03-28"
+    },
+    {
+      "slug": "osaka",
+      "label": "大阪",
+      "emoji": "🍢",
+      "region": "關西",
+      "description": "小吃、商圈與夜間行程豐富，適合美食導向安排。",
+      "status": "active",
+      "spotlight": [],
+      "heroArea": "新世界／通天閣",
+      "coverImageUrl": "",
+      "timezone": "Asia/Tokyo",
+      "defaultMapLat": 34.6937,
+      "defaultMapLng": 135.5023,
+      "lastReviewedAt": "2026-03-28"
+    }
+  ],
+  "meta": {
+    "lastSyncedAt": "2026-03-28T01:42:38.188Z",
+    "notionDataSourceId": "33124c5d-f0b3-8087-84f4-000b2b0702f9",
+    "generatedBy": "github-actions",
+    "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
+    "count": 2
+  }
+}
