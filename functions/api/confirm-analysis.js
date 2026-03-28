@@ -140,8 +140,9 @@ async function ensureCityExists(env, citySlug) {
         },
       }),
     });
-  } catch {
-    // 城市新增失敗不中斷主流程
+} catch (e) {
+    console.error("ensureCityExists error:", e?.message || e);
+    throw new Error("ensureCityExists failed: " + (e?.message || String(e)));
   }
 }
 
