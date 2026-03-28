@@ -1,0 +1,47 @@
+{
+  "city": {
+    "slug": "seoul",
+    "label": "首爾",
+    "emoji": "🇰🇷",
+    "region": "韓國",
+    "description": "韓流文化發源地，美食、購物與歷史景點密集。",
+    "status": "active",
+    "spotlight": [],
+    "heroArea": "明洞／弘大"
+  },
+  "spots": [
+    {
+      "id": "33124c5d-f0b3-810a-b8bb-cc28dbe1053e",
+      "city": "",
+      "citySlug": "seoul",
+      "area": "弘大",
+      "name": "牛火",
+      "category": "餐廳",
+      "description": "主打1++等級的韓牛，油花漂亮，肉質軟嫩多汁，店員全程代烤，值得體驗。",
+      "sourceId": "",
+      "sourceTitle": "",
+      "sourceUrl": "",
+      "bestTime": "晚上",
+      "stayMinutes": 90,
+      "tags": [],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E7%89%9B%E7%81%AB%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": ""
+    }
+  ],
+  "events": [],
+  "sources": [],
+  "meta": {
+    "lastSyncedAt": "2026-03-28T11:07:15.713Z",
+    "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
+    "generatedBy": "github-actions",
+    "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
+    "count": 1
+  }
+}
