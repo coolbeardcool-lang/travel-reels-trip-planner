@@ -58,21 +58,6 @@
       "lastReviewedAt": null
     },
     {
-      "slug": "大阪",
-      "label": "大阪",
-      "emoji": "📍",
-      "region": "其他",
-      "description": "",
-      "status": "active",
-      "spotlight": [],
-      "heroArea": "",
-      "coverImageUrl": "",
-      "timezone": "Asia/Tokyo",
-      "defaultMapLat": 0,
-      "defaultMapLng": 0,
-      "lastReviewedAt": null
-    },
-    {
       "slug": "京都",
       "label": "京都",
       "emoji": "📍",
@@ -89,10 +74,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T16:08:23.187Z",
+    "lastSyncedAt": "2026-03-28T16:57:57.296Z",
     "notionDataSourceId": "33124c5d-f0b3-8087-84f4-000b2b0702f9",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 5
+    "count": 4
   }
 }
