@@ -1,17 +1,13 @@
 {
   "city": {
-    "slug": "seoul",
-    "label": "首爾",
-    "emoji": "🇰🇷",
-    "region": "韓國",
-    "description": "韓流文化發源地，美食、購物與歷史景點密集。",
+    "slug": "彰化",
+    "label": "彰化",
+    "emoji": "📍",
+    "region": "其他",
+    "description": "",
     "status": "active",
-    "spotlight": [
-      "美食",
-      "購物",
-      "文化"
-    ],
-    "heroArea": "明洞／弘大"
+    "spotlight": [],
+    "heroArea": ""
   },
   "spots": [],
   "events": [],
