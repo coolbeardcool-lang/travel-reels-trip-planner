@@ -1008,7 +1008,7 @@ export default function TravelReelsTripPlanner() {
                 style={{ width: "100%", minHeight: 96, borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: 16, outline: "none", resize: "vertical" }}
               />
               <div style={{ display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-                <PrimaryButton type="submit" onClick={handleAnalyzeUrl} disabled={isAnalyzing || isConfirming}>
+                <PrimaryButton type="submit" disabled={isAnalyzing || isConfirming}>
                   {isAnalyzing ? "分析中…" : "先分析網址"}
                 </PrimaryButton>
                 <PrimaryButton secondary onClick={handleConfirmAnalysis} disabled={!analysisPreview || isAnalyzing || isConfirming}>
