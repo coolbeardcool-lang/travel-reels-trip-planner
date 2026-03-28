@@ -235,8 +235,24 @@ function distanceScore(spot, baseArea, currentTime) {
   return score;
 }
 
-function buildRecommendation(spots, baseArea, currentTime) {
-  return [...spots]
+function haversineKm(a, b) {
+  if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) return 0;
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(h));
+}
+
+function estimateTransport(from, to) {
+  const km = haversineKm(from, to);
+  if (km === 0) return null;
+  if (km < 0.5) return { icon: "🚶", label: "步行", minutes: Math.round(km / 0.083), km };
+  if (km < 3)   return { icon: "🚌", label: "電車／公車", minutes: Math.round(km / 0.35 + 5), km };
+  return         { icon: "🚇", label: "地鐵／計程車", minutes: Math.round(km / 0.5 + 8), km };
+}
+
+function buildRecommendation(spots, baseArea, currentTime) {  return [...spots]
     .sort((a, b) => distanceScore(b, baseArea, currentTime) - distanceScore(a, baseArea, currentTime))
     .slice(0, 4)
     .map((spot, index) => ({
@@ -455,8 +471,20 @@ export default function App() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmResult, setConfirmResult] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [inputExpanded, setInputExpanded] = useState(false);
+  const [showCitySources, setShowCitySources] = useState(false);
 
   const hasCitySelected = selectedCitySlug !== "unselected";
+
+  // iPhone Web Share Target：讀取 URL 帶入的分享網址
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shared = params.get("url") || params.get("text");
+    if (shared && /^https?:\/\//i.test(shared)) {
+      setSubmitUrl(shared);
+      setInputExpanded(true);
+    }
+  }, []);
 
   // 載入城市索引
   useEffect(() => {
@@ -648,6 +676,7 @@ export default function App() {
       : { background: COLORS.infoBg, color: COLORS.infoText };
 
   const isDuplicateUrl = Boolean(submitUrl.trim() && submittedUrls.has(submitUrl.trim()));
+  const shouldShowInput = inputExpanded || Boolean(submitUrl || analysisPreview);
 
   const cityStats = {
     cities: cityIndex.length,
@@ -709,29 +738,27 @@ export default function App() {
 
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: isMobile ? 16 : 28, paddingTop: isMobile ? 56 : 56 }}>
 
-        {/* Hero + 分析入口 */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr", gap: 16, alignItems: "stretch" }}>
-          <SectionCard>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <span style={{ ...chipStyle("景點"), background: COLORS.primary, color: "#ffffff", borderColor: COLORS.primary }}>旅遊行程地圖</span>
-              <span style={{ ...chipStyle("活動"), background: "#ffffff", color: COLORS.subtext, border: `1px solid ${COLORS.border}` }}>網址分析入口</span>
-            </div>
-            <div style={{ marginTop: 18 }}>
-              <h1 style={{ margin: 0, fontSize: isMobile ? 30 : 52, lineHeight: 1.08, fontWeight: 900 }}>把旅遊靈感整理成<br />可直接使用的城市地圖與行程頁</h1>
-              <p style={{ marginTop: 14, maxWidth: 820, color: COLORS.subtext, fontSize: 16, lineHeight: 1.8 }}>依城市查看景點、活動、地圖位置與推薦安排，並可直接在頁面上貼上網址，先分析，再確認寫入。</p>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginTop: 20 }}>
-              <MetricCard label="城市數" value={String(cityStats.cities)} sub="持續擴充中" />
-              <MetricCard label="景點數" value={String(cityStats.spots)} sub="目前可瀏覽" />
-              <MetricCard label="活動數" value={String(cityStats.events)} sub="目前可瀏覽" />
-              <MetricCard label="推薦安排" value={String(cityStats.picks)} sub="依時間與區域計算" />
-            </div>
-          </SectionCard>
+        {/* Hero */}
+        <SectionCard>
+          <h1 style={{ margin: 0, fontSize: isMobile ? 28 : 48, lineHeight: 1.1, fontWeight: 900 }}>把旅遊靈感整理成<br />可直接使用的城市地圖與行程頁</h1>
+          <p style={{ marginTop: 12, maxWidth: 820, color: COLORS.subtext, fontSize: 15, lineHeight: 1.8 }}>依城市查看景點、活動、地圖位置與推薦安排。</p>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginTop: 20 }}>
+            <MetricCard label="城市數" value={String(cityStats.cities)} sub="持續擴充中" />
+            <MetricCard label="景點數" value={String(cityStats.spots)} sub="目前可瀏覽" />
+            <MetricCard label="活動數" value={String(cityStats.events)} sub="目前可瀏覽" />
+            <MetricCard label="推薦安排" value={String(cityStats.picks)} sub="依時間與區域計算" />
+          </div>
+        </SectionCard>
 
-          {/* 分析入口 */}
-          <div style={{ background: COLORS.primary, color: "#ffffff", borderRadius: 28, padding: 24, boxShadow: "0 10px 35px rgba(0,0,0,0.14)" }}>
-            <div style={{ fontSize: 13, color: "#d6d3d1" }}>網址分析入口</div>
-            <div style={{ marginTop: 8, fontSize: 30, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
+        {/* 浮動貼網址入口 */}
+        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, maxWidth: isMobile ? "calc(100vw - 48px)" : 420 }}>
+          {shouldShowInput ? (
+            <div style={{ background: COLORS.primary, color: "#fff", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div style={{ fontSize: 16, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
+                <button type="button" onClick={() => { setInputExpanded(false); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); }}
+                  style={{ background: "transparent", border: "none", color: "#a8a29e", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>✕</button>
+              </div>
             <form onSubmit={handleAnalyzeUrl} style={{ marginTop: 16, display: "grid", gap: 12 }}>
               <input value={submitUrl} onChange={(e) => setSubmitUrl(e.target.value)} placeholder="只貼 Instagram Reel / Threads / 網址 就可以"
                 style={{ width: "100%", borderRadius: 18, border: `1px solid ${isDuplicateUrl ? "#fb923c" : "rgba(255,255,255,0.15)"}`, background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
@@ -823,32 +850,15 @@ export default function App() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* 來源清單 */}
-        <div style={{ marginTop: 20 }}>
-          <SectionCard title="來源清單">
-            {sources.length > 0 ? (
-              <div style={{ display: "grid", gap: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
-                {sources.map((source) => (
-                  <div key={source.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.card, padding: 18 }}>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <span style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{source.platform}</span>
-                      <span style={{ borderRadius: 999, background: "#ffffff", border: `1px solid ${COLORS.border}`, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{source.status}</span>
-                    </div>
-                    <div style={{ marginTop: 12, fontSize: 18, fontWeight: 800 }}>{source.title}</div>
-                    <div style={{ marginTop: 8, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{source.note}</div>
-                    <div style={{ marginTop: 14 }}>
-                      <PrimaryButton href={source.url} block secondary>開啟原始來源</PrimaryButton>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ color: COLORS.subtext, fontSize: 14 }}>請先選擇城市以顯示對應來源清單。</div>
-            )}
-          </SectionCard>
+            </div>
+          ) : (
+            <button type="button"
+              onMouseEnter={() => setInputExpanded(true)}
+              onClick={() => setInputExpanded(true)}
+              style={{ background: COLORS.primary, color: "#fff", border: "none", borderRadius: 20, padding: "13px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 28px rgba(0,0,0,0.22)", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 18 }}>＋</span> 貼網址分析
+            </button>
+          )}
         </div>
 
         {/* 城市入口 */}
@@ -857,33 +867,54 @@ export default function App() {
             {hasCitySelected ? (
               <div style={{ display: "grid", gap: 14 }}>
                 {cityIndex.filter((c) => c.slug === selectedCitySlug).map((city) => (
-                  <button key={city.slug} type="button" onClick={() => setSelectedCitySlug("unselected")}
-                    style={{ width: "100%", textAlign: "left", border: `2px solid ${COLORS.primary}`, borderRadius: 28, background: "#fff", boxShadow: "0 10px 26px rgba(0,0,0,0.08)", padding: 24, cursor: "pointer" }}>
+                  <div key={city.slug} style={{ border: `2px solid ${COLORS.primary}`, borderRadius: 28, background: "#fff", boxShadow: "0 10px 26px rgba(0,0,0,0.08)", padding: 24 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                       <div style={{ fontSize: 40 }}>{city.emoji}</div>
-                      <div>
+                      <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 26, fontWeight: 900 }}>{city.label}</div>
                         <div style={{ fontSize: 13, color: COLORS.subtext }}>{city.region}</div>
                       </div>
-                      <div style={{ marginLeft: "auto", fontSize: 12, color: COLORS.subtext, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "6px 12px" }}>點此取消選擇</div>
+                      <button type="button" onClick={() => { setSelectedCitySlug("unselected"); setShowCitySources(false); }}
+                        style={{ fontSize: 12, color: COLORS.subtext, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "6px 12px", background: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}>
+                        取消選擇
+                      </button>
                     </div>
                     <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.8, color: COLORS.subtext }}>{city.description}</div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 16 }}>
                       {[
-                        { label: "景點數", value: loadedSpots.length },
-                        { label: "活動數", value: loadedEvents.length },
-                        { label: "來源數", value: sources.length },
-                      ].map(({ label, value }) => (
-                        <div key={label} style={{ background: COLORS.cardMuted, borderRadius: 16, padding: "12px 14px", border: `1px solid ${COLORS.border}` }}>
-                          <div style={{ fontSize: 11, color: COLORS.subtext }}>{label}</div>
-                          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>{value}</div>
-                        </div>
-                      ))}
+                        { label: "景點數", value: loadedSpots.length, key: "spots", clickable: false },
+                        { label: "活動數", value: loadedEvents.length, key: "events", clickable: false },
+                        { label: "來源數", value: sources.length, key: "sources", clickable: true },
+                      ].map(({ label, value, key, clickable }) => {
+                        const active = showCitySources && key === "sources";
+                        return (
+                          <div key={key} onClick={clickable ? () => setShowCitySources((s) => !s) : undefined}
+                            style={{ background: active ? COLORS.primary : COLORS.cardMuted, borderRadius: 16, padding: "12px 14px", border: `1px solid ${active ? COLORS.primary : COLORS.border}`, cursor: clickable ? "pointer" : "default", transition: "background 0.15s" }}>
+                            <div style={{ fontSize: 11, color: active ? "#d6d3d1" : COLORS.subtext }}>{label} {clickable && <span style={{ fontSize: 10 }}>{showCitySources ? "▲" : "▼"}</span>}</div>
+                            <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: active ? "#fff" : COLORS.text }}>{value}</div>
+                          </div>
+                        );
+                      })}
                     </div>
+                    {showCitySources && sources.length > 0 && (
+                      <div style={{ marginTop: 14, display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)" }}>
+                        {sources.map((source) => (
+                          <div key={source.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 18, background: COLORS.cardMuted, padding: 14 }}>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              <span style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "4px 8px", fontSize: 11, color: COLORS.subtext }}>{source.platform}</span>
+                              <span style={{ borderRadius: 999, background: "#fff", border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11, color: COLORS.subtext }}>{source.status}</span>
+                            </div>
+                            <div style={{ marginTop: 8, fontSize: 14, fontWeight: 700 }}>{source.title}</div>
+                            {source.note && <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext, lineHeight: 1.6 }}>{source.note}</div>}
+                            <a href={source.url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 10, fontSize: 12, color: COLORS.primary, fontWeight: 700, textDecoration: "none" }}>→ 查看來源</a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
                       {city.spotlight.map((item) => <span key={item} style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{item}</span>)}
                     </div>
-                  </button>
+                  </div>
                 ))}
                 <div style={{ display: "grid", gap: 10, gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(140px, 1fr))" }}>
                   {cityIndex.filter((c) => c.slug !== selectedCitySlug).map((city) => (
@@ -956,13 +987,40 @@ export default function App() {
                   })}
                 </div>
               </div>
-              {hasCitySelected
-                ? <VisualMap items={activeCollection} activeItemId={activeItem?.id || null} onSelect={setActiveItemId} />
-                : <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 28, textAlign: "center", color: COLORS.subtext }}>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.text }}>請先選擇城市</div>
-                    <div style={{ marginTop: 10, lineHeight: 1.8 }}>選好城市後，頁面才會載入對應的景點與活動資料。</div>
+              {hasCitySelected ? (
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "200px 1fr", borderRadius: 20, overflow: "hidden", border: `1px solid ${COLORS.border}`, minHeight: 440 }}>
+                  <div style={{ overflowY: "auto", maxHeight: 440, borderRight: isMobile ? "none" : `1px solid ${COLORS.border}`, borderBottom: isMobile ? `1px solid ${COLORS.border}` : "none" }}>
+                    {activeCollection.length ? activeCollection.map((item) => {
+                      const active = activeItemId === item.id;
+                      return (
+                        <button key={item.id} type="button" onClick={() => setActiveItemId(item.id)}
+                          style={{ width: "100%", padding: "12px 14px", borderBottom: `1px solid ${COLORS.border}`, background: active ? COLORS.primarySoft : "#fff", display: "flex", gap: 10, alignItems: "center", textAlign: "left", border: "none", borderBottom: `1px solid ${COLORS.border}`, cursor: "pointer" }}>
+                          <span style={{ fontSize: 22, flexShrink: 0 }}>{item.thumbnail}</span>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: active ? 800 : 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? COLORS.primary : COLORS.text }}>{item.name}</div>
+                            <div style={{ fontSize: 11, color: COLORS.subtext, marginTop: 2 }}>{item.area}</div>
+                          </div>
+                        </button>
+                      );
+                    }) : <div style={{ padding: 16, fontSize: 13, color: COLORS.subtext }}>目前無資料</div>}
                   </div>
-              }
+                  {activeItem?.lat && activeItem?.lng ? (
+                    <iframe
+                      key={`${activeItem.lat}-${activeItem.lng}`}
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${activeItem.lng - 0.008},${activeItem.lat - 0.006},${activeItem.lng + 0.008},${activeItem.lat + 0.006}&layer=mapnik&marker=${activeItem.lat},${activeItem.lng}`}
+                      style={{ border: "none", width: "100%", height: 440 }}
+                      title={activeItem.name}
+                    />
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: COLORS.cardMuted, color: COLORS.subtext, fontSize: 14 }}>請從左側選擇景點查看地圖</div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 28, textAlign: "center", color: COLORS.subtext }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.text }}>請先選擇城市</div>
+                  <div style={{ marginTop: 10, lineHeight: 1.8 }}>選好城市後，頁面才會載入對應的景點與活動資料。</div>
+                </div>
+              )}
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.2fr 0.8fr", gap: 16, marginTop: 16 }}>
                 <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.card, padding: 20 }}>
                   {activeItem ? (
@@ -1017,25 +1075,39 @@ export default function App() {
                 </select>
               </div>
             </div>
-            <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-              {recommendations.map((item) => (
-                <div key={item.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 22, background: COLORS.card, padding: 16 }}>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 999, background: COLORS.primary, color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 }}>{item.order}</div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 800 }}>{item.name}</div>
-                        <span style={{ border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{item.bestTime}</span>
+            <div style={{ display: "grid", gap: 0, marginTop: 16 }}>
+              {recommendations.map((item, i) => {
+                const transport = i > 0 ? estimateTransport(recommendations[i - 1], item) : null;
+                return (
+                  <React.Fragment key={item.id}>
+                    {transport && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0 6px 20px" }}>
+                        <div style={{ width: 2, height: 24, background: COLORS.border, flexShrink: 0 }} />
+                        <span style={{ fontSize: 18 }}>{transport.icon}</span>
+                        <span style={{ fontSize: 12, color: COLORS.subtext }}>{transport.label}・約 {transport.minutes} 分・{transport.km.toFixed(1)} km</span>
                       </div>
-                      <div style={{ marginTop: 8, fontSize: 14, color: COLORS.subtext }}>{item.reason}</div>
-                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 12, color: COLORS.subtext }}>
-                        <span>{item.stayMinutes} 分</span>
-                        <span>{item.city}・{item.area}</span>
+                    )}
+                    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 22, background: COLORS.card, padding: 16, marginBottom: 0 }}>
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 999, background: COLORS.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, flexShrink: 0 }}>{item.order}</div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                            <span style={chipStyle(item.category)}>{item.category}</span>
+                            <span style={{ border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{item.bestTime}</span>
+                          </div>
+                          <div style={{ marginTop: 8, fontWeight: 800, fontSize: 15 }}>{item.name}</div>
+                          <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext }}>{item.city}・{item.area}</div>
+                          <div style={{ marginTop: 6, fontSize: 13, color: COLORS.subtext, lineHeight: 1.6 }}>{item.reason}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                            <span style={{ fontSize: 12, color: COLORS.subtext, background: COLORS.cardMuted, borderRadius: 8, padding: "4px 8px" }}>⏱ {item.stayMinutes} 分</span>
+                            {item.mapUrl && <a href={item.mapUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: COLORS.primary, fontWeight: 700, textDecoration: "none" }}>地圖 →</a>}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  </React.Fragment>
+                );
+              })}
               {!recommendations.length && hasCitySelected && (
                 <div style={{ borderRadius: 18, background: COLORS.cardMuted, padding: 16, color: COLORS.subtext }}>目前這個城市還沒有可推薦的景點資料。</div>
               )}
