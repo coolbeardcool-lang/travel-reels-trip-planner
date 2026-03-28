@@ -338,6 +338,27 @@
   ],
   "sources": [
     {
+      "id": "33124c5d-f0b3-8157-9150-e5dd07921e31",
+      "title": "釜山・測試釜山城市",
+      "url": "https://www.instagram.com/reel/testcity/",
+      "platform": "Instagram",
+      "sourceType": "景點美食",
+      "status": "已匯入",
+      "note": "測試釜山城市",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "busan"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33124c5d-f0b3-8102-8663-fa979f8c6679",
       "title": "首爾・延南洞必吃人蔘雞，清爽美味。",
       "url": "https://www.instagram.com/sasa_finger_licking/reel/DWMD8DVEx6E/",
@@ -487,7 +508,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T13:02:41.580Z",
+    "lastSyncedAt": "2026-03-28T13:02:58.692Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
