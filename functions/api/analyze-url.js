@@ -12,9 +12,9 @@ const PLATFORM_MAP = {
 };
 
 const CITY_ALIAS_MAP = CITY_ALIASES.reduce((acc, entry) => {
-  const zh = String(entry?.zh || "").trim().toLowerCase();
+  const alias = String(entry?.alias || "").trim().toLowerCase();
   const slug = String(entry?.slug || "").trim().toLowerCase();
-  if (zh && slug) acc[zh] = slug;
+  if (alias && slug) acc[alias] = slug;
   if (slug) acc[slug] = slug;
   return acc;
 }, {});
