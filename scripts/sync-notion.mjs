@@ -21,7 +21,7 @@ for (const name of REQUIRED_ENVS) {
   }
 }
 
-const NOTION_VERSION = "2022-06-28";
+const NOTION_VERSION = "2025-09-03";
 const NOTION_BASE_URL = "https://api.notion.com/v1";
 
 async function notionFetch(url, options = {}) {
