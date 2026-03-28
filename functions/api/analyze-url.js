@@ -23,6 +23,8 @@ const CITY_MAP = {
   高雄: "kaohsiung",
   首爾: "seoul",
   釜山: "busan",
+  彰化: "changhua",
+  花壇: "changhua",
   tokyo: "tokyo",
   kyoto: "kyoto",
   osaka: "osaka",
@@ -36,6 +38,7 @@ const CITY_MAP = {
   kaohsiung: "kaohsiung",
   seoul: "seoul",
   busan: "busan",
+  changhua: "changhua",
 };
 
 const EVENT_KEYWORDS = [
@@ -300,6 +303,34 @@ function detectItemKindFromText(text, fallback) {
   return fallback === "mixed" ? "source_only" : fallback;
 }
 
+function inferSpotCategory(text) {
+  const v = String(text || "").toLowerCase();
+  if (/(咖啡|cafe|coffee)/i.test(v)) return "咖啡";
+  if (/(甜點|蛋糕|dessert)/i.test(v)) return "甜點";
+  if (/(夜市)/i.test(v)) return "夜市";
+  if (/(餐廳|restaurant|食堂|火鍋|燒肉|壽司|牛排)/i.test(v)) return "餐廳";
+  if (/(小吃|麵|肉圓|羊肉|滷肉飯|豆花|米糕|鹽酥雞|food)/i.test(v)) return "小吃";
+  return "景點";
+}
+
+function inferAreaFromText(text) {
+  const match = String(text || "").match(/([\u4e00-\u9fff]{2,8}(?:鄉|鎮|市|區))/);
+  return match ? match[1] : null;
+}
+
+function inferThumbnailByCategory(category, itemKind) {
+  const map = {
+    餐廳: "🍽️",
+    小吃: "🍢",
+    咖啡: "☕",
+    甜點: "🍰",
+    夜市: "🏮",
+    景點: "📍",
+    活動: "🎫",
+  };
+  return map[category] || (itemKind === "event" ? "🎫" : "📍");
+}
+
 function normalizeCandidateName(value) {
   return String(value || "")
     .replace(/https?:\/\/\S+/gi, " ")
@@ -327,6 +358,11 @@ function extractCandidatesFromText(mergedText) {
     candidates.push(match[1]);
   }
 
+  const inlineNumberedRegex = /(?:^|\s)\d{1,2}[.)、]\s*([^0-9]{2,80}?)(?=(?:\s+\d{1,2}[.)、])|$)/g;
+  while ((match = inlineNumberedRegex.exec(text))) {
+    candidates.push(match[1]);
+  }
+
   return candidates;
 }
 
@@ -346,18 +382,26 @@ function buildHeuristicItems({ mergedText, contentKind, citySlug, area, confiden
 
     const itemKind = detectItemKindFromText(name, contentKind);
     const inferredCity = inferCitySlug(lower, citySlug);
+    const category = itemKind === "event" ? "活動" : inferSpotCategory(name);
+    const areaFromText = inferAreaFromText(name);
+    const tags = [category];
+    if (areaFromText) tags.push(areaFromText);
+    if (inferredCity) tags.push(inferredCity);
+    const mapQuery = encodeURIComponent(
+      [name, areaFromText || "", inferredCity || ""].filter(Boolean).join(" ")
+    );
 
     items.push({
       id: `heuristic-item-${items.length + 1}`,
       name,
       itemKind,
       item_kind: itemKind,
-      category: itemKind === "event" ? "活動" : itemKind === "spot" ? "景點" : "",
+      category,
       description: "",
-      tags: [],
+      tags,
       citySlug: inferredCity || null,
       city_slug: inferredCity || null,
-      area: area || null,
+      area: areaFromText || area || null,
       best_time: null,
       stay_minutes: null,
       starts_on: null,
@@ -366,12 +410,12 @@ function buildHeuristicItems({ mergedText, contentKind, citySlug, area, confiden
       end_time: "",
       lat: null,
       lng: null,
-      map_url: null,
+      map_url: mapQuery ? `https://www.google.com/maps/search/?api=1&query=${mapQuery}` : null,
       official_url: null,
       venue_name: null,
       price_note: null,
       ticket_type: null,
-      thumbnail: null,
+      thumbnail: inferThumbnailByCategory(category, itemKind),
       itemConfidence: Math.min(confidence, 0.58),
       item_confidence: Math.min(confidence, 0.58),
       sourceCredibility: "low",

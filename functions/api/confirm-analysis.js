@@ -70,8 +70,9 @@ export async function onRequestPost(context) {
 
     if (contentKind === "spot" && env.NOTION_SPOTS_DATA_SOURCE_ID) {
       for (const item of items) {
+        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "");
         const spotPage = await createSpotPage({
-          env, item, citySlug, sourceUrl: url, sourcePageId, sourceTitle,
+          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
         });
         const spotId = spotPage?.id || null;
         if (spotId) spotPageIds.push(spotId);
@@ -81,8 +82,9 @@ export async function onRequestPost(context) {
 
     if (contentKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
       for (const item of items) {
+        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "");
         const eventPage = await createEventPage({
-          env, item, citySlug, sourceUrl: url, sourcePageId, sourceTitle,
+          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
         });
         const eventId = eventPage?.id || null;
         if (eventId) eventPageIds.push(eventId);
@@ -267,13 +269,23 @@ async function createSourcePage({
 async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
-  const tags = Array.isArray(item.tags) ? item.tags.join(", ") : item.category || "景點";
+  const normalizedTags = Array.isArray(item.tags)
+    ? item.tags.map((t) => String(t || "").trim()).filter(Boolean)
+    : [];
+  const tags = normalizedTags.length
+    ? normalizedTags.join(", ")
+    : [item.category || "景點", item.area || "", citySlug || ""].filter(Boolean).join(", ");
 
   const mapQuery = encodeURIComponent(`${item.name} ${cityLabel}`);
   const mapUrl = item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
-  const lat = typeof item.lat === "number" && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
-  const lng = typeof item.lng === "number" && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
+  const lat = Number.isFinite(item?.lat) && Math.abs(item.lat) <= 90 && item.lat !== 0 ? item.lat : null;
+  const lng = Number.isFinite(item?.lng) && Math.abs(item.lng) <= 180 && item.lng !== 0 ? item.lng : null;
+  const priorityScore = Number.isFinite(item?.itemConfidence)
+    ? Math.round(item.itemConfidence * 100)
+    : Number.isFinite(item?.item_confidence)
+      ? Math.round(item.item_confidence * 100)
+      : 0;
 
   const properties = {
     Name:             { title: [{ text: { content: String(item.name || "未命名景點").slice(0, 200) } }] },
@@ -282,18 +294,18 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
     Category:         { rich_text: [{ text: { content: String(item.category || "景點") } }] },
     City:             { select: { name: cityLabel || "未分類" } },
     CitySlug:         { select: { name: String(citySlug || "未分類") } },
-    Description:      { rich_text: [{ text: { content: String(item.description || `${cityLabel}的${item.category || "景點"}，值得一訪。`).slice(0, 2000) } }] },
-    Lat:              { number: lat },
-    Lng:              { number: lng },
+    Description:      { rich_text: [{ text: { content: String(item.description || "").slice(0, 2000) } }] },
     MapUrl:           { url: mapUrl || null },
     Notes:            { rich_text: [{ text: { content: String(item.reason || "") } }] },
-    PriorityScore:    { number: 0 },
+    PriorityScore:    { number: priorityScore },
     Published:        { checkbox: true },
     SourceTitleCache: { rich_text: [{ text: { content: String(sourceTitle || "").slice(0, 200) } }] },
     StayMinutes:      { number: Number(item.stay_minutes || guessStayMinutes(item.category)) },
     Tags:             { rich_text: [{ text: { content: tags } }] },
     Thumbnail:        { rich_text: [{ text: { content: String(item.thumbnail || guessThumbnail(item.category)) } }] },
   };
+  if (lat !== null) properties.Lat = { number: lat };
+  if (lng !== null) properties.Lng = { number: lng };
 
   if (sourcePageId) {
     properties.SourceLinks = { rich_text: [{ text: { content: String(sourcePageId) } }] };
@@ -309,13 +321,18 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
 async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
-  const tags = Array.isArray(item.tags) ? item.tags.join(", ") : item.category || "活動";
+  const normalizedTags = Array.isArray(item.tags)
+    ? item.tags.map((t) => String(t || "").trim()).filter(Boolean)
+    : [];
+  const tags = normalizedTags.length
+    ? normalizedTags.join(", ")
+    : [item.category || "活動", item.area || "", citySlug || ""].filter(Boolean).join(", ");
 
   const mapQuery = encodeURIComponent(`${item.venue_name || item.name} ${cityLabel}`);
   const mapUrl = item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
-  const lat = typeof item.lat === "number" && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
-  const lng = typeof item.lng === "number" && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
+  const lat = Number.isFinite(item?.lat) && Math.abs(item.lat) <= 90 && item.lat !== 0 ? item.lat : null;
+  const lng = Number.isFinite(item?.lng) && Math.abs(item.lng) <= 180 && item.lng !== 0 ? item.lng : null;
 
   const properties = {
     Name:          { title: [{ text: { content: String(item.name || "未命名活動").slice(0, 200) } }] },
@@ -326,8 +343,6 @@ async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, s
     Description:   { rich_text: [{ text: { content: String(item.description || `${cityLabel}的${item.category || "活動"}，詳情請洽官網。`).slice(0, 2000) } }] },
     EndTimeText:   { rich_text: [{ text: { content: String(item.end_time || "") } }] },
     EndsOn:        item.ends_on ? { date: { start: String(item.ends_on) } } : { date: null },
-    Lat:           { number: lat },
-    Lng:           { number: lng },
     MapUrl:        { url: mapUrl || null },
     OfficialUrl:   { url: String(item.official_url || sourceUrl || "") || null },
     PriceNote:     { rich_text: [{ text: { content: String(item.price_note || "請洽官網") } }] },
@@ -340,6 +355,8 @@ async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, s
     TicketType:    { rich_text: [{ text: { content: String(item.ticket_type || "請洽官網") } }] },
     VenueName:     { rich_text: [{ text: { content: String(item.venue_name || item.name || "") } }] },
   };
+  if (lat !== null) properties.Lat = { number: lat };
+  if (lng !== null) properties.Lng = { number: lng };
 
   if (sourcePageId) {
     properties.SourceLinks = { rich_text: [{ text: { content: String(sourcePageId) } }] };
