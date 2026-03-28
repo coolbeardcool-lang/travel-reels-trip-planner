@@ -187,41 +187,55 @@ function shouldUseOpenAI(heuristic, mergedText) {
 async function callOpenAI(apiKey, url, mergedText, contentKindHint) {
   const isEvent = contentKindHint === "event";
 
-  const prompt = `你是旅遊資訊萃取助手。請分析以下內容，回傳 JSON（不要有任何其他文字）。
-
-URL: ${url}
-內容: ${mergedText.slice(0, 800)}
-
-回傳格式（所有欄位都必須有值，不可為空字串，不確定的填合理預設值）：
-{
-  "contentKind": "spot" | "event" | "source_only",
-  "citySlug": 小寫英文城市代稱如 "tokyo" / "seoul" / "taipei"，真的不確定才填 null,
-  "area": "區域名稱，不確定填城市名",
-  "confidence": 0.0~1.0,
-  "needsReview": true | false,
-  "summary": "一句話中文摘要，必填",
-  "items": [
-    {
-      "name": "景點或活動名稱，必填",
+  const spotItemSchema = `{
+      "name": "景點或店家名稱（必填）",
       "area": "所在區域，不確定填城市名",
-      "category": ${isEvent ? '"活動類別如：展覽/音樂/市集/祭典/運動"' : '"景點類別如：餐廳/咖啡/景點/小吃/甜點/逛街/寺社/住宿"'},
-      "description": "50字以內中文說明，必填",
+      "category": "餐廳 | 咖啡 | 景點 | 小吃 | 甜點 | 逛街 | 寺社 | 住宿 | 博物館 | 夜市",
+      "description": "50字以內中文說明（必填）",
       "tags": ["標籤1", "標籤2"],
       "thumbnail": "最能代表此地點的單一 emoji",
-      ${isEvent ? `
+      "best_time": "早上 | 中午 | 下午 | 晚上",
+      "stay_minutes": 建議停留分鐘數（數字，如 30/60/90/120）,
+      "lat": 根據店名與城市推測的緯度（數字，不確定填城市中心座標）,
+      "lng": 根據店名與城市推測的經度（數字，不確定填城市中心座標）,
+      "map_url": "https://www.google.com/maps/search/?api=1&query=店名+城市名 格式"
+    }`;
+
+  const eventItemSchema = `{
+      "name": "活動名稱（必填）",
+      "area": "所在區域，不確定填城市名",
+      "category": "展覽 | 音樂 | 市集 | 祭典 | 運動 | 講座 | 快閃 | 活動",
+      "description": "50字以內中文說明（必填）",
+      "tags": ["標籤1", "標籤2"],
+      "thumbnail": "最能代表此活動的單一 emoji",
       "starts_on": "活動開始日期 YYYY-MM-DD，不確定填 null",
       "ends_on": "活動結束日期 YYYY-MM-DD，不確定填 null",
       "start_time": "開始時間 HH:MM，不確定填空字串",
       "end_time": "結束時間 HH:MM，不確定填空字串",
       "price_note": "票價說明，免費填「免費入場」，不確定填「請洽官網」",
       "ticket_type": "現場購票 | 預售票 | 免費 | 請洽官網",
-      "venue_name": "場地名稱，不確定填景點名稱"
-      ` : `
-      "best_time": "早上 | 中午 | 下午 | 晚上，依據店家或景點特性判斷",
-      "stay_minutes": 建議停留分鐘數如 30/60/90/120，依據類型判斷,
-      "map_url": "https://www.google.com/maps/search/?api=1&query=景點名稱+城市名 這樣的格式"
-      `}
-    }
+      "venue_name": "場地名稱，不確定填活動名稱",
+      "lat": 根據場地與城市推測的緯度（數字，不確定填城市中心座標）,
+      "lng": 根據場地與城市推測的經度（數字，不確定填城市中心座標）,
+      "map_url": "https://www.google.com/maps/search/?api=1&query=場地名+城市名 格式"
+    }`;
+
+  const prompt = `你是旅遊資訊萃取助手。請分析以下內容，回傳 JSON（不要有任何其他文字）。
+所有欄位都必須有值，不可為空字串，不確定的填合理預設值。
+
+URL: ${url}
+內容: ${mergedText.slice(0, 800)}
+
+回傳格式：
+{
+  "contentKind": "spot" | "event" | "source_only",
+  "citySlug": 小寫英文城市代稱如 "tokyo"/"seoul"/"taipei"，真的不確定才填 null,
+  "area": "主要區域名稱",
+  "confidence": 0.0~1.0,
+  "needsReview": true | false,
+  "summary": "一句話中文摘要（15字以內，必填）",
+  "items": [
+    ${isEvent ? eventItemSchema : spotItemSchema}
   ]
 }`;
 
@@ -233,7 +247,7 @@ URL: ${url}
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      max_tokens: 1000,
+      max_tokens: 1200,
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [{ role: "user", content: prompt }],
