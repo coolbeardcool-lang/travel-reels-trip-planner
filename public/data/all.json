@@ -287,23 +287,6 @@
   ],
   "sources": [
     {
-      "id": "33124c5d-f0b3-8107-ae9c-dc6acc1027f1",
-      "title": "測試觸發",
-      "url": "https://www.instagram.com/reel/test999/",
-      "platform": "Instagram",
-      "sourceType": "手動整理",
-      "status": "已匯入",
-      "note": "測試觸發",
-      "capturedAt": null,
-      "authorOrAccount": "",
-      "cityHints": [],
-      "relatedCityIds": [],
-      "relatedSpotIds": [],
-      "relatedEventIds": [],
-      "published": true,
-      "lastReviewedAt": null
-    },
-    {
       "id": "33124c5d-f0b3-8175-b582-ff773e07203e",
       "title": "首爾・弘大美味韓牛餐廳推薦",
       "url": "https://www.instagram.com/reel/DWWiMwgkycB/",
@@ -431,7 +414,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T11:29:05.558Z",
+    "lastSyncedAt": "2026-03-28T11:32:57.845Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
