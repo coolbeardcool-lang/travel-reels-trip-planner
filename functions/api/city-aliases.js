@@ -1,0 +1,17 @@
+export const CITY_ALIASES = [
+  { zh: "東京", slug: "tokyo" },
+  { zh: "京都", slug: "kyoto" },
+  { zh: "大阪", slug: "osaka" },
+  { zh: "奈良", slug: "nara" },
+  { zh: "沖繩", slug: "okinawa" },
+  { zh: "北海道", slug: "hokkaido" },
+  { zh: "福岡", slug: "fukuoka" },
+  { zh: "台北", slug: "taipei" },
+  { zh: "台中", slug: "taichung" },
+  { zh: "台南", slug: "tainan" },
+  { zh: "高雄", slug: "kaohsiung" },
+  { zh: "首爾", slug: "seoul" },
+  { zh: "釜山", slug: "busan" },
+  { zh: "彰化", slug: "changhua" },
+  { zh: "花壇", slug: "changhua" },
+];

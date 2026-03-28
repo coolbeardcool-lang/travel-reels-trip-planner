@@ -1,3 +1,5 @@
+import { CITY_ALIASES } from "./city-aliases.js";
+
 const PLATFORM_MAP = {
   "instagram.com": "Instagram",
   "threads.net": "Threads",
@@ -9,37 +11,13 @@ const PLATFORM_MAP = {
   "x.com": "Twitter",
 };
 
-const CITY_MAP = {
-  東京: "tokyo",
-  京都: "kyoto",
-  大阪: "osaka",
-  奈良: "nara",
-  沖繩: "okinawa",
-  北海道: "hokkaido",
-  福岡: "fukuoka",
-  台北: "taipei",
-  台中: "taichung",
-  台南: "tainan",
-  高雄: "kaohsiung",
-  首爾: "seoul",
-  釜山: "busan",
-  彰化: "changhua",
-  花壇: "changhua",
-  tokyo: "tokyo",
-  kyoto: "kyoto",
-  osaka: "osaka",
-  nara: "nara",
-  okinawa: "okinawa",
-  hokkaido: "hokkaido",
-  fukuoka: "fukuoka",
-  taipei: "taipei",
-  taichung: "taichung",
-  tainan: "tainan",
-  kaohsiung: "kaohsiung",
-  seoul: "seoul",
-  busan: "busan",
-  changhua: "changhua",
-};
+const CITY_ALIAS_MAP = CITY_ALIASES.reduce((acc, entry) => {
+  const zh = String(entry?.zh || "").trim().toLowerCase();
+  const slug = String(entry?.slug || "").trim().toLowerCase();
+  if (zh && slug) acc[zh] = slug;
+  if (slug) acc[slug] = slug;
+  return acc;
+}, {});
 
 const EVENT_KEYWORDS = [
   "活動",
@@ -242,14 +220,33 @@ async function scrapeUrl(url) {
   return result;
 }
 
-function inferCitySlug(text, cityHint) {
-  if (cityHint) return cityHint;
+function normalizeCitySlug(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+}
 
-  for (const [keyword, slug] of Object.entries(CITY_MAP)) {
-    if (text.includes(keyword.toLowerCase())) {
+function inferCitySlug(text, cityHint) {
+  const normalizedHint = normalizeCitySlug(cityHint);
+  if (normalizedHint) {
+    return CITY_ALIAS_MAP[normalizedHint] || normalizedHint;
+  }
+
+  const normalizedText = String(text || "").toLowerCase();
+  for (const [keyword, slug] of Object.entries(CITY_ALIAS_MAP)) {
+    if (normalizedText.includes(keyword.toLowerCase())) {
       return slug;
     }
   }
+
+  const cityTokenMatch = normalizedText.match(
+    /([\u4e00-\u9fff]{2,8})(?:市|縣|鄉|鎮|區)/
+  );
+  if (cityTokenMatch) {
+    return normalizeCitySlug(cityTokenMatch[1]);
+  }
+
   return null;
 }
 
