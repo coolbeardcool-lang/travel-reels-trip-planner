@@ -243,6 +243,33 @@
       "notes": ""
     },
     {
+      "id": "33124c5d-f0b3-81a6-a0f1-dcbf9e09cdf1",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "Mapo-gu",
+      "name": "牛火",
+      "category": "餐廳",
+      "description": "主打1++等級韓牛，肉質軟嫩多汁，服務優質。",
+      "sourceId": "33124c5d-f0b3-812c-a426-cdd8d0454acf",
+      "sourceTitle": "首爾・弘大美味韓牛餐廳推薦",
+      "sourceUrl": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "bestTime": "晚上",
+      "stayMinutes": 60,
+      "tags": [
+        "韓國美食",
+        "弘大美食"
+      ],
+      "lat": 37.5665,
+      "lng": 126.978,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E7%89%9B%E7%81%AB%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": ""
+    },
+    {
       "id": "33124c5d-f0b3-81b3-83f9-c3a4186fa092",
       "city": "首爾",
       "citySlug": "seoul",
@@ -337,6 +364,27 @@
     }
   ],
   "sources": [
+    {
+      "id": "33124c5d-f0b3-812c-a426-cdd8d0454acf",
+      "title": "首爾・弘大美味韓牛餐廳推薦",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "platform": "Instagram",
+      "sourceType": "景點美食",
+      "status": "已匯入",
+      "note": "弘大美味韓牛餐廳推薦",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
     {
       "id": "33124c5d-f0b3-8103-927e-cea68d91332b",
       "title": "首爾・延南洞必吃人蔘雞",
@@ -487,10 +535,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T12:39:07.767Z",
+    "lastSyncedAt": "2026-03-28T12:43:20.384Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 11
+    "count": 12
   }
 }
