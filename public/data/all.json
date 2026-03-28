@@ -530,6 +530,29 @@
   ],
   "sources": [
     {
+      "id": "33124c5d-f0b3-81e4-a6c4-d8dc8bb2b00d",
+      "title": "首爾・弘大區的韓牛餐廳，提供優質的燒肉體驗。",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "弘大區的韓牛餐廳，提供優質的燒肉體驗。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        [
+          "seoul"
+        ]
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33124c5d-f0b3-8180-a39f-f3cc19fe429a",
       "title": "Instagram 景點・changhua",
       "url": "https://www.instagram.com/reel/DWMB274EjKQ",
@@ -690,7 +713,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T18:49:01.879Z",
+    "lastSyncedAt": "2026-03-28T18:49:57.488Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
