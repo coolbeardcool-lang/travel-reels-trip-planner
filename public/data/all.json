@@ -203,7 +203,7 @@
       "notes": ""
     },
     {
-      "id": "33124c5d-f0b3-81cb-849e-d3f38a17fba5",
+      "id": "33124c5d-f0b3-8112-b847-d9549501d5c7",
       "city": "",
       "citySlug": "seoul",
       "area": "弘大",
@@ -214,7 +214,7 @@
       "sourceTitle": "🌸SaSa🌸台北 新北 桃園 台中 高雄 美食 親子｜Wu,Chia-An on Instagram: \"🇰🇷弘大又一間好吃韓牛\n主打1++等級 油花很漂亮 肉質完全不擔心\n軟嫩多汁 全程都有店員代烤 每一口都很滿足\n價格大約一人2000台幣 但整體服務跟品質值得來體驗一次✨\n\n《우화 홍대 한우 맛집 | 牛火 》\n📍地址：南韓 Seoul, Mapo-gu, Hongik-ro 5a",
       "sourceUrl": "",
       "bestTime": "晚上",
-      "stayMinutes": 90,
+      "stayMinutes": 120,
       "tags": [],
       "lat": 37.5665,
       "lng": 126.978,
@@ -287,7 +287,24 @@
   ],
   "sources": [
     {
-      "id": "33124c5d-f0b3-8175-b582-ff773e07203e",
+      "id": "33124c5d-f0b3-81a5-b4a6-e810c458667c",
+      "title": "測試dispatch",
+      "url": "https://www.instagram.com/reel/testdispatch/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "測試dispatch",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [],
+      "relatedCityIds": [],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33124c5d-f0b3-81c0-a343-c2ba54c92b36",
       "title": "首爾・弘大美味韓牛餐廳推薦",
       "url": "https://www.instagram.com/reel/DWWiMwgkycB/",
       "platform": "Instagram",
@@ -414,7 +431,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T11:32:57.845Z",
+    "lastSyncedAt": "2026-03-28T11:39:27.828Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
