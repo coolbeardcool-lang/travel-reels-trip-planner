@@ -133,38 +133,6 @@
   ],
   "events": [
     {
-      "id": "33124c5d-f0b3-818d-b73c-c69d13317a3a",
-      "city": "京都",
-      "citySlug": "kyoto",
-      "area": "京都",
-      "name": "京都隱藏亮點明信片漫步",
-      "category": "活動",
-      "description": "透過「京都隱藏亮點」明信片漫步，邀請遊客深入體驗京都的魅力。",
-      "sourceId": "33124c5d-f0b3-81b2-9b53-e883b3418a06",
-      "sourceTitle": "京都・透過「京都隱藏亮點」明信片漫步，體驗京都的魅力。",
-      "sourceUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
-      "tags": [
-        "京都",
-        "活動",
-        "旅遊"
-      ],
-      "lat": 35.0116,
-      "lng": 135.7681,
-      "thumbnail": "🎫",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BA%AC%E9%83%BD%E9%9A%B1%E8%97%8F%E4%BA%AE%E9%BB%9E%E6%98%8E%E4%BF%A1%E7%89%87%E6%BC%AB%E6%AD%A5%20%E4%BA%AC%E9%83%BD",
-      "startsOn": null,
-      "endsOn": null,
-      "startTime": "",
-      "endTime": "",
-      "ticketType": "請洽官網",
-      "priceNote": "請洽官網",
-      "officialUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
-      "status": "待整理",
-      "recurringType": "一次性",
-      "published": true,
-      "lastReviewedAt": null
-    },
-    {
       "id": "33124c5d-f0b3-8154-89af-e12917b19cc4",
       "city": "京都",
       "citySlug": "kyoto",
@@ -197,38 +165,12 @@
       "lastReviewedAt": "2026-03-28"
     }
   ],
-  "sources": [
-    {
-      "id": "33124c5d-f0b3-81b2-9b53-e883b3418a06",
-      "title": "京都・透過「京都隱藏亮點」明信片漫步，體驗京都的魅力。",
-      "url": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
-      "platform": "Website",
-      "sourceType": "活動資訊",
-      "status": "已匯入",
-      "note": "透過「京都隱藏亮點」明信片漫步，體驗京都的魅力。",
-      "capturedAt": null,
-      "authorOrAccount": "",
-      "cityHints": [
-        "kyoto"
-      ],
-      "relatedCityIds": [
-        [
-          "kyoto"
-        ]
-      ],
-      "relatedSpotIds": [],
-      "relatedEventIds": [
-        "33124c5d-f0b3-818d-b73c-c69d13317a3a"
-      ],
-      "published": true,
-      "lastReviewedAt": null
-    }
-  ],
+  "sources": [],
   "meta": {
-    "lastSyncedAt": "2026-03-28T18:13:09.945Z",
+    "lastSyncedAt": "2026-03-28T18:15:54.355Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 6
+    "count": 5
   }
 }
