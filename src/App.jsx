@@ -221,7 +221,13 @@ function inferAnalysisItemKind(item, contentKind) {
     return contentKind;
   }
 
-  return "spot";
+  return "source_only";
+}
+
+function normalizeNullableNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
 }
 
 function normalizeAnalysisPayload(payload, fallback = {}) {
@@ -280,13 +286,16 @@ function normalizeAnalysisPayload(payload, fallback = {}) {
     cached: Boolean(payload?.cached),
     items: items.map((item, index) => {
       const itemKind = inferAnalysisItemKind(item, contentKind);
+      const stayMinutes = normalizeNullableNumber(item.stay_minutes);
+      const lat = normalizeNullableNumber(item.lat);
+      const lng = normalizeNullableNumber(item.lng);
       return {
         id: item.id || `analysis-item-${index}`,
-        name: item.name || `候選項目 ${index + 1}`,
+        name: item.name || "",
         itemKind,
         category:
           item.category ||
-          (itemKind === "event" ? "活動" : "景點"),
+          (itemKind === "event" ? "活動" : itemKind === "spot" ? "景點" : ""),
         description: item.description || "",
         tags: Array.isArray(item.tags) ? item.tags : [],
         citySlug: normalizeCitySlugValue(
@@ -303,15 +312,13 @@ function normalizeAnalysisPayload(payload, fallback = {}) {
           fallback.area ||
           "",
         best_time: item.best_time || "",
-        stay_minutes: Number.isFinite(item.stay_minutes)
-          ? item.stay_minutes
-          : Number(item.stay_minutes) || 0,
+        stay_minutes: stayMinutes,
         starts_on: item.starts_on || null,
         ends_on: item.ends_on || null,
         start_time: item.start_time || "",
         end_time: item.end_time || "",
-        lat: Number.isFinite(item.lat) ? item.lat : Number(item.lat),
-        lng: Number.isFinite(item.lng) ? item.lng : Number(item.lng),
+        lat,
+        lng,
         map_url: item.map_url || "",
         official_url: item.official_url || "",
         venue_name: item.venue_name || "",
@@ -342,7 +349,12 @@ function normalizeAnalysisPayload(payload, fallback = {}) {
 
 function normalizeItemsForMap(items) {
   const validItems = items.filter(
-    (item) => Number.isFinite(item.lat) && Number.isFinite(item.lng)
+    (item) =>
+      Number.isFinite(item.lat) &&
+      Number.isFinite(item.lng) &&
+      Math.abs(item.lat) <= 90 &&
+      Math.abs(item.lng) <= 180 &&
+      !(item.lat === 0 && item.lng === 0)
   );
 
   if (!validItems.length) return [];
@@ -414,6 +426,7 @@ function formatEventWindow(event) {
 function prettyAnalysisKind(kind) {
   if (kind === "event") return "活動";
   if (kind === "spot") return "景點 / 美食";
+  if (kind === "mixed") return "混合（景點＋活動）";
   return "來源待整理";
 }
 
