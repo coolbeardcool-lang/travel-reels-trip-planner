@@ -31,7 +31,7 @@ jobs:
           NOTION_SPOTS_DATA_SOURCE_ID: ${{ secrets.NOTION_SPOTS_DATA_SOURCE_ID }}
           NOTION_EVENTS_DATA_SOURCE_ID: ${{ secrets.NOTION_EVENTS_DATA_SOURCE_ID }}
           NOTION_SOURCES_DATA_SOURCE_ID: ${{ secrets.NOTION_SOURCES_DATA_SOURCE_ID }}
-        run: node scripts/sync-notion.js
+        run: node scripts/sync-notion.mjs
 
       - name: Commit generated JSON
         run: |
