@@ -48,8 +48,9 @@ export async function onRequestPost(context) {
     const confidence = Number(analysis.confidence || 0);
     const items = Array.isArray(analysis.items) ? analysis.items : [];
 
+    // 確保城市存在（需要 READ_ID 查詢 + WRITE_ID 寫入）
     let cityEnsureError = null;
-    if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
+    if (citySlug && env.NOTION_CITIES_READ_ID && env.NOTION_CITIES_WRITE_ID) {
       try {
         await ensureCityExists(env, citySlug);
       } catch (e) {
@@ -128,7 +129,6 @@ export async function onRequestPost(context) {
 async function updateSourceRelations(env, sourcePageId, spotIds, eventIds, citySlug) {
   try {
     const properties = {};
-
     if (spotIds.length > 0) {
       properties.RelatedSpots = { rich_text: [{ text: { content: spotIds.join(", ") } }] };
     }
@@ -139,7 +139,6 @@ async function updateSourceRelations(env, sourcePageId, spotIds, eventIds, cityS
       properties.CityHints = { multi_select: [{ name: citySlug }] };
       properties.RelatedCities = { rich_text: [{ text: { content: citySlug } }] };
     }
-
     if (Object.keys(properties).length === 0) return;
 
     await fetch(`https://api.notion.com/v1/pages/${sourcePageId}`, {
@@ -159,8 +158,9 @@ async function updateSourceRelations(env, sourcePageId, spotIds, eventIds, cityS
 // ── 自動確保城市存在 ───────────────────────────────────────
 async function ensureCityExists(env, citySlug) {
   try {
+    // 查詢用 database ID（NOTION_CITIES_READ_ID）
     const res = await fetch(
-      `https://api.notion.com/v1/databases/${env.NOTION_CITIES_DATA_SOURCE_ID}/query`,
+      `https://api.notion.com/v1/databases/${env.NOTION_CITIES_READ_ID}/query`,
       {
         method: "POST",
         headers: {
@@ -196,6 +196,7 @@ async function ensureCityExists(env, citySlug) {
       heroArea: "", spotlight: "", description: "",
     };
 
+    // 寫入用 data source ID（NOTION_CITIES_WRITE_ID）
     const createRes = await fetch("https://api.notion.com/v1/pages", {
       method: "POST",
       headers: {
@@ -204,7 +205,7 @@ async function ensureCityExists(env, citySlug) {
         "Notion-Version": NOTION_VERSION,
       },
       body: JSON.stringify({
-        parent: { database_id: env.NOTION_CITIES_DATA_SOURCE_ID },
+        parent: { data_source_id: env.NOTION_CITIES_WRITE_ID },
         properties: {
           Name:          { title: [{ text: { content: city.label } }] },
           Slug:          { rich_text: [{ text: { content: citySlug } }] },
@@ -269,8 +270,7 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
   const tags = Array.isArray(item.tags) ? item.tags.join(", ") : item.category || "景點";
 
   const mapQuery = encodeURIComponent(`${item.name} ${cityLabel}`);
-  const mapUrl = item.map_url ||
-    `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+  const mapUrl = item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
   const lat = typeof item.lat === "number" && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
   const lng = typeof item.lng === "number" && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
@@ -312,8 +312,7 @@ async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, s
   const tags = Array.isArray(item.tags) ? item.tags.join(", ") : item.category || "活動";
 
   const mapQuery = encodeURIComponent(`${item.venue_name || item.name} ${cityLabel}`);
-  const mapUrl = item.map_url ||
-    `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+  const mapUrl = item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
   const lat = typeof item.lat === "number" && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
   const lng = typeof item.lng === "number" && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
@@ -397,24 +396,6 @@ async function notionCreatePage(env, payload) {
   return jsonBody;
 }
 
-// ── GitHub Actions ─────────────────────────────────────────
-async function triggerGitHubDispatch(env) {
-  const resp = await fetch(
-    `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/dispatches`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-        Accept: "application/vnd.github+json",
-        "Content-Type": "application/json",
-        "User-Agent": "TravelReelsBot/1.0",
-      },
-      body: JSON.stringify({ event_type: "sync_notion_after_reel_submit" }),
-    }
-  );
-  return resp.ok;
-}
-
 // ── 工具 ───────────────────────────────────────────────────
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -422,3 +403,9 @@ function json(data, status = 200) {
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
+```
+
+覆蓋後 commit push。同時記得去 Cloudflare 新增這兩個環境變數：
+```
+NOTION_CITIES_READ_ID  = 33124c5df0b380b2a2b7c3983e1b7d13
+NOTION_CITIES_WRITE_ID = 33124c5df0b380874f4000b2b0702f9
