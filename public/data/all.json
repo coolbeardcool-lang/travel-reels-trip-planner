@@ -241,6 +241,33 @@
       "priorityScore": 90,
       "lastReviewedAt": "2026-03-28",
       "notes": ""
+    },
+    {
+      "id": "33124c5d-f0b3-81da-ad47-f347b45f144a",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "弘大",
+      "name": "牛火",
+      "category": "餐廳",
+      "description": "主打1++等級韓牛，肉質軟嫩多汁，服務優質。",
+      "sourceId": "33124c5d-f0b3-81b2-aa9f-eca07d077a96",
+      "sourceTitle": "首爾・弘大美味韓牛餐廳推薦",
+      "sourceUrl": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "bestTime": "晚上",
+      "stayMinutes": 90,
+      "tags": [
+        "韓國美食",
+        "弘大美食"
+      ],
+      "lat": 37.5665,
+      "lng": 126.978,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E7%89%9B%E7%81%AB%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": ""
     }
   ],
   "events": [
@@ -311,37 +338,18 @@
   ],
   "sources": [
     {
-      "id": "33124c5d-f0b3-81c4-a742-ddbe4a103e06",
-      "title": "Instagram 景點・台北",
-      "url": "https://www.instagram.com/sasa_finger_licking/reel/DV-i9X0ExmJ/",
+      "id": "33124c5d-f0b3-81b2-aa9f-eca07d077a96",
+      "title": "首爾・弘大美味韓牛餐廳推薦",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
       "platform": "Instagram",
       "sourceType": "景點美食",
       "status": "已匯入",
-      "note": "",
+      "note": "弘大美味韓牛餐廳推薦",
       "capturedAt": null,
       "authorOrAccount": "",
       "cityHints": [
-        "taipei"
+        "seoul"
       ],
-      "relatedCityIds": [
-        []
-      ],
-      "relatedSpotIds": [],
-      "relatedEventIds": [],
-      "published": true,
-      "lastReviewedAt": null
-    },
-    {
-      "id": "33124c5d-f0b3-8167-9e36-f9456da47071",
-      "title": "測試dispatch",
-      "url": "https://www.instagram.com/reel/testdispatch/",
-      "platform": "Instagram",
-      "sourceType": "手動整理",
-      "status": "已匯入",
-      "note": "測試dispatch",
-      "capturedAt": null,
-      "authorOrAccount": "",
-      "cityHints": [],
       "relatedCityIds": [
         []
       ],
@@ -479,10 +487,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T12:32:14.330Z",
+    "lastSyncedAt": "2026-03-28T12:33:17.034Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 10
+    "count": 11
   }
 }
