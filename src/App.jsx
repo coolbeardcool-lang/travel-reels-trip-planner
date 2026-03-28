@@ -1,308 +1,302 @@
-import { useState, useCallback } from "react";
+// functions/api/analyze-url.js
 
-// ── 工具函式 ──────────────────────────────────────────────
-function cn(...classes) {
-  return classes.filter(Boolean).join(" ");
+const PLATFORM_MAP = {
+  "instagram.com": "Instagram",
+  "threads.net": "Threads",
+  "facebook.net": "Facebook",
+  "youtube.com": "YouTube",
+  "youtu.be": "YouTube",
+  "tiktok.com": "TikTok",
+  "twitter.com": "Twitter",
+  "x.com": "Twitter",
+};
+
+function detectPlatform(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    return PLATFORM_MAP[host] || "Website";
+  } catch {
+    return "Website";
+  }
 }
 
-// ── API 呼叫 ──────────────────────────────────────────────
-async function apiAnalyzeUrl(url) {
-  const res = await fetch("/api/analyze-url", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "分析失敗");
-  return data;
+function normalizeUrl(raw) {
+  try {
+    const u = new URL(raw);
+    const remove = [
+      "utm_source", "utm_medium", "utm_campaign",
+      "utm_content", "utm_term", "fbclid", "igshid",
+      "ref", "share",
+    ];
+    remove.forEach((p) => u.searchParams.delete(p));
+    return u.toString();
+  } catch {
+    return raw;
+  }
 }
 
-async function apiConfirmAnalysis({ url, sourceTitle, notes, analysis }) {
-  const res = await fetch("/api/confirm-analysis", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url, sourceTitle, notes, analysis }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "寫入失敗");
-  return data;
-}
-
-// ── Badge ─────────────────────────────────────────────────
-function Badge({ children, variant = "default" }) {
-  const styles = {
-    default: "bg-gray-100 text-gray-700",
-    cached: "bg-yellow-100 text-yellow-800",
-    event: "bg-blue-100 text-blue-800",
-    spot: "bg-green-100 text-green-800",
-    source_only: "bg-gray-100 text-gray-600",
-    review: "bg-red-100 text-red-700",
-  };
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-        styles[variant] || styles.default
-      )}
-    >
-      {children}
-    </span>
+async function sha256(str) {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(str)
   );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 24);
 }
 
-// ── Step 1：輸入網址 ──────────────────────────────────────
-function AnalyzeForm({ onResult }) {
-  const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+async function getCachedAnalysis(env, analysisId) {
+  if (!env.ANALYSIS_CACHE) return null;
+  try {
+    return await env.ANALYSIS_CACHE.get(analysisId, { type: "json" });
+  } catch {
+    return null;
+  }
+}
 
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      const trimmed = url.trim();
-      if (!trimmed) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await apiAnalyzeUrl(trimmed);
-        onResult(trimmed, result);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+async function setCachedAnalysis(env, analysisId, data) {
+  if (!env.ANALYSIS_CACHE) return;
+  try {
+    await env.ANALYSIS_CACHE.put(analysisId, JSON.stringify(data), {
+      expirationTtl: 86400,
+    });
+  } catch {}
+}
+
+async function scrapeUrl(url) {
+  const result = { title: null, description: null, ogTitle: null, ogDescription: null };
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; TravelReelsBot/1.0)" },
+      signal: AbortSignal.timeout(7000),
+      redirect: "follow",
+    });
+    if (!res.ok) return result;
+    const html = await res.text();
+    const get = (pattern) => {
+      const m = html.match(pattern);
+      if (!m) return null;
+      return m[1]
+        .replace(/&amp;/g, "&").replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+        .trim().slice(0, 500);
+    };
+    result.ogTitle =
+      get(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
+      get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+    result.ogDescription =
+      get(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
+      get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
+    result.title = get(/<title[^>]*>([^<]+)<\/title>/i);
+    result.description =
+      get(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
+      get(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+  } catch {}
+  return result;
+}
+
+const CITY_MAP = {
+  東京: "tokyo", 京都: "kyoto", 大阪: "osaka", 奈良: "nara",
+  沖繩: "okinawa", 北海道: "hokkaido", 福岡: "fukuoka",
+  台北: "taipei", 台中: "taichung", 台南: "tainan", 高雄: "kaohsiung",
+  首爾: "seoul", 釜山: "busan",
+  tokyo: "tokyo", kyoto: "kyoto", osaka: "osaka", nara: "nara",
+  okinawa: "okinawa", hokkaido: "hokkaido", fukuoka: "fukuoka",
+  taipei: "taipei", taichung: "taichung", tainan: "tainan",
+  kaohsiung: "kaohsiung", seoul: "seoul", busan: "busan",
+};
+
+const EVENT_KEYWORDS = [
+  "活動", "展覽", "演唱會", "音樂節", "市集", "節慶", "開幕", "講座",
+  "祭", "花火", "煙火", "限定", "快閃",
+  "event", "festival", "concert", "exhibition", "market",
+  "fair", "workshop", "popup", "pop-up",
+];
+
+const SPOT_KEYWORDS = [
+  "餐廳", "咖啡", "景點", "美食", "小吃", "住宿", "飯店", "旅館",
+  "海灘", "公園", "博物館", "夜市", "老街", "神社", "寺", "瀑布", "溫泉",
+  "restaurant", "cafe", "coffee", "hotel", "beach",
+  "park", "museum", "street food", "shrine", "temple", "onsen",
+];
+
+function cheapHeuristicAnalysis({ sourceTitle, sourcePlatform, mergedText, cityHint, typeHint }) {
+  const text = mergedText.toLowerCase();
+  let contentKind = null;
+  if (typeHint === "event") contentKind = "event";
+  if (typeHint === "spot") contentKind = "spot";
+
+  let eventScore = 0;
+  let spotScore = 0;
+  EVENT_KEYWORDS.forEach((k) => { if (text.includes(k)) eventScore++; });
+  SPOT_KEYWORDS.forEach((k) => { if (text.includes(k)) spotScore++; });
+
+  if (!contentKind) {
+    if (eventScore >= 2 && eventScore > spotScore) contentKind = "event";
+    else if (spotScore >= 2 && spotScore > eventScore) contentKind = "spot";
+    else if (eventScore === 1 && spotScore === 0) contentKind = "event";
+    else if (spotScore === 1 && eventScore === 0) contentKind = "spot";
+    else contentKind = "source_only";
+  }
+
+  const maxScore = Math.max(eventScore, spotScore);
+  let confidence = 0.3;
+  if (maxScore >= 3) confidence = 0.85;
+  else if (maxScore === 2) confidence = 0.72;
+  else if (maxScore === 1) confidence = 0.55;
+  if (typeHint) confidence = Math.max(confidence, 0.8);
+
+  let citySlug = cityHint || null;
+  if (!citySlug) {
+    for (const [keyword, slug] of Object.entries(CITY_MAP)) {
+      if (text.includes(keyword.toLowerCase())) {
+        citySlug = slug;
+        break;
       }
-    },
-    [url, onResult]
-  );
-
-  return (
-    <div className="max-w-xl mx-auto mt-10 px-4">
-      <div className="text-center mb-8">
-        <div className="text-5xl mb-3">🗺️</div>
-        <h1 className="text-2xl font-bold text-gray-900">Travel Reels Trip Planner</h1>
-        <p className="text-gray-500 mt-2 text-sm">
-          貼上 Instagram Reel、Threads 或活動頁網址，自動整理成旅遊資料庫
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://www.instagram.com/reel/..."
-          required
-          disabled={loading}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white rounded-lg py-3 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
-        >
-          {loading ? "分析中…" : "分析網址"}
-        </button>
-        {error && (
-          <p className="text-red-600 text-sm text-center">{error}</p>
-        )}
-      </form>
-    </div>
-  );
-}
-
-// ── Step 2：預覽分析結果 ───────────────────────────────────
-function AnalysisPreview({ url, result, onConfirmed, onReset }) {
-  const [sourceTitle, setSourceTitle] = useState(result.sourceTitle || "");
-  const [notes, setNotes] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const handleConfirm = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await apiConfirmAnalysis({
-        url,
-        sourceTitle: sourceTitle || result.sourceTitle,
-        notes,
-        analysis: result,
-      });
-      onConfirmed(res);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const kindLabel = {
-    spot: "景點 / 美食",
-    event: "活動 / 展覽",
-    source_only: "來源收藏",
-  };
-
-  return (
-    <div className="max-w-xl mx-auto mt-10 px-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">分析結果預覽</h2>
-        <div className="flex gap-2">
-          {result.cached && <Badge variant="cached">⚡ 快取</Badge>}
-          {result.needsReview && <Badge variant="review">需審查</Badge>}
-          <Badge variant={result.contentKind}>
-            {kindLabel[result.contentKind] || result.contentKind}
-          </Badge>
-        </div>
-      </div>
-
-      {/* 可編輯的來源標題 */}
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">來源標題（可修改）</label>
-        <input
-          type="text"
-          value={sourceTitle}
-          onChange={(e) => setSourceTitle(e.target.value)}
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      {/* 資訊列表 */}
-      <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-2">
-        <Row label="平台" value={result.sourcePlatform} />
-        <Row label="城市" value={result.citySlug || "—"} />
-        <Row label="信心度" value={result.confidence != null ? `${Math.round(result.confidence * 100)}%` : "—"} />
-        <Row label="摘要" value={result.summary || "—"} />
-        <Row label="Analysis ID" value={<code className="text-xs">{result.analysis_id || result.analysisId}</code>} />
-      </div>
-
-      {/* 擷取項目 */}
-      {result.items && result.items.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-2">擷取項目（{result.items.length}）</h3>
-          <ul className="space-y-2">
-            {result.items.map((item, i) => (
-              <li key={i} className="bg-white border border-gray-200 rounded-lg p-3 text-sm">
-                <div className="font-medium text-gray-900">{item.name}</div>
-                {item.area && <div className="text-gray-500 text-xs mt-0.5">{item.area}</div>}
-                {item.category && <Badge>{item.category}</Badge>}
-                {item.description && (
-                  <div className="text-gray-600 text-xs mt-1">{item.description}</div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* 備註 */}
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">備註（選填）</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={2}
-          placeholder="補充說明..."
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-        />
-      </div>
-
-      {error && <p className="text-red-600 text-sm">{error}</p>}
-
-      <div className="flex gap-3">
-        <button
-          onClick={handleConfirm}
-          disabled={loading}
-          className="flex-1 bg-blue-600 text-white rounded-lg py-3 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
-        >
-          {loading ? "寫入中…" : "✅ 確認寫入 Notion"}
-        </button>
-        <button
-          onClick={onReset}
-          disabled={loading}
-          className="px-4 py-3 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition"
-        >
-          取消
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Row({ label, value }) {
-  return (
-    <div className="flex gap-2">
-      <span className="text-gray-500 w-20 shrink-0">{label}</span>
-      <span className="text-gray-900 break-all">{value}</span>
-    </div>
-  );
-}
-
-// ── Step 3：寫入完成 ──────────────────────────────────────
-function SuccessView({ result, onReset }) {
-  return (
-    <div className="max-w-xl mx-auto mt-10 px-4 text-center space-y-4">
-      <div className="text-5xl">✅</div>
-      <h2 className="text-xl font-semibold text-gray-900">已寫入 Notion！</h2>
-      <div className="bg-gray-50 rounded-lg p-4 text-sm text-left space-y-1">
-        {result.created?.sourcePageId && (
-          <p>Sources 頁面 ID：<code className="text-xs">{result.created.sourcePageId}</code></p>
-        )}
-        {result.created?.spots?.length > 0 && (
-          <p>建立景點：{result.created.spots.map((s) => s.name).join("、")}</p>
-        )}
-        {result.created?.events?.length > 0 && (
-          <p>建立活動：{result.created.events.map((e) => e.name).join("、")}</p>
-        )}
-        {result.dispatched && <p className="text-green-600">已觸發 GitHub Actions 同步</p>}
-      </div>
-      <button
-        onClick={onReset}
-        className="bg-blue-600 text-white rounded-lg px-6 py-3 text-sm font-medium hover:bg-blue-700 transition"
-      >
-        再貼一個網址
-      </button>
-    </div>
-  );
-}
-
-// ── 主元件：狀態機 ────────────────────────────────────────
-export default function App() {
-  const [step, setStep] = useState("input"); // "input" | "preview" | "success"
-  const [pendingUrl, setPendingUrl] = useState(null);
-  const [analysisResult, setAnalysisResult] = useState(null);
-  const [confirmResult, setConfirmResult] = useState(null);
-
-  const handleResult = useCallback((url, result) => {
-    setPendingUrl(url);
-    setAnalysisResult(result);
-    setStep("preview");
-  }, []);
-
-  const handleConfirmed = useCallback((result) => {
-    setConfirmResult(result);
-    setStep("success");
-  }, []);
-
-  const handleReset = useCallback(() => {
-    setPendingUrl(null);
-    setAnalysisResult(null);
-    setConfirmResult(null);
-    setStep("input");
-  }, []);
-
-  if (step === "preview" && analysisResult) {
-    return (
-      <AnalysisPreview
-        url={pendingUrl}
-        result={analysisResult}
-        onConfirmed={handleConfirmed}
-        onReset={handleReset}
-      />
-    );
   }
 
-  if (step === "success" && confirmResult) {
-    return <SuccessView result={confirmResult} onReset={handleReset} />;
+  return {
+    sourceTitle,
+    sourcePlatform,
+    contentKind,
+    citySlug: citySlug || null,
+    area: null,
+    confidence,
+    needsReview: confidence < 0.7,
+    summary: "",
+    items: [],
+  };
+}
+
+function shouldUseOpenAI(heuristic, mergedText) {
+  if (heuristic.confidence >= 0.75) return false;
+  if (!mergedText || mergedText.length < 20) return false;
+  return true;
+}
+
+async function callOpenAI(apiKey, url, mergedText) {
+  const prompt = `你是旅遊資訊萃取助手。請分析以下內容，回傳 JSON（不要有任何其他文字）。
+
+URL: ${url}
+內容: ${mergedText.slice(0, 800)}
+
+回傳格式：
+{
+  "contentKind": "spot" | "event" | "source_only",
+  "citySlug": "tokyo" | "osaka" | "kyoto" | "taipei" | "seoul" 等小寫英文，不確定填 null,
+  "area": "區域名或 null",
+  "confidence": 0.0~1.0,
+  "needsReview": true | false,
+  "summary": "一句話中文摘要",
+  "items": [
+    {
+      "name": "景點或活動名稱",
+      "area": "區域或 null",
+      "category": "類別",
+      "description": "簡短說明"
+    }
+  ]
+}`;
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      max_tokens: 600,
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "OpenAI error");
+  return JSON.parse(data.choices?.[0]?.message?.content || "{}");
+}
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+  const corsHeaders = {
+    "Content-Type": "application/json; charset=utf-8",
+    "Access-Control-Allow-Origin": "*",
+  };
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ message: "Invalid JSON" }), { status: 400, headers: corsHeaders });
   }
 
-  return <AnalyzeForm onResult={handleResult} />;
+  const rawUrl = String(body?.url || "").trim();
+  const hints = body?.hints || {};
+
+  if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) {
+    return new Response(JSON.stringify({ message: "url 不可空白，且必須是 http/https 網址。" }), { status: 400, headers: corsHeaders });
+  }
+
+  if (!env.OPENAI_API_KEY) {
+    return new Response(JSON.stringify({ message: "OPENAI_API_KEY 尚未設定。" }), { status: 500, headers: corsHeaders });
+  }
+
+  const normalizedUrl = normalizeUrl(rawUrl);
+  const analysisId = await sha256(normalizedUrl);
+
+  const cached = await getCachedAnalysis(env, analysisId);
+  if (cached) {
+    return new Response(JSON.stringify({ ...cached, cached: true, analysis_id: analysisId }), { status: 200, headers: corsHeaders });
+  }
+
+  const scraped = await scrapeUrl(normalizedUrl);
+  const sourcePlatform = detectPlatform(normalizedUrl);
+  const sourceTitle =
+    String(hints.title || "").trim() ||
+    scraped.ogTitle || scraped.title || "未命名來源";
+
+  const mergedText = [
+    sourceTitle, scraped.ogTitle, scraped.ogDescription,
+    scraped.title, scraped.description, hints.notes || "",
+  ].filter(Boolean).join(" ").trim();
+
+  const heuristic = cheapHeuristicAnalysis({
+    sourceTitle, sourcePlatform, mergedText,
+    cityHint: hints.citySlug || "",
+    typeHint: hints.type || "",
+  });
+
+  let result = { ...heuristic };
+  let usedAI = false;
+
+  if (shouldUseOpenAI(heuristic, mergedText)) {
+    try {
+      const aiResult = await callOpenAI(env.OPENAI_API_KEY, normalizedUrl, mergedText);
+      result = {
+        sourceTitle,
+        sourcePlatform,
+        contentKind: aiResult.contentKind || heuristic.contentKind,
+        citySlug: aiResult.citySlug || heuristic.citySlug || null,
+        area: aiResult.area || null,
+        confidence: aiResult.confidence ?? heuristic.confidence,
+        needsReview: aiResult.needsReview ?? true,
+        summary: aiResult.summary || "",
+        items: Array.isArray(aiResult.items) ? aiResult.items : [],
+      };
+      usedAI = true;
+    } catch {
+      result.needsReview = true;
+    }
+  }
+
+  await setCachedAnalysis(env, analysisId, result);
+
+  return new Response(
+    JSON.stringify({ ...result, cached: false, analysis_id: analysisId, _usedAI: usedAI }),
+    { status: 200, headers: corsHeaders }
+  );
 }
