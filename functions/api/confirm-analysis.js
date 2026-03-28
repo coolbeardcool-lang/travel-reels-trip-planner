@@ -68,25 +68,30 @@ export async function onRequestPost(context) {
     const spotPageIds = [];
     const eventPageIds = [];
 
-    if (contentKind === "spot" && env.NOTION_SPOTS_DATA_SOURCE_ID) {
+    if (items.length && (env.NOTION_SPOTS_DATA_SOURCE_ID || env.NOTION_EVENTS_DATA_SOURCE_ID)) {
       for (const item of items) {
-        const spotPage = await createSpotPage({
-          env, item, citySlug, sourceUrl: url, sourcePageId, sourceTitle,
-        });
-        const spotId = spotPage?.id || null;
-        if (spotId) spotPageIds.push(spotId);
-        created.spots.push({ id: spotId, name: item.name || "未命名景點" });
-      }
-    }
+        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "").trim();
+        const itemKind = normalizeItemKind(item, contentKind);
+        const itemName = cleanText(item?.name) || (itemKind === "event" ? "未命名活動" : "未命名項目");
 
-    if (contentKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
-      for (const item of items) {
-        const eventPage = await createEventPage({
-          env, item, citySlug, sourceUrl: url, sourcePageId, sourceTitle,
-        });
-        const eventId = eventPage?.id || null;
-        if (eventId) eventPageIds.push(eventId);
-        created.events.push({ id: eventId, name: item.name || "未命名活動" });
+        if (itemKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
+          const eventPage = await createEventPage({
+            env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
+          });
+          const eventId = eventPage?.id || null;
+          if (eventId) eventPageIds.push(eventId);
+          created.events.push({ id: eventId, name: itemName });
+          continue;
+        }
+
+        if (env.NOTION_SPOTS_DATA_SOURCE_ID) {
+          const spotPage = await createSpotPage({
+            env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
+          });
+          const spotId = spotPage?.id || null;
+          if (spotId) spotPageIds.push(spotId);
+          created.spots.push({ id: spotId, name: itemName });
+        }
       }
     }
 
@@ -267,33 +272,43 @@ async function createSourcePage({
 async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
-  const tags = Array.isArray(item.tags) ? item.tags.join(", ") : item.category || "景點";
+  const normalizedTags = normalizeTags(item.tags);
+  const tags = normalizedTags.length
+    ? normalizedTags.join(", ")
+    : [cleanText(item.category) || "待分類", cleanText(item.area), cleanText(citySlug)].filter(Boolean).join(", ");
 
-  const mapQuery = encodeURIComponent(`${item.name} ${cityLabel}`);
-  const mapUrl = item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+  const mapQuery = encodeURIComponent(joinClean([item.name, item.area, cityLabel], " "));
+  const mapUrl = cleanText(item.map_url) || (mapQuery ? `https://www.google.com/maps/search/?api=1&query=${mapQuery}` : null);
 
-  const lat = typeof item.lat === "number" && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
-  const lng = typeof item.lng === "number" && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
+  const lat = Number.isFinite(item?.lat) && Math.abs(item.lat) <= 90 && item.lat !== 0 ? item.lat : null;
+  const lng = Number.isFinite(item?.lng) && Math.abs(item.lng) <= 180 && item.lng !== 0 ? item.lng : null;
+  const priorityScore = Number.isFinite(item?.itemConfidence)
+    ? Math.round(item.itemConfidence * 100)
+    : Number.isFinite(item?.item_confidence)
+      ? Math.round(item.item_confidence * 100)
+      : 0;
 
   const properties = {
-    Name:             { title: [{ text: { content: String(item.name || "未命名景點").slice(0, 200) } }] },
-    Area:             { rich_text: [{ text: { content: String(item.area || cityLabel) } }] },
-    BestTime:         { rich_text: [{ text: { content: String(item.best_time || guessBestTime(item.category)) } }] },
-    Category:         { rich_text: [{ text: { content: String(item.category || "景點") } }] },
+    Name:             { title: [{ text: { content: cleanText(item.name || "未命名項目").slice(0, 200) } }] },
+    Area:             { rich_text: [{ text: { content: cleanText(item.area || cityLabel) } }] },
+    BestTime:         { rich_text: [{ text: { content: cleanText(item.best_time) } }] },
+    Category:         { rich_text: [{ text: { content: cleanText(item.category || "待分類") } }] },
     City:             { select: { name: cityLabel || "未分類" } },
     CitySlug:         { select: { name: String(citySlug || "未分類") } },
-    Description:      { rich_text: [{ text: { content: String(item.description || `${cityLabel}的${item.category || "景點"}，值得一訪。`).slice(0, 2000) } }] },
-    Lat:              { number: lat },
-    Lng:              { number: lng },
+    Description:      { rich_text: [{ text: { content: cleanText(item.description).slice(0, 2000) } }] },
     MapUrl:           { url: mapUrl || null },
-    Notes:            { rich_text: [{ text: { content: String(item.reason || "") } }] },
-    PriorityScore:    { number: 0 },
+    Notes:            { rich_text: [{ text: { content: buildItemNotes(item) } }] },
+    PriorityScore:    { number: priorityScore },
     Published:        { checkbox: true },
-    SourceTitleCache: { rich_text: [{ text: { content: String(sourceTitle || "").slice(0, 200) } }] },
-    StayMinutes:      { number: Number(item.stay_minutes || guessStayMinutes(item.category)) },
+    SourceTitleCache: { rich_text: [{ text: { content: cleanText(sourceTitle).slice(0, 200) } }] },
     Tags:             { rich_text: [{ text: { content: tags } }] },
-    Thumbnail:        { rich_text: [{ text: { content: String(item.thumbnail || guessThumbnail(item.category)) } }] },
+    Thumbnail:        { rich_text: [{ text: { content: cleanText(item.thumbnail || guessThumbnail(item.category)) } }] },
   };
+  if (Number.isFinite(Number(item?.stay_minutes)) && Number(item.stay_minutes) > 0) {
+    properties.StayMinutes = { number: Number(item.stay_minutes) };
+  }
+  if (lat !== null) properties.Lat = { number: lat };
+  if (lng !== null) properties.Lng = { number: lng };
 
   if (sourcePageId) {
     properties.SourceLinks = { rich_text: [{ text: { content: String(sourcePageId) } }] };
@@ -309,37 +324,40 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
 async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
-  const tags = Array.isArray(item.tags) ? item.tags.join(", ") : item.category || "活動";
+  const normalizedTags = normalizeTags(item.tags);
+  const tags = normalizedTags.length
+    ? normalizedTags.join(", ")
+    : [cleanText(item.category) || "活動", cleanText(item.area), cleanText(citySlug)].filter(Boolean).join(", ");
 
-  const mapQuery = encodeURIComponent(`${item.venue_name || item.name} ${cityLabel}`);
-  const mapUrl = item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+  const mapQuery = encodeURIComponent(joinClean([item.venue_name || item.name, item.area, cityLabel], " "));
+  const mapUrl = cleanText(item.map_url) || (mapQuery ? `https://www.google.com/maps/search/?api=1&query=${mapQuery}` : null);
 
-  const lat = typeof item.lat === "number" && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
-  const lng = typeof item.lng === "number" && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
+  const lat = Number.isFinite(item?.lat) && Math.abs(item.lat) <= 90 && item.lat !== 0 ? item.lat : null;
+  const lng = Number.isFinite(item?.lng) && Math.abs(item.lng) <= 180 && item.lng !== 0 ? item.lng : null;
 
   const properties = {
-    Name:          { title: [{ text: { content: String(item.name || "未命名活動").slice(0, 200) } }] },
-    Area:          { rich_text: [{ text: { content: String(item.area || cityLabel) } }] },
-    Category:      { select: { name: String(item.category || "活動") } },
-    City:          { rich_text: [{ text: { content: cityLabel } }] },
-    CitySlug:      { rich_text: [{ text: { content: String(citySlug || "") } }] },
-    Description:   { rich_text: [{ text: { content: String(item.description || `${cityLabel}的${item.category || "活動"}，詳情請洽官網。`).slice(0, 2000) } }] },
-    EndTimeText:   { rich_text: [{ text: { content: String(item.end_time || "") } }] },
+    Name:          { title: [{ text: { content: cleanText(item.name || "未命名活動").slice(0, 200) } }] },
+    Area:          { rich_text: [{ text: { content: cleanText(item.area || cityLabel) } }] },
+    Category:      { select: { name: cleanText(item.category || "活動") } },
+    City:          { rich_text: [{ text: { content: cleanText(cityLabel) } }] },
+    CitySlug:      { rich_text: [{ text: { content: cleanText(citySlug) } }] },
+    Description:   { rich_text: [{ text: { content: cleanText(item.description).slice(0, 2000) } }] },
+    EndTimeText:   { rich_text: [{ text: { content: cleanText(item.end_time) } }] },
     EndsOn:        item.ends_on ? { date: { start: String(item.ends_on) } } : { date: null },
-    Lat:           { number: lat },
-    Lng:           { number: lng },
     MapUrl:        { url: mapUrl || null },
-    OfficialUrl:   { url: String(item.official_url || sourceUrl || "") || null },
-    PriceNote:     { rich_text: [{ text: { content: String(item.price_note || "請洽官網") } }] },
+    OfficialUrl:   { url: cleanText(item.official_url || sourceUrl) || null },
+    PriceNote:     { rich_text: [{ text: { content: cleanText(item.price_note) } }] },
     Published:     { checkbox: true },
     RecurringType: { select: { name: "一次性" } },
-    StartTimeText: { rich_text: [{ text: { content: String(item.start_time || "") } }] },
+    StartTimeText: { rich_text: [{ text: { content: cleanText(item.start_time) } }] },
     StartsOn:      item.starts_on ? { date: { start: String(item.starts_on) } } : { date: null },
     Status:        { select: { name: "待整理" } },
     Tags:          { rich_text: [{ text: { content: tags } }] },
-    TicketType:    { rich_text: [{ text: { content: String(item.ticket_type || "請洽官網") } }] },
-    VenueName:     { rich_text: [{ text: { content: String(item.venue_name || item.name || "") } }] },
+    TicketType:    { rich_text: [{ text: { content: cleanText(item.ticket_type) } }] },
+    VenueName:     { rich_text: [{ text: { content: cleanText(item.venue_name || item.name) } }] },
   };
+  if (lat !== null) properties.Lat = { number: lat };
+  if (lng !== null) properties.Lng = { number: lng };
 
   if (sourcePageId) {
     properties.SourceLinks = { rich_text: [{ text: { content: String(sourcePageId) } }] };
@@ -351,25 +369,6 @@ async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, s
   });
 }
 
-// ── 智慧預設值 ─────────────────────────────────────────────
-function guessBestTime(category) {
-  const map = {
-    餐廳: "晚上", 小吃: "下午", 咖啡: "下午", 甜點: "下午",
-    景點: "下午", 逛街: "下午", 寺社: "早上", 住宿: "下午",
-    博物館: "下午", 夜市: "晚上", 活動: "下午",
-  };
-  return map[category] || "下午";
-}
-
-function guessStayMinutes(category) {
-  const map = {
-    餐廳: 75, 小吃: 30, 咖啡: 60, 甜點: 45,
-    景點: 60, 逛街: 90, 寺社: 40, 住宿: 60,
-    博物館: 120, 夜市: 90, 活動: 120,
-  };
-  return map[category] || 60;
-}
-
 function guessThumbnail(category) {
   const map = {
     餐廳: "🍽️", 小吃: "🍢", 咖啡: "☕", 甜點: "🍰",
@@ -377,6 +376,43 @@ function guessThumbnail(category) {
     博物館: "🏛️", 夜市: "🏮", 活動: "🎫",
   };
   return map[category] || "📍";
+}
+
+function cleanText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function joinClean(values, sep = " ") {
+  return values.map((v) => cleanText(v)).filter(Boolean).join(sep).trim();
+}
+
+function normalizeTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  return tags.map((t) => cleanText(t)).filter(Boolean).slice(0, 20);
+}
+
+function normalizeItemKind(item, fallback) {
+  const value = cleanText(item?.itemKind || item?.item_kind || fallback);
+  if (value === "event" || value === "spot" || value === "source_only") return value;
+  if (value === "mixed") return "source_only";
+  return fallback === "event" ? "event" : "spot";
+}
+
+function buildItemNotes(item) {
+  const parts = [];
+  const reason = cleanText(item?.reason);
+  const reviewReason = cleanText(item?.reviewReason || item?.review_reason);
+  if (reason) parts.push(`reason: ${reason}`);
+  if (reviewReason) parts.push(`review: ${reviewReason}`);
+  if (Array.isArray(item?.evidence) && item.evidence.length) {
+    const evidenceText = item.evidence
+      .map((e) => cleanText(typeof e === "string" ? e : e?.value || e?.text))
+      .filter(Boolean)
+      .slice(0, 6)
+      .join(" | ");
+    if (evidenceText) parts.push(`evidence: ${evidenceText}`);
+  }
+  return parts.join(" || ").slice(0, 2000);
 }
 
 // ── Notion API ─────────────────────────────────────────────

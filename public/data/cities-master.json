@@ -1,0 +1,18 @@
+{
+  "cities": [
+    { "slug": "tokyo", "nameZh": "東京" },
+    { "slug": "kyoto", "nameZh": "京都" },
+    { "slug": "osaka", "nameZh": "大阪" },
+    { "slug": "nara", "nameZh": "奈良" },
+    { "slug": "okinawa", "nameZh": "沖繩" },
+    { "slug": "hokkaido", "nameZh": "北海道" },
+    { "slug": "fukuoka", "nameZh": "福岡" },
+    { "slug": "taipei", "nameZh": "台北" },
+    { "slug": "taichung", "nameZh": "台中" },
+    { "slug": "tainan", "nameZh": "台南" },
+    { "slug": "kaohsiung", "nameZh": "高雄" },
+    { "slug": "seoul", "nameZh": "首爾" },
+    { "slug": "busan", "nameZh": "釜山" },
+    { "slug": "changhua", "nameZh": "彰化", "aliases": ["花壇"] }
+  ]
+}
