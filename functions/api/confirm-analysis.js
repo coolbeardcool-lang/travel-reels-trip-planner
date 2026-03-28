@@ -97,60 +97,65 @@ const debugInfo = {
 
 // ── 自動確保城市存在 ───────────────────────────────────────
 async function ensureCityExists(env, citySlug) {
-  try {
-    const res = await fetch(
-      `https://api.notion.com/v1/data_sources/${env.NOTION_CITIES_DATA_SOURCE_ID}/query`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.NOTION_TOKEN}`,
-          "Content-Type": "application/json",
-          "Notion-Version": NOTION_VERSION,
-        },
-        body: JSON.stringify({ page_size: 100 }),
-      }
-    );
-
-    if (!res.ok) return;
-
-    const data = await res.json();
-    const pages = data.results || [];
-
-    const existingSlugs = pages.map((page) => {
-      const slugProp = page.properties?.Slug;
-      if (slugProp?.type === "rich_text") {
-        return (slugProp.rich_text || []).map((r) => r.plain_text || "").join("").trim().toLowerCase();
-      }
-      return "";
-    }).filter(Boolean);
-
-    if (existingSlugs.includes(citySlug.toLowerCase())) return;
-
-    const label = CITY_LABEL_MAP[citySlug] || citySlug;
-    const emoji = CITY_EMOJI_MAP[citySlug] || "📍";
-
-    await fetch("https://api.notion.com/v1/pages", {
+  const res = await fetch(
+    `https://api.notion.com/v1/data_sources/${env.NOTION_CITIES_DATA_SOURCE_ID}/query`,
+    {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.NOTION_TOKEN}`,
         "Content-Type": "application/json",
         "Notion-Version": NOTION_VERSION,
       },
-      body: JSON.stringify({
-        parent: { data_source_id: env.NOTION_CITIES_DATA_SOURCE_ID },
-        properties: {
-          Name: { title: [{ text: { content: label } }] },
-          Slug: { rich_text: [{ text: { content: citySlug } }] },
-          Emoji: { rich_text: [{ text: { content: emoji } }] },
-          Published: { checkbox: false },
-        },
-      }),
-    });
-  } catch (e) {
-    throw new Error("ensureCityExists failed: " + (e?.message || String(e)));
+      body: JSON.stringify({ page_size: 100 }),
+    }
+  );
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Cities 查詢失敗 ${res.status}: ${errText}`);
+  }
+
+  const data = await res.json();
+  const pages = data.results || [];
+
+  const existingSlugs = pages.map((page) => {
+    const slugProp = page.properties?.Slug;
+    if (slugProp?.type === "rich_text") {
+      return (slugProp.rich_text || []).map((r) => r.plain_text || "").join("").trim().toLowerCase();
+    }
+    return "";
+  }).filter(Boolean);
+
+  if (existingSlugs.includes(citySlug.toLowerCase())) {
+    throw new Error(`slug 已存在，跳過新增：${citySlug}，現有：${existingSlugs.join(",")}`);
+  }
+
+  const label = CITY_LABEL_MAP[citySlug] || citySlug;
+  const emoji = CITY_EMOJI_MAP[citySlug] || "📍";
+
+  const createRes = await fetch("https://api.notion.com/v1/pages", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.NOTION_TOKEN}`,
+      "Content-Type": "application/json",
+      "Notion-Version": NOTION_VERSION,
+    },
+    body: JSON.stringify({
+      parent: { data_source_id: env.NOTION_CITIES_DATA_SOURCE_ID },
+      properties: {
+        Name: { title: [{ text: { content: label } }] },
+        Slug: { rich_text: [{ text: { content: citySlug } }] },
+        Emoji: { rich_text: [{ text: { content: emoji } }] },
+        Published: { checkbox: false },
+      },
+    }),
+  });
+
+  if (!createRes.ok) {
+    const errText = await createRes.text();
+    throw new Error(`Cities 新增失敗 ${createRes.status}: ${errText}`);
   }
 }
-
 // ── Sources ────────────────────────────────────────────────
 async function createSourcePage({
   env, sourceTitle, url, platform, notes,
