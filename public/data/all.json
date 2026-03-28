@@ -343,6 +343,25 @@
   ],
   "sources": [
     {
+      "id": "33124c5d-f0b3-819d-a3d4-ff1068498c61",
+      "title": "Instagram 來源",
+      "url": "https://www.instagram.com/reel/DWbB04-hJd9",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33124c5d-f0b3-81b2-9b53-e883b3418a06",
       "title": "京都・透過「京都隱藏亮點」明信片漫步，體驗京都的魅力。",
       "url": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
@@ -542,7 +561,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T17:54:00.446Z",
+    "lastSyncedAt": "2026-03-28T17:56:10.339Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
