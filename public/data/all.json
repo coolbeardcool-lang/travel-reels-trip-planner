@@ -201,30 +201,6 @@
       "priorityScore": 90,
       "lastReviewedAt": "2026-03-28",
       "notes": ""
-    },
-    {
-      "id": "33124c5d-f0b3-8112-b847-d9549501d5c7",
-      "city": "",
-      "citySlug": "seoul",
-      "area": "弘大",
-      "name": "牛火",
-      "category": "餐廳",
-      "description": "主打1++等級韓牛，油花漂亮，肉質軟嫩多汁，服務優質。",
-      "sourceId": "",
-      "sourceTitle": "🌸SaSa🌸台北 新北 桃園 台中 高雄 美食 親子｜Wu,Chia-An on Instagram: \"🇰🇷弘大又一間好吃韓牛\n主打1++等級 油花很漂亮 肉質完全不擔心\n軟嫩多汁 全程都有店員代烤 每一口都很滿足\n價格大約一人2000台幣 但整體服務跟品質值得來體驗一次✨\n\n《우화 홍대 한우 맛집 | 牛火 》\n📍地址：南韓 Seoul, Mapo-gu, Hongik-ro 5a",
-      "sourceUrl": "",
-      "bestTime": "晚上",
-      "stayMinutes": 120,
-      "tags": [],
-      "lat": 37.5665,
-      "lng": 126.978,
-      "confidence": "推定",
-      "thumbnail": "🍽️",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E7%89%9B%E7%81%AB%20%E9%A6%96%E7%88%BE",
-      "published": true,
-      "priorityScore": 0,
-      "lastReviewedAt": null,
-      "notes": ""
     }
   ],
   "events": [
@@ -287,7 +263,7 @@
   ],
   "sources": [
     {
-      "id": "33124c5d-f0b3-81a5-b4a6-e810c458667c",
+      "id": "33124c5d-f0b3-8167-824f-fa9b55291a50",
       "title": "測試dispatch",
       "url": "https://www.instagram.com/reel/testdispatch/",
       "platform": "Instagram",
@@ -431,10 +407,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T11:39:27.828Z",
+    "lastSyncedAt": "2026-03-28T11:44:35.147Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 11
+    "count": 10
   }
 }
