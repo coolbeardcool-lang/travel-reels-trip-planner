@@ -17,7 +17,6 @@ const BASE_URL = (() => {
   return "/";
 })();
 
-const DATA_SOURCE_MODE = "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取";
 const CONTENT_MODES = ["spots", "events"];
 
 const CITY_INDEX_SEED = [
@@ -27,9 +26,8 @@ const CITY_INDEX_SEED = [
     emoji: "⛩️",
     region: "關西",
     description: "寺社、散步、甜點與選物密度高，適合慢節奏安排。",
-    status: "active",
-    spotlight: ["寺社", "甜點", "散步"],
     heroArea: "佛光寺周邊",
+    spotlight: ["寺社", "甜點", "散步"],
   },
   {
     slug: "osaka",
@@ -37,52 +35,26 @@ const CITY_INDEX_SEED = [
     emoji: "🍢",
     region: "關西",
     description: "小吃、商圈與夜間行程豐富，適合美食導向安排。",
-    status: "active",
-    spotlight: ["小吃", "商圈", "夜生活"],
     heroArea: "新世界／通天閣",
+    spotlight: ["小吃", "商圈", "夜生活"],
   },
 ];
 
 const SOURCES_SEED = [
   {
-    id: "src-threads-demo",
-    title: "可點旅遊行程表範例",
-    url: "https://www.threads.com/@cecilypantw/post/DWOLr2pjflm/...",
-    platform: "Threads",
-    status: "已匯入",
-    note: "已依範例做成可點地圖＋清單圖卡＋推薦路線的版型。",
-  },
-  {
     id: "src-osaka-gyutan",
     title: "大阪牛舌 Reel",
     url: "https://www.instagram.com/reel/DWOiXYxkf97/",
-    platform: "Instagram Reel",
-    status: "部分辨識",
-    note: "已整理出吉次牛舌與心齋橋區域線索；分店點位先以推定方式放入。",
   },
   {
     id: "src-osaka-shinsekai-food",
     title: "大阪新世界街邊美食 Reel",
     url: "https://www.instagram.com/reel/DV_M4ayDcf-/",
-    platform: "Instagram Reel",
-    status: "已匯入",
-    note: "已放入 Nonkiya、Matsuya、串炸八重勝等可辨識點位。",
   },
   {
     id: "src-kyoto-hidden-list",
     title: "京都私藏清單 Reel",
     url: "https://www.instagram.com/reel/DWWQYkuAfHD/",
-    platform: "Instagram Reel",
-    status: "部分辨識",
-    note: "已放入 D&DEPARTMENT KYOTO、平等寺（因幡堂）、麓壽庵；其餘點位待後續補齊。",
-  },
-  {
-    id: "src-kyoto-spring-night",
-    title: "京都夜櫻活動範例",
-    url: "https://example.com/kyoto-night-event",
-    platform: "手動新增",
-    status: "待整理",
-    note: "活動資料範例，用於前台 events 分流展示。",
   },
 ];
 
@@ -103,7 +75,6 @@ const SPOTS_SEED = [
     tags: ["牛舌", "大阪美食", "晚餐", "心齋橋"],
     lat: 34.6706,
     lng: 135.5023,
-    confidence: "推定",
     thumbnail: "🥩",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=心齋橋+吉次牛舌",
     published: true,
@@ -124,7 +95,6 @@ const SPOTS_SEED = [
     tags: ["關東煮", "土手燒", "立食", "通天閣"],
     lat: 34.6529,
     lng: 135.5057,
-    confidence: "已確認",
     thumbnail: "🍢",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=Nonkiya+大阪",
     published: true,
@@ -145,7 +115,6 @@ const SPOTS_SEED = [
     tags: ["烏龍麵", "立食", "平價", "新世界"],
     lat: 34.6531,
     lng: 135.5059,
-    confidence: "已確認",
     thumbnail: "🍜",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=立ち食いうどんそば+松屋+大阪",
     published: true,
@@ -157,7 +126,7 @@ const SPOTS_SEED = [
     area: "新世界／通天閣",
     name: "串炸八重勝",
     category: "餐廳",
-    description: "Reel 可辨識出的新世界經典串炸名店，適合當作新世界區晚餐主站。",
+    description: "新世界經典串炸名店，適合當作新世界區晚餐主站。",
     sourceId: "src-osaka-shinsekai-food",
     sourceTitle: "大阪新世界街邊美食 Reel",
     sourceUrl: "https://www.instagram.com/reel/DV_M4ayDcf-/",
@@ -166,7 +135,6 @@ const SPOTS_SEED = [
     tags: ["串炸", "大阪經典", "排隊店", "新世界"],
     lat: 34.6525,
     lng: 135.5056,
-    confidence: "已確認",
     thumbnail: "🍢",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=串かつ八重勝+新世界",
     published: true,
@@ -187,7 +155,6 @@ const SPOTS_SEED = [
     tags: ["選物店", "佛光寺", "京都設計", "散步"],
     lat: 35.0018,
     lng: 135.7596,
-    confidence: "已確認",
     thumbnail: "🛍️",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=D%26DEPARTMENT+KYOTO",
     published: true,
@@ -208,7 +175,6 @@ const SPOTS_SEED = [
     tags: ["寺院", "庭院", "散步", "市區"],
     lat: 35.0017,
     lng: 135.7592,
-    confidence: "推定",
     thumbnail: "⛩️",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=佛光寺+京都",
     published: true,
@@ -220,7 +186,7 @@ const SPOTS_SEED = [
     area: "四條烏丸周邊",
     name: "平等寺（因幡堂）",
     category: "寺社",
-    description: "Reel 提到是貓奴狗主必訪的守護聖地，適合排在市區散步路線中。",
+    description: "貓奴狗主必訪的守護聖地，適合排在市區散步路線中。",
     sourceId: "src-kyoto-hidden-list",
     sourceTitle: "京都私藏清單 Reel",
     sourceUrl: "https://www.instagram.com/reel/DWWQYkuAfHD/",
@@ -229,7 +195,6 @@ const SPOTS_SEED = [
     tags: ["寵物御守", "祈福", "寺社", "散步"],
     lat: 35.0013,
     lng: 135.7582,
-    confidence: "已確認",
     thumbnail: "🐾",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=平等寺+因幡堂+京都",
     published: true,
@@ -250,65 +215,13 @@ const SPOTS_SEED = [
     tags: ["和菓子", "蕨餅", "預約", "百年建築"],
     lat: 35.0107,
     lng: 135.7575,
-    confidence: "已確認",
     thumbnail: "🍵",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=麓壽庵+kyoto",
     published: true,
   },
 ];
 
-const EVENTS_SEED = [
-  {
-    id: "evt-kyoto-night-sakura",
-    city: "京都",
-    citySlug: "kyoto",
-    area: "東山周邊",
-    name: "京都夜櫻點燈示意活動",
-    category: "活動",
-    description: "示意用活動資料。正式版會由 Notion Events 資料庫同步，適合做期間限定活動展示。",
-    sourceId: "src-kyoto-spring-night",
-    sourceTitle: "京都夜櫻活動範例",
-    sourceUrl: "https://example.com/kyoto-night-event",
-    tags: ["夜櫻", "期間限定", "春季"],
-    lat: 35.0037,
-    lng: 135.7788,
-    thumbnail: "🌸",
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=%E6%9D%B1%E5%B1%B1+%E4%BA%AC%E9%83%BD",
-    startsOn: "2026-03-25",
-    endsOn: "2026-04-10",
-    startTime: "18:00",
-    endTime: "21:00",
-    ticketType: "現場購票",
-    priceNote: "示意資料",
-    published: true,
-    status: "待整理",
-  },
-  {
-    id: "evt-osaka-food-fes",
-    city: "大阪",
-    citySlug: "osaka",
-    area: "中之島",
-    name: "大阪美食市集示意活動",
-    category: "活動",
-    description: "示意用活動資料，正式版可放快閃市集、祭典、展覽等日期型內容。",
-    sourceId: "src-osaka-shinsekai-food",
-    sourceTitle: "大阪新世界街邊美食 Reel",
-    sourceUrl: "https://www.instagram.com/reel/DV_M4ayDcf-/",
-    tags: ["市集", "美食", "週末"],
-    lat: 34.6925,
-    lng: 135.4904,
-    thumbnail: "🎏",
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=%E4%B8%AD%E4%B9%8B%E5%B3%B6+%E5%A4%A7%E9%98%AA",
-    startsOn: "2026-04-12",
-    endsOn: "2026-04-14",
-    startTime: "11:00",
-    endTime: "20:00",
-    ticketType: "免費入場",
-    priceNote: "餐飲另計",
-    published: true,
-    status: "待整理",
-  },
-];
+const EVENTS_SEED = [];
 
 const COLORS = {
   pageBg: "linear-gradient(135deg, #fafaf9 0%, #ffffff 48%, #fff7ed 100%)",
@@ -320,8 +233,6 @@ const COLORS = {
   primary: "#1c1917",
   primarySoft: "#f5f5f4",
   accent: "#f97316",
-  success: "#166534",
-  info: "#1d4ed8",
   warningBg: "#fff7ed",
   warningText: "#c2410c",
 };
@@ -343,7 +254,6 @@ function cityIndexPath() {
 function normalizeCitySlugValue(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
-
   const aliasMap = {
     京都: "kyoto",
     大阪: "osaka",
@@ -358,7 +268,6 @@ function normalizeCitySlugValue(value) {
     全部: "all",
     all: "all",
   };
-
   if (aliasMap[raw]) return aliasMap[raw];
   return raw.toLowerCase();
 }
@@ -366,29 +275,12 @@ function normalizeCitySlugValue(value) {
 function cityDataPaths(citySlug) {
   const normalizedSlug = normalizeCitySlugValue(citySlug);
   if (!normalizedSlug || normalizedSlug === "unselected") return [];
-  if (normalizedSlug === "all") {
-    return [`${BASE_URL}data/all.json`];
-  }
-
+  if (normalizedSlug === "all") return [`${BASE_URL}data/all.json`];
   return [
     `${BASE_URL}data/cities/${normalizedSlug}.json`,
     `${BASE_URL}data/${normalizedSlug}.json`,
     `${BASE_URL}data/${citySlug}.json`,
   ];
-}
-
-function cityDataPath(citySlug) {
-  return cityDataPaths(citySlug)[0] || null;
-}
-
-function cityLabelToSlug(label) {
-  const city = CITY_INDEX_SEED.find((item) => item.label === label);
-  return city ? city.slug : normalizeCitySlugValue(label);
-}
-
-function citySlugToLabel(slug, cityIndex) {
-  const city = cityIndex.find((item) => item.slug === slug);
-  return city ? city.label : slug;
 }
 
 function filterByCitySlug(items, citySlug) {
@@ -410,9 +302,8 @@ function normalizeCity(city, index) {
     emoji: city.emoji || "📍",
     region: city.region || "未分類",
     description: city.description || "",
-    status: city.status || "active",
-    spotlight: Array.isArray(city.spotlight) ? city.spotlight : [],
     heroArea: city.heroArea || "",
+    spotlight: Array.isArray(city.spotlight) ? city.spotlight : [],
   };
 }
 
@@ -421,15 +312,12 @@ function normalizeSource(source, index) {
     id: source.id || `source-${index}`,
     title: source.title || "未命名來源",
     url: source.url || "",
-    platform: source.platform || "手動新增",
-    status: source.status || "已匯入",
-    note: source.note || "",
   };
 }
 
 function normalizeSpot(spot, index, cityIndex) {
-  const cityLabel = spot.city || citySlugToLabel(spot.citySlug, cityIndex) || "未分類";
-  const citySlug = spot.citySlug || cityLabelToSlug(cityLabel);
+  const cityLabel = spot.city || cityIndex.find((item) => item.slug === spot.citySlug)?.label || "未分類";
+  const citySlug = normalizeCitySlugValue(spot.citySlug || cityLabel);
   return {
     id: spot.id || `spot-${index}`,
     city: cityLabel,
@@ -446,7 +334,6 @@ function normalizeSpot(spot, index, cityIndex) {
     tags: Array.isArray(spot.tags) ? spot.tags : [],
     lat: Number.isFinite(spot.lat) ? spot.lat : Number(spot.lat) || 0,
     lng: Number.isFinite(spot.lng) ? spot.lng : Number(spot.lng) || 0,
-    confidence: spot.confidence || "推定",
     thumbnail: spot.thumbnail || "📍",
     mapUrl: spot.mapUrl || "",
     published: spot.published !== false,
@@ -454,8 +341,8 @@ function normalizeSpot(spot, index, cityIndex) {
 }
 
 function normalizeEvent(event, index, cityIndex) {
-  const cityLabel = event.city || citySlugToLabel(event.citySlug, cityIndex) || "未分類";
-  const citySlug = event.citySlug || cityLabelToSlug(cityLabel);
+  const cityLabel = event.city || cityIndex.find((item) => item.slug === event.citySlug)?.label || "未分類";
+  const citySlug = normalizeCitySlugValue(event.citySlug || cityLabel);
   return {
     id: event.id || `event-${index}`,
     city: cityLabel,
@@ -478,22 +365,14 @@ function normalizeEvent(event, index, cityIndex) {
     endTime: event.endTime || "",
     ticketType: event.ticketType || "",
     priceNote: event.priceNote || "",
-    status: event.status || "待整理",
     published: event.published !== false,
   };
 }
 
 function normalizeCityIndexPayload(payload) {
   const rawCities = Array.isArray(payload?.cities) ? payload.cities : [];
-  const cities = rawCities.map((city, index) => normalizeCity(city, index));
-  const meta = payload?.meta || {};
   return {
-    cities,
-    meta: {
-      generatedBy: meta.generatedBy || "unknown",
-      lastSyncedAt: meta.lastSyncedAt || null,
-      count: Number.isFinite(meta.count) ? meta.count : cities.length,
-    },
+    cities: rawCities.map((city, index) => normalizeCity(city, index)),
   };
 }
 
@@ -501,88 +380,35 @@ function normalizeCityPayload(payload, fallbackSlug, cityIndex) {
   const rawSpots = Array.isArray(payload?.spots) ? payload.spots : [];
   const rawEvents = Array.isArray(payload?.events) ? payload.events : [];
   const rawSources = Array.isArray(payload?.sources) ? payload.sources : [];
-  const city = payload?.city || {};
-  const meta = payload?.meta || {};
-
-  const spots = rawSpots.map((spot, index) => normalizeSpot(spot, index, cityIndex));
-  const events = rawEvents.map((event, index) => normalizeEvent(event, index, cityIndex));
+  const spots = rawSpots.map((spot, index) => normalizeSpot(spot, index, cityIndex)).filter((spot) => spot.published);
+  const events = rawEvents.map((event, index) => normalizeEvent(event, index, cityIndex)).filter((event) => event.published);
   const sources = rawSources.map((source, index) => normalizeSource(source, index));
-  const allItems = [...spots, ...events];
-
   return {
-    city: normalizeCity(
-      {
-        slug: city.slug || fallbackSlug,
-        label: city.label || citySlugToLabel(fallbackSlug, cityIndex),
-        emoji: city.emoji || "📍",
-        region: city.region || "未分類",
-        description: city.description || "",
-        status: city.status || "active",
-        spotlight: city.spotlight || [],
-        heroArea: city.heroArea || "",
-      },
-      0
-    ),
+    city: normalizeCity(payload?.city || { slug: fallbackSlug }, 0),
     spots,
     events,
-    sources: sources.length ? sources : filterSourcesByLinkedIds(allItems, SOURCES_SEED),
-    meta: {
-      lastSyncedAt: meta.lastSyncedAt || null,
-      notionDataSourceId: meta.notionDataSourceId || null,
-      generatedBy: meta.generatedBy || "unknown",
-      sourceMode: meta.sourceMode || DATA_SOURCE_MODE,
-      count: Number.isFinite(meta.count) ? meta.count : spots.length + events.length,
-    },
+    sources: sources.length ? sources : filterSourcesByLinkedIds([...spots, ...events], SOURCES_SEED),
   };
 }
 
 async function fetchCityIndex() {
   const response = await fetch(cityIndexPath(), { headers: { Accept: "application/json" } });
-  if (!response.ok) {
-    throw new Error(`無法載入 ${cityIndexPath()}，HTTP ${response.status}`);
-  }
-  const payload = await response.json();
-  return normalizeCityIndexPayload(payload);
+  if (!response.ok) throw new Error(`無法載入 ${cityIndexPath()}，HTTP ${response.status}`);
+  return normalizeCityIndexPayload(await response.json());
 }
 
 async function fetchCityDataset(citySlug, cityIndex) {
   const paths = cityDataPaths(citySlug);
   if (!paths.length) {
-    return {
-      city: normalizeCity({ slug: "unselected", label: "未選擇" }, 0),
-      spots: [],
-      events: [],
-      sources: [],
-      meta: {
-        lastSyncedAt: null,
-        notionDataSourceId: null,
-        generatedBy: "not-loaded",
-        sourceMode: DATA_SOURCE_MODE,
-        count: 0,
-      },
-    };
+    return { city: normalizeCity({ slug: "unselected", label: "未選擇" }, 0), spots: [], events: [], sources: [] };
   }
-
-  let lastError = null;
   for (const path of paths) {
     const response = await fetch(path, { headers: { Accept: "application/json" } });
     if (response.ok) {
-      const payload = await response.json();
-      return normalizeCityPayload(payload, normalizeCitySlugValue(citySlug), cityIndex);
+      return normalizeCityPayload(await response.json(), normalizeCitySlugValue(citySlug), cityIndex);
     }
-    lastError = new Error(`無法載入 ${path}，HTTP ${response.status}`);
   }
-
-  throw lastError || new Error(`無法載入城市資料：${citySlug}`);
-}
-
-function toCoordinateTuples(items) {
-  return items.reduce((acc, item) => {
-    if (Number.isFinite(item.lat) && Number.isFinite(item.lng)) {
-      acc.push([item.lat, item.lng]);
-    }
-    return acc;
-  }, []);
+  throw new Error(`無法載入城市資料：${citySlug}`);
 }
 
 function normalizeItemsForMap(items) {
@@ -595,7 +421,6 @@ function normalizeItemsForMap(items) {
   const maxLng = Math.max(...lngs);
   const latRange = Math.max(maxLat - minLat, 0.001);
   const lngRange = Math.max(maxLng - minLng, 0.001);
-
   return items.map((item) => ({
     id: item.id,
     left: 10 + ((item.lng - minLng) / lngRange) * 80,
@@ -607,7 +432,7 @@ function distanceScore(spot, baseArea, currentTime) {
   let score = 0;
   if (spot.area === baseArea) score += 3;
   if (spot.bestTime === currentTime) score += 3;
-  if (currentTime === "晚上" && (spot.category === "餐廳" || spot.category === "小吃")) score += 2;
+  if (currentTime === "晚上" && ["餐廳", "小吃"].includes(spot.category)) score += 2;
   if (currentTime === "下午" && ["逛街", "甜點", "寺社"].includes(spot.category)) score += 2;
   if (currentTime === "早上" && ["小吃", "寺社"].includes(spot.category)) score += 2;
   return score;
@@ -637,62 +462,6 @@ function formatEventWindow(event) {
   const timePart = startTime || endTime ? `｜${startTime || "--:--"} - ${endTime || "--:--"}` : "";
   return `${startDate} ～ ${endDate}${timePart}`;
 }
-
-function runDataSanityChecks() {
-  const tuples = toCoordinateTuples(SPOTS_SEED);
-  const normalized = normalizeItemsForMap(SPOTS_SEED);
-  const recommendations = buildRecommendation(filterByCitySlug(SPOTS_SEED, "kyoto"), "佛光寺周邊", "下午");
-  const kyotoOnly = filterByCitySlug(SPOTS_SEED, "kyoto");
-  const osakaOnly = filterByCitySlug(SPOTS_SEED, "osaka");
-  const eventsKyoto = filterByCitySlug(EVENTS_SEED, "kyoto");
-  const fakeCityIndex = normalizeCityIndexPayload({
-    cities: [{ slug: "tokyo", label: "東京", emoji: "🗼" }],
-    meta: { count: 1, generatedBy: "github-actions" },
-  });
-  const fakeCityPayload = normalizeCityPayload(
-    {
-      city: { slug: "kyoto", label: "京都" },
-      spots: [{ id: "t1", citySlug: "kyoto", name: "測試點", lat: 35, lng: 135.7 }],
-      events: [{ id: "e1", citySlug: "kyoto", name: "測試活動", lat: 35, lng: 135.71 }],
-      sources: [{ id: "s1", title: "測試來源", url: "https://example.com" }],
-      meta: { count: 2, generatedBy: "github-actions" },
-    },
-    "kyoto",
-    CITY_INDEX_SEED
-  );
-  const indexPath = cityIndexPath();
-  const kyotoPath = cityDataPath("kyoto");
-  const legacyKyotoPaths = cityDataPaths("京都");
-
-  const testCases = [
-    { name: "BASE_URL 應至少有 fallback 字串", pass: typeof BASE_URL === "string" && BASE_URL.length > 0 },
-    { name: "城市索引路徑應存在", pass: typeof indexPath === "string" && indexPath.includes("data/") },
-    { name: "城市資料路徑應存在", pass: typeof kyotoPath === "string" && kyotoPath.includes("cities/kyoto.json") },
-    { name: "中文城市名稱應可轉成 kyoto 路徑", pass: Array.isArray(legacyKyotoPaths) && legacyKyotoPaths[0]?.includes("cities/kyoto.json") },
-    { name: "城市索引應至少有 2 城", pass: CITY_INDEX_SEED.length >= 2 },
-    { name: "每個 city 都應有 slug", pass: CITY_INDEX_SEED.every((city) => typeof city.slug === "string" && city.slug.length > 0) },
-    { name: "每個 spot 都應有有效座標", pass: tuples.length === SPOTS_SEED.length },
-    { name: "tuple 應為 [lat, lng]", pass: tuples.every((tuple) => Array.isArray(tuple) && tuple.length === 2 && tuple.every((value) => typeof value === "number")) },
-    { name: "地圖點位數量應與 spots 一致", pass: normalized.length === SPOTS_SEED.length },
-    { name: "所有地圖點位 left 應落在 0 到 100", pass: normalized.every((point) => point.left >= 0 && point.left <= 100) },
-    { name: "所有地圖點位 top 應落在 0 到 100", pass: normalized.every((point) => point.top >= 0 && point.top <= 100) },
-    { name: "推薦結果最多 4 筆", pass: recommendations.length <= 4 },
-    { name: "京都篩選結果都應為 kyoto", pass: kyotoOnly.length > 0 && kyotoOnly.every((spot) => spot.citySlug === "kyoto") },
-    { name: "大阪篩選結果都應為 osaka", pass: osakaOnly.length > 0 && osakaOnly.every((spot) => spot.citySlug === "osaka") },
-    { name: "京都 events 篩選應有效", pass: eventsKyoto.length > 0 && eventsKyoto.every((event) => event.citySlug === "kyoto") },
-    { name: "城市索引 normalize 後應保留 count", pass: fakeCityIndex.meta.count === 1 },
-    { name: "城市 payload normalize 後應有 events", pass: fakeCityPayload.events.length === 1 },
-    { name: "每個 source 都應有網址", pass: SOURCES_SEED.every((source) => typeof source.url === "string" && source.url.startsWith("http")) },
-    { name: "每個 spot 都應有 Google Maps 連結", pass: SPOTS_SEED.every((spot) => typeof spot.mapUrl === "string" && spot.mapUrl.includes("google.com/maps")) },
-  ];
-
-  const failed = testCases.filter((test) => !test.pass);
-  if (failed.length > 0) {
-    console.warn("TravelReelsTripPlanner sanity checks failed:", failed.map((item) => item.name));
-  }
-}
-
-runDataSanityChecks();
 
 function chipStyle(category) {
   const theme = CATEGORY_THEME[category] || { bg: COLORS.primarySoft, color: COLORS.text };
@@ -734,7 +503,7 @@ function SectionCard({ children, title, right }) {
   );
 }
 
-function PrimaryButton({ children, href, onClick, secondary = false, block = false }) {
+function PrimaryButton({ children, href, secondary = false, block = false }) {
   const style = {
     display: block ? "flex" : "inline-flex",
     width: block ? "100%" : undefined,
@@ -751,26 +520,16 @@ function PrimaryButton({ children, href, onClick, secondary = false, block = fal
     fontSize: 14,
     cursor: "pointer",
   };
-
-  if (href) {
-    return (
-      <a href={href} target="_blank" rel="noreferrer" style={style}>
-        {children}
-      </a>
-    );
-  }
-
   return (
-    <button type="button" onClick={onClick} style={style}>
+    <a href={href} target="_blank" rel="noreferrer" style={style}>
       {children}
-    </button>
+    </a>
   );
 }
 
 function VisualMap({ items, activeItemId, onSelect }) {
   const points = useMemo(() => normalizeItemsForMap(items), [items]);
   const byId = useMemo(() => new Map(points.map((point) => [point.id, point])), [points]);
-
   return (
     <div style={{ position: "relative", minHeight: 520, overflow: "hidden", borderRadius: 28, border: `1px solid ${COLORS.border}`, background: "linear-gradient(135deg,#fff7ed 0%,#ffffff 48%,#f5f5f4 100%)" }}>
       <div
@@ -783,9 +542,9 @@ function VisualMap({ items, activeItemId, onSelect }) {
         }}
       />
       <div style={{ position: "absolute", left: 20, top: 20, zIndex: 1, background: "rgba(255,255,255,0.88)", border: `1px solid ${COLORS.border}`, borderRadius: 20, padding: 16, maxWidth: 360, backdropFilter: "blur(8px)" }}>
-        <div style={{ fontWeight: 800, fontSize: 15, color: COLORS.text }}>城市分布圖</div>
+        <div style={{ fontWeight: 800, fontSize: 15, color: COLORS.text }}>旅遊大地圖</div>
         <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.6, color: COLORS.subtext }}>
-          這個前台改成城市索引 + 城市資料架構。每個城市 JSON 裡可同時帶 spots、events、sources 與 meta。
+          點選地圖上的位置，即可查看景點或活動資訊。
         </div>
       </div>
       {items.map((item) => {
@@ -820,7 +579,6 @@ function VisualMap({ items, activeItemId, onSelect }) {
                 justifyContent: "center",
                 boxShadow: "0 6px 18px rgba(0,0,0,0.15)",
                 fontSize: 22,
-                transform: active ? "scale(1.08)" : "scale(1)",
               }}
             >
               {item.thumbnail}
@@ -849,25 +607,20 @@ function VisualMap({ items, activeItemId, onSelect }) {
 
 function useResponsiveColumns() {
   const [isMobile, setIsMobile] = useState(false);
-
   useEffect(() => {
     const update = () => setIsMobile(window.innerWidth < 980);
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
-
   return isMobile;
 }
 
 export default function TravelReelsTripPlanner() {
   const [cityIndex, setCityIndex] = useState(CITY_INDEX_SEED);
-  const [cityIndexMeta, setCityIndexMeta] = useState({ generatedBy: "seed", lastSyncedAt: null, count: CITY_INDEX_SEED.length });
   const [selectedCitySlug, setSelectedCitySlug] = useState("unselected");
   const [selectedContentMode, setSelectedContentMode] = useState("spots");
   const [sources, setSources] = useState(SOURCES_SEED);
-  const [fallbackSpots] = useState(SPOTS_SEED);
-  const [fallbackEvents] = useState(EVENTS_SEED);
   const [loadedSpots, setLoadedSpots] = useState([]);
   const [loadedEvents, setLoadedEvents] = useState([]);
   const [search, setSearch] = useState("");
@@ -875,40 +628,21 @@ export default function TravelReelsTripPlanner() {
   const [baseArea, setBaseArea] = useState("");
   const [favorites, setFavorites] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [newUrl, setNewUrl] = useState("");
-  const [bulkText, setBulkText] = useState("");
   const [activeItemId, setActiveItemId] = useState(null);
-  const [loadState, setLoadState] = useState("idle");
-  const [loadError, setLoadError] = useState("");
-  const [syncMeta, setSyncMeta] = useState({
-    lastSyncedAt: null,
-    notionDataSourceId: null,
-    generatedBy: "not-loaded",
-    sourceMode: DATA_SOURCE_MODE,
-    count: 0,
-  });
   const isMobile = useResponsiveColumns();
 
   const hasCitySelected = selectedCitySlug !== "unselected";
 
   useEffect(() => {
     let cancelled = false;
-
     async function loadIndex() {
       try {
         const payload = await fetchCityIndex();
-        if (cancelled) return;
-        if (payload.cities.length) {
-          setCityIndex(payload.cities);
-          setCityIndexMeta(payload.meta);
-        }
+        if (!cancelled && payload.cities.length) setCityIndex(payload.cities);
       } catch (_error) {
-        if (cancelled) return;
-        setCityIndex(CITY_INDEX_SEED);
-        setCityIndexMeta({ generatedBy: "seed", lastSyncedAt: null, count: CITY_INDEX_SEED.length });
+        if (!cancelled) setCityIndex(CITY_INDEX_SEED);
       }
     }
-
     loadIndex();
     return () => {
       cancelled = true;
@@ -917,115 +651,65 @@ export default function TravelReelsTripPlanner() {
 
   useEffect(() => {
     let cancelled = false;
-
     async function loadCityData() {
       if (!hasCitySelected) {
         setLoadedSpots([]);
         setLoadedEvents([]);
         setSources(SOURCES_SEED);
-        setLoadState("idle");
-        setLoadError("");
-        setSyncMeta({
-          lastSyncedAt: null,
-          notionDataSourceId: null,
-          generatedBy: "not-loaded",
-          sourceMode: DATA_SOURCE_MODE,
-          count: 0,
-        });
         setActiveItemId(null);
         setBaseArea("");
         setSelectedCategories([]);
         setFavorites([]);
         return;
       }
-
-      setLoadState("loading");
-      setLoadError("");
-
       try {
         const payload = await fetchCityDataset(selectedCitySlug, cityIndex);
         if (cancelled) return;
-
-        const fallbackSpotsByCity = filterByCitySlug(fallbackSpots, selectedCitySlug);
-        const fallbackEventsByCity = filterByCitySlug(fallbackEvents, selectedCitySlug);
+        const fallbackSpotsByCity = filterByCitySlug(SPOTS_SEED, selectedCitySlug);
+        const fallbackEventsByCity = filterByCitySlug(EVENTS_SEED, selectedCitySlug);
         const safeSpots = payload.spots.length ? payload.spots : fallbackSpotsByCity;
         const safeEvents = payload.events.length ? payload.events : fallbackEventsByCity;
         const safeSources = payload.sources.length ? payload.sources : filterSourcesByLinkedIds([...safeSpots, ...safeEvents], SOURCES_SEED);
-        const firstArea = safeSpots[0]?.area || safeEvents[0]?.area || payload.city.heroArea || "";
-        const defaultActiveId = selectedContentMode === "events"
-          ? safeEvents[0]?.id || safeSpots[0]?.id || null
-          : safeSpots[0]?.id || safeEvents[0]?.id || null;
-
         setLoadedSpots(safeSpots);
         setLoadedEvents(safeEvents);
         setSources(safeSources);
-        setSyncMeta({
-          lastSyncedAt: payload.meta.lastSyncedAt,
-          notionDataSourceId: payload.meta.notionDataSourceId,
-          generatedBy: payload.meta.generatedBy,
-          sourceMode: payload.meta.sourceMode,
-          count: payload.meta.count,
-        });
-        setBaseArea(firstArea);
-        setActiveItemId(defaultActiveId);
-        setSelectedCategories([]);
-        setFavorites([]);
-        setLoadState("ready");
-      } catch (error) {
+        setBaseArea(safeSpots[0]?.area || safeEvents[0]?.area || payload.city.heroArea || "");
+        setActiveItemId((selectedContentMode === "events" ? safeEvents[0]?.id : safeSpots[0]?.id) || safeSpots[0]?.id || safeEvents[0]?.id || null);
+      } catch (_error) {
         if (cancelled) return;
-
-        const fallbackSpotsByCity = filterByCitySlug(fallbackSpots, selectedCitySlug);
-        const fallbackEventsByCity = filterByCitySlug(fallbackEvents, selectedCitySlug);
-        const fallbackSources = filterSourcesByLinkedIds([...fallbackSpotsByCity, ...fallbackEventsByCity], SOURCES_SEED);
-        const defaultActiveId = selectedContentMode === "events"
-          ? fallbackEventsByCity[0]?.id || fallbackSpotsByCity[0]?.id || null
-          : fallbackSpotsByCity[0]?.id || fallbackEventsByCity[0]?.id || null;
-
+        const fallbackSpotsByCity = filterByCitySlug(SPOTS_SEED, selectedCitySlug);
+        const fallbackEventsByCity = filterByCitySlug(EVENTS_SEED, selectedCitySlug);
         setLoadedSpots(fallbackSpotsByCity);
         setLoadedEvents(fallbackEventsByCity);
-        setSources(fallbackSources);
-        setActiveItemId(defaultActiveId);
-        setBaseArea(fallbackSpotsByCity[0]?.area || fallbackEventsByCity[0]?.area || "");
-        setSyncMeta({
-          lastSyncedAt: null,
-          notionDataSourceId: null,
-          generatedBy: "fallback-seed",
-          sourceMode: DATA_SOURCE_MODE,
-          count: fallbackSpotsByCity.length + fallbackEventsByCity.length,
-        });
-        setLoadError(error instanceof Error ? error.message : "載入失敗");
-        setLoadState("fallback");
+        setSources(filterSourcesByLinkedIds([...fallbackSpotsByCity, ...fallbackEventsByCity], SOURCES_SEED));
+        setBaseArea(fallbackSpotsByCity[0]?.area || "");
+        setActiveItemId((selectedContentMode === "events" ? fallbackEventsByCity[0]?.id : fallbackSpotsByCity[0]?.id) || fallbackSpotsByCity[0]?.id || fallbackEventsByCity[0]?.id || null);
       }
+      setSelectedCategories([]);
+      setFavorites([]);
     }
-
     loadCityData();
     return () => {
       cancelled = true;
     };
-  }, [selectedCitySlug, hasCitySelected, cityIndex, fallbackSpots, fallbackEvents, selectedContentMode]);
+  }, [selectedCitySlug, selectedContentMode, hasCitySelected, cityIndex]);
 
-  const selectedCity = useMemo(
-    () => cityIndex.find((city) => city.slug === selectedCitySlug) || null,
-    [cityIndex, selectedCitySlug]
-  );
+  const selectedCity = useMemo(() => cityIndex.find((city) => city.slug === selectedCitySlug) || null, [cityIndex, selectedCitySlug]);
 
   const allAreas = useMemo(() => {
     const base = selectedContentMode === "events" ? loadedEvents : loadedSpots;
     return [...new Set(base.map((item) => item.area).filter(Boolean))];
-  }, [loadedSpots, loadedEvents, selectedContentMode]);
+  }, [loadedEvents, loadedSpots, selectedContentMode]);
 
   const allCategories = useMemo(() => {
     const base = selectedContentMode === "events" ? loadedEvents : loadedSpots;
     return [...new Set(base.map((item) => item.category).filter(Boolean))];
-  }, [loadedSpots, loadedEvents, selectedContentMode]);
+  }, [loadedEvents, loadedSpots, selectedContentMode]);
 
   const filteredSpots = useMemo(() => {
     return loadedSpots.filter((spot) => {
       const categoryMatches = selectedCategories.length === 0 || selectedCategories.includes(spot.category);
-      const searchMatches =
-        search.trim().length === 0
-          ? true
-          : `${spot.name} ${spot.description} ${spot.tags.join(" ")} ${spot.area}`.toLowerCase().includes(search.toLowerCase());
+      const searchMatches = !search.trim() || `${spot.name} ${spot.description} ${spot.tags.join(" ")} ${spot.area}`.toLowerCase().includes(search.toLowerCase());
       return categoryMatches && searchMatches;
     });
   }, [loadedSpots, selectedCategories, search]);
@@ -1033,10 +717,7 @@ export default function TravelReelsTripPlanner() {
   const filteredEvents = useMemo(() => {
     return loadedEvents.filter((event) => {
       const categoryMatches = selectedCategories.length === 0 || selectedCategories.includes(event.category);
-      const searchMatches =
-        search.trim().length === 0
-          ? true
-          : `${event.name} ${event.description} ${event.tags.join(" ")} ${event.area}`.toLowerCase().includes(search.toLowerCase());
+      const searchMatches = !search.trim() || `${event.name} ${event.description} ${event.tags.join(" ")} ${event.area}`.toLowerCase().includes(search.toLowerCase());
       return categoryMatches && searchMatches;
     });
   }, [loadedEvents, selectedCategories, search]);
@@ -1060,12 +741,10 @@ export default function TravelReelsTripPlanner() {
 
   const cityStats = useMemo(() => ({
     cities: cityIndex.length,
-    spots: fallbackSpots.length,
-    events: fallbackEvents.length,
-    sources: SOURCES_SEED.length,
-  }), [cityIndex, fallbackSpots, fallbackEvents]);
-
-  const totalStay = recommendations.reduce((sum, spot) => sum + spot.stayMinutes, 0);
+    spots: SPOTS_SEED.length,
+    events: loadedEvents.length,
+    picks: recommendations.length,
+  }), [cityIndex, loadedEvents.length, recommendations.length]);
 
   function toggleCategory(category) {
     setSelectedCategories((prev) => (prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category]));
@@ -1075,123 +754,56 @@ export default function TravelReelsTripPlanner() {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   }
 
-  function addPendingUrl(url) {
-    const clean = url.trim();
-    if (!clean) return;
-    setSources((prev) => [
-      {
-        id: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        title: "待整理的新來源",
-        url: clean,
-        platform: "手動新增",
-        status: "待整理",
-        note: "這筆網址已先加入來源清單，後續可再解析內容並寫回 Notion Sources。",
-      },
-      ...prev,
-    ]);
-  }
-
-  function bulkAddUrls() {
-    const urls = bulkText
-      .split(/\n|\s+/)
-      .map((value) => value.trim())
-      .filter((value) => value.startsWith("http"));
-    urls.forEach((url) => addPendingUrl(url));
-    setBulkText("");
-  }
-
   return (
     <div style={{ minHeight: "100vh", background: COLORS.pageBg, color: COLORS.text, fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: isMobile ? 16 : 28 }}>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr", gap: 16, alignItems: "stretch" }}>
           <SectionCard>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <span style={{ ...chipStyle("景點"), background: COLORS.primary, color: "#ffffff", borderColor: COLORS.primary }}>旅遊 Reels 行程頁 v2</span>
-              <span style={{ ...chipStyle("寺社"), background: "#ffffff", color: COLORS.subtext, border: `1px solid ${COLORS.border}` }}>Cities / Spots / Events / Sources</span>
-              <span style={{ ...chipStyle("逛街"), background: "#ffffff", color: COLORS.subtext, border: `1px solid ${COLORS.border}` }}>城市索引載入</span>
-              <span style={{ ...chipStyle("活動"), background: "#ffffff", color: COLORS.subtext, border: `1px solid ${COLORS.border}` }}>Notion 主資料庫模式</span>
+              <span style={{ ...chipStyle("景點"), background: COLORS.primary, color: "#ffffff", borderColor: COLORS.primary }}>旅遊行程地圖</span>
+              <span style={{ ...chipStyle("寺社"), background: "#ffffff", color: COLORS.subtext, border: `1px solid ${COLORS.border}` }}>城市精選</span>
+              <span style={{ ...chipStyle("逛街"), background: "#ffffff", color: COLORS.subtext, border: `1px solid ${COLORS.border}` }}>景點與活動</span>
             </div>
-
             <div style={{ marginTop: 18 }}>
               <h1 style={{ margin: 0, fontSize: isMobile ? 30 : 52, lineHeight: 1.08, fontWeight: 900 }}>
-                旅遊頁資料架構
+                把旅遊靈感整理成
                 <br />
-                升級成城市索引＋景點／活動分流
+                可直接使用的城市地圖與行程頁
               </h1>
               <p style={{ marginTop: 14, maxWidth: 820, color: COLORS.subtext, fontSize: 16, lineHeight: 1.8 }}>
-                這版把前台從固定城市常數升級成動態城市索引。未來新增東京、福岡、沖繩，只要在 Notion Cities / Spots / Events / Sources 補資料，GitHub Actions 產出新的 JSON，前台就能直接出現新城市與新內容。
+                依城市查看景點、活動、地圖位置與推薦安排，快速整理出更直覺的旅遊路線。
               </p>
             </div>
-
-            <div style={{ marginTop: 18, borderRadius: 20, border: `1px solid ${COLORS.border}`, background: "#ffffff", padding: 16 }}>
-              <div style={{ fontSize: 13, color: COLORS.subtext }}>資料來源模式</div>
-              <div style={{ marginTop: 8, fontSize: 15, fontWeight: 800 }}>{DATA_SOURCE_MODE}</div>
-              <div style={{ marginTop: 8, fontSize: 13, color: COLORS.subtext, lineHeight: 1.8 }}>
-                前端先讀取 data/cities/index.json，再依選擇的 city slug 載入 data/cities/&lt;slug&gt;.json。城市資料檔內同時包含 spots、events、sources 與 meta。
-              </div>
-            </div>
-
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginTop: 20 }}>
-              <MetricCard label="城市數" value={String(cityStats.cities)} sub="Cities Index" />
-              <MetricCard label="景點數" value={String(cityStats.spots)} sub="Spots Seed" />
-              <MetricCard label="活動數" value={String(cityStats.events)} sub="Events Seed" />
-              <MetricCard label="來源數" value={String(cityStats.sources)} sub="Sources Seed" />
+              <MetricCard label="城市數" value={String(cityStats.cities)} sub="持續擴充中" />
+              <MetricCard label="景點數" value={String(cityStats.spots)} sub="目前可瀏覽" />
+              <MetricCard label="活動數" value={String(cityStats.events)} sub="已發布內容" />
+              <MetricCard label="推薦安排" value={String(cityStats.picks)} sub="依時間與區域計算" />
             </div>
           </SectionCard>
 
           <div style={{ background: COLORS.primary, color: "#ffffff", borderRadius: 28, padding: 24, boxShadow: "0 10px 35px rgba(0,0,0,0.14)" }}>
-            <div style={{ fontSize: 13, color: "#d6d3d1" }}>Notion 主資料庫規劃</div>
-            <div style={{ marginTop: 8, fontSize: 30, fontWeight: 900 }}>同步與整理入口</div>
-
+            <div style={{ fontSize: 13, color: "#d6d3d1" }}>使用方式</div>
+            <div style={{ marginTop: 8, fontSize: 30, fontWeight: 900 }}>快速規劃旅程</div>
             <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
               <div style={{ borderRadius: 20, background: "rgba(255,255,255,0.10)", padding: 16 }}>
-                <div style={{ fontWeight: 800 }}>1. Cities</div>
-                <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>管理城市索引、slug、emoji、region、heroArea、狀態與排序。</div>
+                <div style={{ fontWeight: 800 }}>1. 先選城市</div>
+                <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>先切換想查看的城市，再依喜好瀏覽景點與活動。</div>
               </div>
               <div style={{ borderRadius: 20, background: "rgba(255,255,255,0.10)", padding: 16 }}>
-                <div style={{ fontWeight: 800 }}>2. Spots</div>
-                <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>管理固定地點，例如景點、餐廳、小吃、寺社、逛街、甜點。</div>
+                <div style={{ fontWeight: 800 }}>2. 看地圖與圖卡</div>
+                <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>直接用地圖定位位置，也可以切成圖卡方式比對內容。</div>
               </div>
               <div style={{ borderRadius: 20, background: "rgba(255,255,255,0.10)", padding: 16 }}>
-                <div style={{ fontWeight: 800 }}>3. Events</div>
-                <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>管理有日期的活動，例如祭典、市集、展覽、快閃活動。</div>
-              </div>
-              <div style={{ borderRadius: 20, background: "rgba(255,255,255,0.10)", padding: 16 }}>
-                <div style={{ fontWeight: 800 }}>4. Sources</div>
-                <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>管理 Reels、Threads、文章、地圖連結與整理狀態。</div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 18 }}>
-              <input
-                value={newUrl}
-                onChange={(e) => setNewUrl(e.target.value)}
-                placeholder="貼上新的 Reel / 文章 / Google Map 網址"
-                style={{ width: "100%", borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none" }}
-              />
-              <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
-                <PrimaryButton onClick={() => { addPendingUrl(newUrl); setNewUrl(""); }}>先加入待整理</PrimaryButton>
-                <PrimaryButton secondary>後續整理後寫回 Notion Sources</PrimaryButton>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 18 }}>
-              <div style={{ fontSize: 13, color: "#d6d3d1" }}>也可以一次貼多筆網址</div>
-              <textarea
-                value={bulkText}
-                onChange={(e) => setBulkText(e.target.value)}
-                placeholder={`https://www.instagram.com/reel/...\nhttps://www.instagram.com/reel/...\nhttps://maps.app.goo.gl/...`}
-                style={{ width: "100%", minHeight: 130, marginTop: 8, borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: 16, outline: "none", resize: "vertical" }}
-              />
-              <div style={{ marginTop: 12 }}>
-                <PrimaryButton secondary onClick={bulkAddUrls}>批次加入來源清單</PrimaryButton>
+                <div style={{ fontWeight: 800 }}>3. 安排行程順序</div>
+                <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>依目前時間與所在區域，快速挑出比較順路的安排方式。</div>
               </div>
             </div>
           </div>
         </div>
 
         <div style={{ marginTop: 20 }}>
-          <SectionCard title="城市入口索引" right={<span style={{ fontSize: 12, color: COLORS.subtext }}>來源：{cityIndexMeta.generatedBy} / {cityIndexMeta.count} cities</span>}>
+          <SectionCard title="城市入口">
             <div style={{ display: "grid", gap: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
               {cityIndex.map((city) => {
                 const active = selectedCitySlug === city.slug;
@@ -1210,23 +822,15 @@ export default function TravelReelsTripPlanner() {
                       cursor: "pointer",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-                      <div>
-                        <div style={{ fontSize: 34 }}>{city.emoji}</div>
-                        <div style={{ marginTop: 8, fontSize: 24, fontWeight: 900 }}>{city.label}</div>
-                        <div style={{ marginTop: 4, fontSize: 13, color: COLORS.subtext }}>{city.region}</div>
-                      </div>
-                      <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 12, background: active ? COLORS.primary : COLORS.primarySoft, color: active ? "#fff" : COLORS.text }}>
-                        {city.status}
-                      </span>
-                    </div>
+                    <div style={{ fontSize: 34 }}>{city.emoji}</div>
+                    <div style={{ marginTop: 8, fontSize: 24, fontWeight: 900 }}>{city.label}</div>
+                    <div style={{ marginTop: 4, fontSize: 13, color: COLORS.subtext }}>{city.region}</div>
                     <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.8, color: COLORS.subtext }}>{city.description}</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                       {city.spotlight.map((item) => (
                         <span key={item} style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{item}</span>
                       ))}
                     </div>
-                    <div style={{ marginTop: 12, fontSize: 12, color: COLORS.subtext }}>slug: {city.slug} / heroArea: {city.heroArea || "未設定"}</div>
                   </button>
                 );
               })}
@@ -1234,34 +838,10 @@ export default function TravelReelsTripPlanner() {
           </SectionCard>
         </div>
 
-        <div style={{ marginTop: 20 }}>
-          <SectionCard title="已匯入來源">
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-              {sources.map((source) => (
-                <div key={source.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 22, background: COLORS.card, padding: 18 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-                    <div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        <span style={{ border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{source.platform}</span>
-                        <span style={{ borderRadius: 999, padding: "4px 10px", fontSize: 12, background: COLORS.primary, color: "#ffffff" }}>{source.status}</span>
-                      </div>
-                      <div style={{ marginTop: 10, fontWeight: 800, fontSize: 16 }}>{source.title}</div>
-                      <div style={{ marginTop: 8, color: COLORS.subtext, fontSize: 14, lineHeight: 1.7 }}>{source.note}</div>
-                    </div>
-                    <a href={source.url} target="_blank" rel="noreferrer" style={{ color: COLORS.text, textUnderlineOffset: 4, fontSize: 14, fontWeight: 700 }}>
-                      原始連結
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-        </div>
-
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.2fr 1.2fr 0.9fr", gap: 16, marginTop: 20 }}>
           <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
             <SectionCard
-              title={selectedCity ? `${selectedCity.label} 城市資料` : "城市資料"}
+              title={selectedCity ? `${selectedCity.label} 旅遊地圖` : "城市地圖"}
               right={
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <input
@@ -1300,12 +880,11 @@ export default function TravelReelsTripPlanner() {
                           fontWeight: 700,
                         }}
                       >
-                        {mode === "spots" ? `景點 Spots (${loadedSpots.length})` : `活動 Events (${loadedEvents.length})`}
+                        {mode === "spots" ? `景點 (${loadedSpots.length})` : `活動 (${loadedEvents.length})`}
                       </button>
                     );
                   })}
                 </div>
-
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {allCategories.map((category) => {
                     const active = selectedCategories.includes(category);
@@ -1329,26 +908,9 @@ export default function TravelReelsTripPlanner() {
                     );
                   })}
                 </div>
-
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                  <span style={{ borderRadius: 999, padding: "6px 12px", background: COLORS.primarySoft, fontSize: 12, color: COLORS.subtext }}>載入狀態：{loadState}</span>
-                  <span style={{ borderRadius: 999, padding: "6px 12px", background: "#eff6ff", fontSize: 12, color: COLORS.info }}>來源：{syncMeta.generatedBy}</span>
-                  <span style={{ borderRadius: 999, padding: "6px 12px", background: "#f0fdf4", fontSize: 12, color: COLORS.success }}>筆數：{syncMeta.count}</span>
-                  {syncMeta.lastSyncedAt ? (
-                    <span style={{ borderRadius: 999, padding: "6px 12px", background: "#fff7ed", fontSize: 12, color: COLORS.accent }}>上次同步：{syncMeta.lastSyncedAt}</span>
-                  ) : null}
-                </div>
-
                 {selectedCity ? (
                   <div style={{ borderRadius: 18, background: COLORS.primarySoft, padding: 14, fontSize: 13, color: COLORS.subtext, lineHeight: 1.8 }}>
                     {selectedCity.emoji} {selectedCity.label}：{selectedCity.description}
-                    {selectedCity.heroArea ? ` 目前主推薦區域會優先採用 ${selectedCity.heroArea}。` : ""}
-                  </div>
-                ) : null}
-
-                {loadError ? (
-                  <div style={{ borderRadius: 18, background: "#fef2f2", color: "#991b1b", padding: 12, fontSize: 13, lineHeight: 1.7 }}>
-                    目前尚未找到對應城市的 JSON，已自動改用前端 seed 作 fallback。錯誤：{loadError}
                   </div>
                 ) : null}
               </div>
@@ -1359,7 +921,7 @@ export default function TravelReelsTripPlanner() {
                 <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 28, textAlign: "center", color: COLORS.subtext }}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.text }}>請先選擇城市</div>
                   <div style={{ marginTop: 10, lineHeight: 1.8 }}>
-                    前台會先讀取城市索引，再依城市 slug 載入該城市的 JSON。未來新增城市時，不需要再改前端常數。
+                    先選擇想看的城市，即可切換對應的景點、活動與推薦安排。
                   </div>
                 </div>
               )}
@@ -1373,11 +935,6 @@ export default function TravelReelsTripPlanner() {
                         <div>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                             <span style={chipStyle(activeItem.category)}>{activeItem.category}</span>
-                            {selectedContentMode === "spots" ? (
-                              <span style={{ border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: "6px 12px", fontSize: 12 }}>{activeItem.confidence}</span>
-                            ) : (
-                              <span style={{ border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: "6px 12px", fontSize: 12 }}>{activeItem.status}</span>
-                            )}
                           </div>
                           <div style={{ marginTop: 10, fontSize: 22, fontWeight: 900 }}>{activeItem.name}</div>
                           <div style={{ marginTop: 6, fontSize: 14, color: COLORS.subtext }}>{activeItem.city}・{activeItem.area}</div>
@@ -1392,8 +949,6 @@ export default function TravelReelsTripPlanner() {
                       {selectedContentMode === "events" ? (
                         <div style={{ marginTop: 14, borderRadius: 18, background: COLORS.warningBg, color: COLORS.warningText, padding: 14, fontSize: 13, lineHeight: 1.8 }}>
                           活動期間：{formatEventWindow(activeItem)}
-                          <br />
-                          票務：{activeItem.ticketType || "未設定"} {activeItem.priceNote ? `／ ${activeItem.priceNote}` : ""}
                         </div>
                       ) : null}
                     </>
@@ -1403,7 +958,7 @@ export default function TravelReelsTripPlanner() {
                 </div>
 
                 <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 20 }}>
-                  <div style={{ fontSize: 13, color: COLORS.subtext }}>操作</div>
+                  <div style={{ fontSize: 13, color: COLORS.subtext }}>快速操作</div>
                   <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
                     {activeItem ? (
                       <>
@@ -1413,20 +968,14 @@ export default function TravelReelsTripPlanner() {
                     ) : null}
                   </div>
                   <div style={{ marginTop: 14, fontSize: 12, color: COLORS.subtext, lineHeight: 1.7 }}>
-                    這一區保留互動地圖體驗，但不依賴外部地圖套件，因此更適合放在 GitHub Pages。Notion 的真正讀寫同步，會由 GitHub Actions 使用 Secrets 與 Integration Token 在背景完成。
+                    可直接開啟 Google Maps 或查看對應來源，方便安排實際路線與收藏靈感。
                   </div>
-                  {syncMeta.notionDataSourceId ? (
-                    <div style={{ marginTop: 12, fontSize: 12, color: COLORS.subtext, wordBreak: "break-all" }}>Data Source ID: {syncMeta.notionDataSourceId}</div>
-                  ) : null}
-                  {selectedCity ? (
-                    <div style={{ marginTop: 12, fontSize: 12, color: COLORS.subtext }}>City slug: {selectedCity.slug} / region: {selectedCity.region}</div>
-                  ) : null}
                 </div>
               </div>
             </SectionCard>
           </div>
 
-          <SectionCard title="現在怎麼排最順">
+          <SectionCard title="推薦安排">
             <div style={{ display: "grid", gap: 14 }}>
               <div>
                 <div style={{ fontSize: 13, color: COLORS.subtext, marginBottom: 8 }}>目前時間</div>
@@ -1446,17 +995,15 @@ export default function TravelReelsTripPlanner() {
                 </select>
               </div>
             </div>
-
             <div style={{ marginTop: 16, borderRadius: 20, background: COLORS.primarySoft, padding: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14, color: COLORS.subtext }}>
                 <span>推薦停留總時數</span>
-                <span>{Math.round((totalStay / 60) * 10) / 10} 小時</span>
+                <span>{Math.round((recommendations.reduce((sum, spot) => sum + spot.stayMinutes, 0) / 60) * 10) / 10} 小時</span>
               </div>
               <div style={{ marginTop: 8, fontSize: 12, color: COLORS.subtext }}>
-                推薦邏輯目前以 Spots 為主，Events 主要負責期間型內容展示。未來可再進一步做活動與景點混排行程。
+                依你目前的時間與所在區域，快速挑出較順路的安排方式。
               </div>
             </div>
-
             <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
               {recommendations.map((item) => (
                 <div key={item.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 22, background: COLORS.card, padding: 16 }}>
@@ -1480,10 +1027,6 @@ export default function TravelReelsTripPlanner() {
                 <div style={{ borderRadius: 18, background: COLORS.cardMuted, padding: 16, color: COLORS.subtext }}>目前這個城市還沒有可推薦的景點資料。</div>
               ) : null}
             </div>
-
-            <div style={{ marginTop: 16 }}>
-              <PrimaryButton secondary block>後續可再擴充成完整日程表</PrimaryButton>
-            </div>
           </SectionCard>
         </div>
 
@@ -1500,29 +1043,29 @@ export default function TravelReelsTripPlanner() {
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                             <span style={{ fontSize: 36 }}>{item.thumbnail}</span>
                             <span style={chipStyle(item.category)}>{item.category}</span>
-                            <span style={{ border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: "6px 10px", fontSize: 12 }}>{selectedContentMode === "spots" ? item.confidence : item.status}</span>
                           </div>
                           <div style={{ marginTop: 12, fontSize: 22, fontWeight: 900, lineHeight: 1.2 }}>{item.name}</div>
                           <div style={{ marginTop: 6, fontSize: 14, color: COLORS.subtext }}>{item.city}・{item.area}</div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => toggleFavorite(item.id)}
-                          style={{
-                            width: 42,
-                            height: 42,
-                            borderRadius: 999,
-                            border: `1px solid ${COLORS.border}`,
-                            background: favored ? "#fee2e2" : "#ffffff",
-                            cursor: "pointer",
-                            fontSize: 18,
-                          }}
-                        >
-                          {favored ? "❤️" : "🤍"}
-                        </button>
+                        {selectedContentMode === "spots" ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleFavorite(item.id)}
+                            style={{
+                              width: 42,
+                              height: 42,
+                              borderRadius: 999,
+                              border: `1px solid ${COLORS.border}`,
+                              background: favored ? "#fee2e2" : "#ffffff",
+                              cursor: "pointer",
+                              fontSize: 18,
+                            }}
+                          >
+                            {favored ? "❤️" : "🤍"}
+                          </button>
+                        ) : null}
                       </div>
                     </div>
-
                     <div style={{ padding: 20 }}>
                       <div style={{ fontSize: 14, color: COLORS.subtext, lineHeight: 1.8 }}>{item.description}</div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
@@ -1530,7 +1073,6 @@ export default function TravelReelsTripPlanner() {
                           <span key={tag} style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>#{tag}</span>
                         ))}
                       </div>
-
                       {selectedContentMode === "spots" ? (
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
                           <div style={{ borderRadius: 18, background: COLORS.primarySoft, padding: 14 }}>
@@ -1545,11 +1087,8 @@ export default function TravelReelsTripPlanner() {
                       ) : (
                         <div style={{ marginTop: 16, borderRadius: 18, background: COLORS.warningBg, color: COLORS.warningText, padding: 14, fontSize: 13, lineHeight: 1.8 }}>
                           活動期間：{formatEventWindow(item)}
-                          <br />
-                          票務：{item.ticketType || "未設定"} {item.priceNote ? `／ ${item.priceNote}` : ""}
                         </div>
                       )}
-
                       <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
                         <PrimaryButton href={item.mapUrl} block secondary>Google Maps</PrimaryButton>
                         <PrimaryButton href={item.sourceUrl} block>原始來源</PrimaryButton>
@@ -1558,7 +1097,7 @@ export default function TravelReelsTripPlanner() {
                   </div>
                 );
               }) : (
-                <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 24, color: COLORS.subtext }}>請先選擇城市，才會載入該城市的景點／活動圖卡。</div>
+                <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 24, color: COLORS.subtext }}>請先選擇城市，才會載入該城市的景點或活動圖卡。</div>
               )}
             </div>
           </SectionCard>
@@ -1567,27 +1106,27 @@ export default function TravelReelsTripPlanner() {
         <div style={{ marginTop: 20, background: COLORS.primary, color: "#ffffff", borderRadius: 28, padding: isMobile ? 20 : 28, boxShadow: "0 10px 35px rgba(0,0,0,0.14)" }}>
           <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "1.2fr 1fr 1fr" }}>
             <div>
-              <div style={{ fontSize: 28, fontWeight: 900 }}>下一步可以怎麼擴充</div>
+              <div style={{ fontSize: 28, fontWeight: 900 }}>更多旅遊靈感</div>
               <div style={{ marginTop: 10, lineHeight: 1.8, color: "#d6d3d1" }}>
-                目前已經是可以展示、篩選、看點位、看推薦路線的旅遊原型。後續只要在 Notion 補上新城市、新景點、新活動與新來源，GitHub Actions 就能把它同步成新的前台 JSON。
+                之後可持續加入更多城市、景點與活動內容，讓整體旅遊地圖越來越完整。
               </div>
             </div>
             <div style={{ borderRadius: 24, background: "rgba(255,255,255,0.10)", padding: 20 }}>
-              <div style={{ fontWeight: 800 }}>已具備</div>
+              <div style={{ fontWeight: 800 }}>目前可以使用</div>
               <ul style={{ marginTop: 12, paddingLeft: 20, lineHeight: 1.9, color: "#e7e5e4" }}>
-                <li>城市索引載入</li>
-                <li>景點 / 活動分流</li>
-                <li>來源獨立管理</li>
-                <li>依時間／區域推薦路線</li>
+                <li>城市切換</li>
+                <li>景點與活動瀏覽</li>
+                <li>地圖定位查看</li>
+                <li>推薦順路安排</li>
               </ul>
             </div>
             <div style={{ borderRadius: 24, background: "rgba(255,255,255,0.10)", padding: 20 }}>
-              <div style={{ fontWeight: 800 }}>可再接</div>
+              <div style={{ fontWeight: 800 }}>旅程操作</div>
               <ul style={{ marginTop: 12, paddingLeft: 20, lineHeight: 1.9, color: "#e7e5e4" }}>
-                <li>GitHub Pages 部署</li>
-                <li>manifest 與桌面圖示</li>
-                <li>Notion → JSON 同步 workflow</li>
-                <li>Cities / Spots / Events / Sources 四庫同步</li>
+                <li>查看 Google Maps</li>
+                <li>打開原始來源</li>
+                <li>收藏喜歡的點位</li>
+                <li>依時段規劃路線</li>
               </ul>
             </div>
           </div>
