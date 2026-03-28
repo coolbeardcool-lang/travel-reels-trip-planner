@@ -338,6 +338,27 @@
   ],
   "sources": [
     {
+      "id": "33124c5d-f0b3-818b-bebb-ec61c2d36006",
+      "title": "釜山・測試釜山城市",
+      "url": "https://www.instagram.com/reel/testcity/",
+      "platform": "Instagram",
+      "sourceType": "景點美食",
+      "status": "已匯入",
+      "note": "測試釜山城市",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "busan"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33124c5d-f0b3-816d-a764-cede1355c409",
       "title": "首爾・弘大美味韓牛餐廳推薦",
       "url": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
@@ -487,7 +508,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T12:56:59.457Z",
+    "lastSyncedAt": "2026-03-28T12:58:07.518Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
