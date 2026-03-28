@@ -43,9 +43,7 @@ async function notionFetch(url, options = {}) {
   return response.json();
 }
 
-// useDatabase=true 用 /databases/{id}/query（標準 API）
-// useDatabase=false 用 /data_sources/{id}/query（Notion 內部 API）
-async function queryAllRows(dataSourceId, useDatabase = false) {
+async function queryAllRows(dataSourceId) {
   let results = [];
   let hasMore = true;
   let startCursor = undefined;
@@ -57,11 +55,10 @@ async function queryAllRows(dataSourceId, useDatabase = false) {
       ...(startCursor ? { start_cursor: startCursor } : {}),
     };
 
-    const url = useDatabase
-      ? `${NOTION_BASE_URL}/databases/${dataSourceId}/query`
-      : `${NOTION_BASE_URL}/data_sources/${dataSourceId}/query`;
-
-    const data = await notionFetch(url, { method: "POST", body: JSON.stringify(body) });
+    const data = await notionFetch(
+      `${NOTION_BASE_URL}/data_sources/${dataSourceId}/query`,
+      { method: "POST", body: JSON.stringify(body) }
+    );
 
     results = results.concat(data.results || []);
     hasMore = Boolean(data.has_more);
@@ -263,9 +260,8 @@ async function writeJsonFile(filepath, data) {
 }
 
 async function main() {
-  // Cities 用標準 databases API，其他三張用 data_sources API
   const [citiesPages, sourcesPages, spotsPages, eventsPages] = await Promise.all([
-    queryAllRows(NOTION_CITIES_DATA_SOURCE_ID, true),
+    queryAllRows(NOTION_CITIES_DATA_SOURCE_ID),
     queryAllRows(NOTION_SOURCES_DATA_SOURCE_ID),
     queryAllRows(NOTION_SPOTS_DATA_SOURCE_ID),
     queryAllRows(NOTION_EVENTS_DATA_SOURCE_ID),
