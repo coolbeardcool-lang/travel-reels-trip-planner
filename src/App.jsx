@@ -180,45 +180,185 @@ async function fetchCityDataset(citySlug, cityIndex) {
   throw new Error(`無法載入城市資料：${citySlug}`);
 }
 
+function normalizeEvidenceList(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      if (typeof entry === "string") {
+        const text = entry.trim();
+        return text ? { type: "note", value: text } : null;
+      }
+      if (!entry || typeof entry !== "object") return null;
+
+      const type = String(entry.type || entry.kind || "note").trim();
+      const text = String(entry.value || entry.text || "").trim();
+      if (!text) return null;
+
+      return { type, value: text };
+    })
+    .filter(Boolean);
+}
+
+function inferAnalysisItemKind(item, contentKind) {
+  const explicit = item.itemKind || item.item_kind;
+  if (explicit === "spot" || explicit === "event" || explicit === "source_only") {
+    return explicit;
+  }
+
+  if (
+    item.starts_on ||
+    item.ends_on ||
+    item.start_time ||
+    item.end_time ||
+    item.price_note ||
+    item.ticket_type ||
+    item.venue_name
+  ) {
+    return "event";
+  }
+
+  if (contentKind === "spot" || contentKind === "event") {
+    return contentKind;
+  }
+
+  return "spot";
+}
+
 function normalizeAnalysisPayload(payload, fallback = {}) {
   const items = Array.isArray(payload?.items) ? payload.items : [];
-  const contentKind = payload?.contentKind || payload?.content_kind || fallback.contentKind || "source_only";
+  const contentKind =
+    payload?.contentKind ||
+    payload?.content_kind ||
+    fallback.contentKind ||
+    "source_only";
+
   return {
-    sourceTitle: payload?.sourceTitle || payload?.source_title || fallback.sourceTitle || "未命名來源",
-    sourcePlatform: payload?.sourcePlatform || payload?.source_platform || fallback.sourcePlatform || "未知來源",
+    schemaVersion:
+      payload?.schemaVersion ||
+      payload?.schema_version ||
+      "1.0",
+    sourceTitle:
+      payload?.sourceTitle ||
+      payload?.source_title ||
+      fallback.sourceTitle ||
+      "未命名來源",
+    sourcePlatform:
+      payload?.sourcePlatform ||
+      payload?.source_platform ||
+      fallback.sourcePlatform ||
+      "未知來源",
     contentKind,
-    citySlug: normalizeCitySlugValue(payload?.citySlug || payload?.city_slug || fallback.citySlug || ""),
+    citySlug: normalizeCitySlugValue(
+      payload?.citySlug ||
+        payload?.city_slug ||
+        fallback.citySlug ||
+        ""
+    ),
     area: payload?.area || fallback.area || "",
-    confidence: Number.isFinite(payload?.confidence) ? payload.confidence : Number(payload?.confidence) || 0,
-    needsReview: payload?.needsReview !== false && payload?.needs_review !== false,
+    confidence: Number.isFinite(payload?.confidence)
+      ? payload.confidence
+      : Number(payload?.confidence) || 0,
+    needsReview:
+      payload?.needsReview !== false && payload?.needs_review !== false,
     summary: payload?.summary || fallback.summary || "",
+    reviewReason:
+      payload?.reviewReason ||
+      payload?.review_reason ||
+      "",
+    sourceCredibility:
+      payload?.sourceCredibility ||
+      payload?.source_credibility ||
+      "medium",
+    extractionMode:
+      payload?.extractionMode ||
+      payload?.extraction_mode ||
+      "metadata_only",
+    sourceEvidence: normalizeEvidenceList(
+      payload?.sourceEvidence || payload?.source_evidence
+    ),
     analysis_id: payload?.analysis_id || payload?.analysisId || "",
     cached: Boolean(payload?.cached),
-    items: items.map((item, index) => ({
-      id: item.id || `analysis-item-${index}`,
-      name: item.name || `候選項目 ${index + 1}`,
-      category: item.category || (contentKind === "event" ? "活動" : "景點"),
-      description: item.description || "",
-      tags: Array.isArray(item.tags) ? item.tags : [],
-      area: item.area || payload?.area || fallback.area || "",
-      best_time: item.best_time || "",
-      stay_minutes: Number.isFinite(item.stay_minutes) ? item.stay_minutes : Number(item.stay_minutes) || 0,
-      starts_on: item.starts_on || null,
-      ends_on: item.ends_on || null,
-      reason: item.reason || "",
-    })),
+    items: items.map((item, index) => {
+      const itemKind = inferAnalysisItemKind(item, contentKind);
+      return {
+        id: item.id || `analysis-item-${index}`,
+        name: item.name || `候選項目 ${index + 1}`,
+        itemKind,
+        category:
+          item.category ||
+          (itemKind === "event" ? "活動" : "景點"),
+        description: item.description || "",
+        tags: Array.isArray(item.tags) ? item.tags : [],
+        citySlug: normalizeCitySlugValue(
+          item.citySlug ||
+            item.city_slug ||
+            payload?.citySlug ||
+            payload?.city_slug ||
+            fallback.citySlug ||
+            ""
+        ),
+        area:
+          item.area ||
+          payload?.area ||
+          fallback.area ||
+          "",
+        best_time: item.best_time || "",
+        stay_minutes: Number.isFinite(item.stay_minutes)
+          ? item.stay_minutes
+          : Number(item.stay_minutes) || 0,
+        starts_on: item.starts_on || null,
+        ends_on: item.ends_on || null,
+        start_time: item.start_time || "",
+        end_time: item.end_time || "",
+        lat: Number.isFinite(item.lat) ? item.lat : Number(item.lat),
+        lng: Number.isFinite(item.lng) ? item.lng : Number(item.lng),
+        map_url: item.map_url || "",
+        official_url: item.official_url || "",
+        venue_name: item.venue_name || "",
+        price_note: item.price_note || "",
+        ticket_type: item.ticket_type || "",
+        thumbnail: item.thumbnail || "",
+        itemConfidence: Number.isFinite(item.itemConfidence)
+          ? item.itemConfidence
+          : Number(item.item_confidence) || 0,
+        sourceCredibility:
+          item.sourceCredibility ||
+          item.source_credibility ||
+          payload?.sourceCredibility ||
+          payload?.source_credibility ||
+          "medium",
+        needsReview:
+          item.needsReview !== false && item.needs_review !== false,
+        reviewReason:
+          item.reviewReason ||
+          item.review_reason ||
+          "",
+        evidence: normalizeEvidenceList(item.evidence),
+        reason: item.reason || "",
+      };
+    }),
   };
 }
 
 function normalizeItemsForMap(items) {
-  if (!items.length) return [];
-  const lats = items.map((i) => i.lat);
-  const lngs = items.map((i) => i.lng);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+  const validItems = items.filter(
+    (item) => Number.isFinite(item.lat) && Number.isFinite(item.lng)
+  );
+
+  if (!validItems.length) return [];
+
+  const lats = validItems.map((i) => i.lat);
+  const lngs = validItems.map((i) => i.lng);
+
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+
   const latRange = Math.max(maxLat - minLat, 0.001);
   const lngRange = Math.max(maxLng - minLng, 0.001);
-  return items.map((item) => ({
+
+  return validItems.map((item) => ({
     id: item.id,
     left: 10 + ((item.lng - minLng) / lngRange) * 80,
     top: 10 + (1 - (item.lat - minLat) / latRange) * 80,
