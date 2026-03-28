@@ -44,12 +44,14 @@ export async function onRequestPost(context) {
     const confidence = Number(analysis.confidence || 0);
     const items = Array.isArray(analysis.items) ? analysis.items : [];
 
-    // 若有 citySlug 且有 Cities 表，先確保城市存在
-if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
-  await ensureCityExists(env, citySlug);
-} else {
-  console.log("skip ensureCity, citySlug=", citySlug, "citiesDbId=", env.NOTION_CITIES_DATA_SOURCE_ID);
-}
+    const debugInfo = {
+      citySlug,
+      hasCitiesDb: !!env.NOTION_CITIES_DATA_SOURCE_ID,
+    };
+
+    if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
+      await ensureCityExists(env, citySlug);
+    }
 
     const sourcePage = await createSourcePage({
       env, sourceTitle, url, platform, notes,
@@ -81,7 +83,7 @@ if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
       dispatched = await triggerGitHubDispatch(env);
     }
 
-    return json({ message: "已確認寫入。", created, dispatched });
+    return json({ message: "已確認寫入。", created, dispatched, debugInfo });
   } catch (error) {
     return json({ message: error instanceof Error ? error.message : "確認寫入失敗。" }, 500);
   }
@@ -90,7 +92,6 @@ if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
 // ── 自動確保城市存在 ───────────────────────────────────────
 async function ensureCityExists(env, citySlug) {
   try {
-    // 查詢 Cities 表，找有沒有相同 slug
     const res = await fetch(
       `https://api.notion.com/v1/data_sources/${env.NOTION_CITIES_DATA_SOURCE_ID}/query`,
       {
@@ -104,12 +105,11 @@ async function ensureCityExists(env, citySlug) {
       }
     );
 
-    if (!res.ok) return; // 查詢失敗不中斷主流程
+    if (!res.ok) return;
 
     const data = await res.json();
     const pages = data.results || [];
 
-    // 取得所有現有 slug
     const existingSlugs = pages.map((page) => {
       const slugProp = page.properties?.Slug;
       if (slugProp?.type === "rich_text") {
@@ -118,10 +118,8 @@ async function ensureCityExists(env, citySlug) {
       return "";
     }).filter(Boolean);
 
-    // slug 已存在就跳過
     if (existingSlugs.includes(citySlug.toLowerCase())) return;
 
-    // 不存在才新增
     const label = CITY_LABEL_MAP[citySlug] || citySlug;
     const emoji = CITY_EMOJI_MAP[citySlug] || "📍";
 
@@ -138,12 +136,11 @@ async function ensureCityExists(env, citySlug) {
           Name: { title: [{ text: { content: label } }] },
           Slug: { rich_text: [{ text: { content: citySlug } }] },
           Emoji: { rich_text: [{ text: { content: emoji } }] },
-          Published: { checkbox: false }, // 預設不發布，需人工審核後再勾
+          Published: { checkbox: false },
         },
       }),
     });
-} catch (e) {
-    console.error("ensureCityExists error:", e?.message || e);
+  } catch (e) {
     throw new Error("ensureCityExists failed: " + (e?.message || String(e)));
   }
 }
