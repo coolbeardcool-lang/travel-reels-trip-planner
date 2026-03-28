@@ -403,9 +403,3 @@ function json(data, status = 200) {
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
-```
-
-覆蓋後 commit push。同時記得去 Cloudflare 新增這兩個環境變數：
-```
-NOTION_CITIES_READ_ID  = 33124c5df0b380b2a2b7c3983e1b7d13
-NOTION_CITIES_WRITE_ID = 33124c5df0b380874f4000b2b0702f9
