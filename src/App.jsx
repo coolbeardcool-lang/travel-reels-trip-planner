@@ -377,6 +377,43 @@ function normalizeItemsForMap(items) {
   }));
 }
 
+const TRAVEL_ITEM_KEYWORDS = [
+  "景點", "活動", "展覽", "餐廳", "小吃", "咖啡", "甜點", "夜市",
+  "museum", "park", "cafe", "restaurant", "event", "festival",
+];
+const NON_TRAVEL_NOISE_KEYWORDS = [
+  "instagram", "on instagram", "總共", "這次吃完", "直接愛上", "店家資訊",
+  "追蹤", "按讚", "分享", "留言", "訂閱", "reel", "豆比",
+];
+
+function isLikelyTravelItem(item) {
+  const name = String(item.name || "").trim();
+  const text = `${name} ${item.category || ""} ${item.description || ""} ${(item.tags || []).join(" ")}`.toLowerCase();
+  const hasKeyword = TRAVEL_ITEM_KEYWORDS.some((k) => text.includes(String(k).toLowerCase()));
+  const hasNoise = NON_TRAVEL_NOISE_KEYWORDS.some((k) => text.includes(String(k).toLowerCase()));
+  const confidence = Number.isFinite(item.itemConfidence)
+    ? item.itemConfidence
+    : Number(item.itemConfidence) || 0;
+  const hasUsefulKind = item.itemKind === "spot" || item.itemKind === "event";
+  const hasName = name.length >= 2 && name.length <= 40;
+  const looksLikeListBlob = /[。！？]|：/.test(name) && name.length > 18;
+  if (!hasName || hasNoise || looksLikeListBlob) return false;
+  return (hasUsefulKind && (hasKeyword || confidence >= 0.35)) || (hasKeyword && confidence >= 0.25);
+}
+
+function filterReviewableItems(items) {
+  const kept = [];
+  let dropped = 0;
+  for (const item of items) {
+    if (isLikelyTravelItem(item)) {
+      kept.push(item);
+    } else {
+      dropped += 1;
+    }
+  }
+  return { kept, dropped };
+}
+
 function distanceScore(spot, baseArea, currentTime) {
   let score = 0;
   if (spot.area === baseArea) score += 3;
@@ -773,7 +810,13 @@ export default function App() {
         contentKind: submitType === "auto" ? "source_only" : submitType,
         citySlug: submitCitySlug,
       });
-      setAnalysisPreview(preview);
+      const { kept, dropped } = filterReviewableItems(preview.items);
+      const filteredPreview = {
+        ...preview,
+        items: kept,
+        droppedItemsCount: dropped,
+      };
+      setAnalysisPreview(filteredPreview);
       setSubmitStatus({ kind: "success", message: "分析完成。請先檢查下方結果，確認無誤後再寫入資料庫。" });
     } catch (error) {
       setSubmitStatus({ kind: "error", message: error instanceof Error ? error.message : "分析失敗。" });
@@ -906,12 +949,13 @@ export default function App() {
         {/* 浮動貼網址入口 */}
         <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, maxWidth: isMobile ? "calc(100vw - 48px)" : 420 }}>
           {shouldShowInput ? (
-            <div style={{ background: COLORS.primary, color: "#fff", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
+            <div style={{ background: COLORS.primary, color: "#fff", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.35)", height: "min(76vh, 820px)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div style={{ fontSize: 16, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
                 <button type="button" onClick={() => { setInputExpanded(false); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); }}
                   style={{ background: "transparent", border: "none", color: "#a8a29e", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>✕</button>
               </div>
+            <div style={{ overflowY: "auto", paddingRight: 2 }}>
             <form onSubmit={handleAnalyzeUrl} style={{ marginTop: 16, display: "grid", gap: 12 }}>
               <input value={submitUrl} onChange={(e) => setSubmitUrl(e.target.value)} placeholder="只貼 Instagram Reel / Threads / 網址 就可以"
                 style={{ width: "100%", borderRadius: 18, border: `1px solid ${isDuplicateUrl ? "#fb923c" : "rgba(255,255,255,0.15)"}`, background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
@@ -985,7 +1029,12 @@ export default function App() {
                   </div>
                 </div>
                 {analysisPreview.summary && <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.8, color: "#f5f5f4" }}>{analysisPreview.summary}</div>}
-                <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                {analysisPreview.droppedItemsCount > 0 && (
+                  <div style={{ marginTop: 12, borderRadius: 12, padding: "8px 10px", background: "rgba(255,255,255,0.10)", fontSize: 12, color: "#e7e5e4" }}>
+                    已自動略過 {analysisPreview.droppedItemsCount} 筆低信心且非旅遊項目內容。
+                  </div>
+                )}
+                <div style={{ marginTop: 14, display: "grid", gap: 10, maxHeight: "34vh", overflowY: "auto", paddingRight: 2 }}>
                   {analysisPreview.items.length ? analysisPreview.items.map((item) => (
                     <div key={item.id} style={{ borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -1003,6 +1052,7 @@ export default function App() {
                 </div>
               </div>
             )}
+            </div>
             </div>
           ) : (
             <button type="button"
