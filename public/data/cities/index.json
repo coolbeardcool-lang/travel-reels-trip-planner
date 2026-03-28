@@ -7,7 +7,11 @@
       "region": "關西",
       "description": "寺社、散步、甜點與選物密度高，適合慢節奏安排。",
       "status": "active",
-      "spotlight": [],
+      "spotlight": [
+        "寺社",
+        "甜點",
+        "散步"
+      ],
       "heroArea": "佛光寺周邊",
       "coverImageUrl": "",
       "timezone": "Asia/Tokyo",
@@ -22,7 +26,11 @@
       "region": "關西",
       "description": "小吃、商圈與夜間行程豐富，適合美食導向安排。",
       "status": "active",
-      "spotlight": [],
+      "spotlight": [
+        "小吃",
+        "商圈",
+        "夜生活"
+      ],
       "heroArea": "新世界／通天閣",
       "coverImageUrl": "",
       "timezone": "Asia/Tokyo",
@@ -37,7 +45,11 @@
       "region": "韓國",
       "description": "韓流文化發源地，美食、購物與歷史景點密集。",
       "status": "active",
-      "spotlight": [],
+      "spotlight": [
+        "美食",
+        "購物",
+        "文化"
+      ],
       "heroArea": "明洞／弘大",
       "coverImageUrl": "",
       "timezone": "Asia/Seoul",
@@ -47,7 +59,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T11:55:53.209Z",
+    "lastSyncedAt": "2026-03-28T12:30:14.540Z",
     "notionDataSourceId": "33124c5d-f0b3-8087-84f4-000b2b0702f9",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
