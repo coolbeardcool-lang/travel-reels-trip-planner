@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+
 const NOTION_API_KEY = process.env.NOTION_API_KEY;
 const NOTION_CITIES_DATA_SOURCE_ID = process.env.NOTION_CITIES_DATA_SOURCE_ID;
 const NOTION_SPOTS_DATA_SOURCE_ID = process.env.NOTION_SPOTS_DATA_SOURCE_ID;
