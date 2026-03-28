@@ -299,6 +299,38 @@
   ],
   "events": [
     {
+      "id": "33124c5d-f0b3-8107-ba60-eeb749286473",
+      "city": "京都",
+      "citySlug": "京都",
+      "area": "京都",
+      "name": "明信片漫步",
+      "category": "活動",
+      "description": "透過明信片漫步，探索京都隱藏的魅力與傳統。",
+      "sourceId": "33124c5d-f0b3-81d1-8b8a-eda7eae11292",
+      "sourceTitle": "京都・京都隱藏亮點明信片漫步活動",
+      "sourceUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "tags": [
+        "京都",
+        "隱藏亮點",
+        "旅遊"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "thumbnail": "🎫",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E6%98%8E%E4%BF%A1%E7%89%87%E6%BC%AB%E6%AD%A5%20%E4%BA%AC%E9%83%BD",
+      "startsOn": "2023-11-24",
+      "endsOn": "2023-12-31",
+      "startTime": "",
+      "endTime": "",
+      "ticketType": "請洽官網",
+      "priceNote": "請洽官網",
+      "officialUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "status": "待整理",
+      "recurringType": "一次性",
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33124c5d-f0b3-8154-89af-e12917b19cc4",
       "city": "京都",
       "citySlug": "kyoto",
@@ -364,6 +396,31 @@
     }
   ],
   "sources": [
+    {
+      "id": "33124c5d-f0b3-81d1-8b8a-eda7eae11292",
+      "title": "京都・京都隱藏亮點明信片漫步活動",
+      "url": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "platform": "Website",
+      "sourceType": "活動資訊",
+      "status": "已匯入",
+      "note": "京都隱藏亮點明信片漫步活動",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "京都"
+      ],
+      "relatedCityIds": [
+        [
+          "京都"
+        ]
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [
+        "33124c5d-f0b3-8107-ba60-eeb749286473"
+      ],
+      "published": true,
+      "lastReviewedAt": null
+    },
     {
       "id": "33124c5d-f0b3-812e-9ae4-fc4b29be798e",
       "title": "大阪・ニク サングルマン美味漢堡",
@@ -543,10 +600,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T16:05:50.322Z",
+    "lastSyncedAt": "2026-03-28T16:08:23.218Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 12
+    "count": 13
   }
 }
