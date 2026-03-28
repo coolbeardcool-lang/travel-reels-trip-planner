@@ -21,7 +21,7 @@ for (const name of REQUIRED_ENVS) {
   }
 }
 
-const NOTION_VERSION = "2025-09-03";
+const NOTION_VERSION = "2022-06-28";
 const NOTION_BASE_URL = "https://api.notion.com/v1";
 
 async function notionFetch(url, options = {}) {
@@ -51,21 +51,13 @@ async function queryAllRows(dataSourceId) {
   while (hasMore) {
     const body = {
       page_size: 100,
-      sorts: [
-        {
-          timestamp: "last_edited_time",
-          direction: "descending",
-        },
-      ],
+      sorts: [{ timestamp: "last_edited_time", direction: "descending" }],
       ...(startCursor ? { start_cursor: startCursor } : {}),
     };
 
     const data = await notionFetch(
       `${NOTION_BASE_URL}/data_sources/${dataSourceId}/query`,
-      {
-        method: "POST",
-        body: JSON.stringify(body),
-      }
+      { method: "POST", body: JSON.stringify(body) }
     );
 
     results = results.concat(data.results || []);
@@ -83,62 +75,32 @@ function getPlainText(value) {
 
 function getPropertyValue(prop) {
   if (!prop || !prop.type) return null;
-
   switch (prop.type) {
-    case "title":
-      return getPlainText(prop.title);
-    case "rich_text":
-      return getPlainText(prop.rich_text);
-    case "number":
-      return prop.number;
-    case "url":
-      return prop.url || "";
-    case "checkbox":
-      return Boolean(prop.checkbox);
-    case "select":
-      return prop.select?.name || "";
-    case "status":
-      return prop.status?.name || "";
-    case "multi_select":
-      return (prop.multi_select || []).map((item) => item.name);
-    case "date":
-      return prop.date
-        ? {
-            start: prop.date.start || null,
-            end: prop.date.end || null,
-          }
-        : null;
-    case "relation":
-      return (prop.relation || []).map((item) => item.id);
-    case "email":
-      return prop.email || "";
-    case "phone_number":
-      return prop.phone_number || "";
-    case "formula":
-      return getFormulaValue(prop.formula);
-    default:
-      return null;
+    case "title":       return getPlainText(prop.title);
+    case "rich_text":   return getPlainText(prop.rich_text);
+    case "number":      return prop.number;
+    case "url":         return prop.url || "";
+    case "checkbox":    return Boolean(prop.checkbox);
+    case "select":      return prop.select?.name || "";
+    case "status":      return prop.status?.name || "";
+    case "multi_select": return (prop.multi_select || []).map((item) => item.name);
+    case "date":        return prop.date ? { start: prop.date.start || null, end: prop.date.end || null } : null;
+    case "relation":    return (prop.relation || []).map((item) => item.id);
+    case "email":       return prop.email || "";
+    case "phone_number": return prop.phone_number || "";
+    case "formula":     return getFormulaValue(prop.formula);
+    default:            return null;
   }
 }
 
 function getFormulaValue(formula) {
   if (!formula || !formula.type) return null;
   switch (formula.type) {
-    case "string":
-      return formula.string || "";
-    case "number":
-      return formula.number;
-    case "boolean":
-      return Boolean(formula.boolean);
-    case "date":
-      return formula.date
-        ? {
-            start: formula.date.start || null,
-            end: formula.date.end || null,
-          }
-        : null;
-    default:
-      return null;
+    case "string":  return formula.string || "";
+    case "number":  return formula.number;
+    case "boolean": return Boolean(formula.boolean);
+    case "date":    return formula.date ? { start: formula.date.start || null, end: formula.date.end || null } : null;
+    default:        return null;
   }
 }
 
@@ -147,20 +109,25 @@ function getProp(page, name, fallback = null) {
 }
 
 function slugify(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-");
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, "-");
 }
 
 function ensureArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+// rich_text 欄位轉成 array（用於 Tags 等原本是 multi_select 但改成 rich_text 的欄位）
+function richTextToArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    return value.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 function normalizeCity(page) {
   const name = getProp(page, "Name", "");
   const slug = getProp(page, "Slug", "") || slugify(name);
-
   return {
     id: page.id,
     slug,
@@ -169,7 +136,7 @@ function normalizeCity(page) {
     region: getProp(page, "Region", "未分類") || "未分類",
     description: getProp(page, "Description", "") || "",
     status: getProp(page, "Status", "active") || "active",
-    spotlight: ensureArray(getProp(page, "SpotlightTags", [])),
+    spotlight: richTextToArray(getProp(page, "SpotlightTags", "")),
     heroArea: getProp(page, "HeroArea", "") || "",
     sortOrder: getProp(page, "SortOrder", 9999) ?? 9999,
     published: Boolean(getProp(page, "Published", false)),
@@ -193,38 +160,44 @@ function normalizeSource(page) {
     note: getProp(page, "Note", "") || "",
     capturedAt: getProp(page, "CapturedAt", null)?.start || null,
     authorOrAccount: getProp(page, "AuthorOrAccount", "") || "",
+    // CityHints 是 multi_select
     cityHints: ensureArray(getProp(page, "CityHints", [])),
-    relatedCityIds: ensureArray(getProp(page, "RelatedCities", [])),
-    relatedSpotIds: ensureArray(getProp(page, "RelatedSpots", [])),
-    relatedEventIds: ensureArray(getProp(page, "RelatedEvents", [])),
+    // RelatedCities/Spots/Events 是 rich_text，存的是 ID 字串
+    relatedCityIds: getProp(page, "RelatedCities", "") ? [getProp(page, "RelatedCities", "")] : [],
+    relatedSpotIds: getProp(page, "RelatedSpots", "") ? getProp(page, "RelatedSpots", "").split(",").map(s => s.trim()).filter(Boolean) : [],
+    relatedEventIds: getProp(page, "RelatedEvents", "") ? getProp(page, "RelatedEvents", "").split(",").map(s => s.trim()).filter(Boolean) : [],
     published: Boolean(getProp(page, "Published", false)),
     lastReviewedAt: getProp(page, "LastReviewedAt", null)?.start || null,
   };
 }
 
-function normalizeSpot(page, citiesById, sourcesById) {
-  const cityRelations = ensureArray(getProp(page, "City", []));
-  const cityId = cityRelations[0] || null;
-  const city = cityId ? citiesById.get(cityId) : null;
-  const sourceRelations = ensureArray(getProp(page, "SourceLinks", []));
+function normalizeSpot(page, sourcesById) {
+  // City 是 select，CitySlug 也是 select
+  const cityLabel = getProp(page, "City", "") || "";
+  const citySlug = getProp(page, "CitySlug", "") || slugify(cityLabel);
 
-  const sourceId = sourceRelations[0] || null;
-  const source = sourceId ? sourcesById.get(sourceId) : null;
+  // SourceLinks 是 rich_text，存的是 source page ID
+  const sourceId = getProp(page, "SourceLinks", "") || "";
+  const source = sourceId ? sourcesById.get(sourceId.trim()) : null;
+
+  // Tags 是 rich_text，逗號分隔
+  const tagsRaw = getProp(page, "Tags", "") || "";
+  const tags = richTextToArray(tagsRaw);
 
   return {
     id: page.id,
-    city: city?.label || getProp(page, "CityName", "") || "",
-    citySlug: city?.slug || getProp(page, "CitySlug", "") || "",
+    city: cityLabel,
+    citySlug,
     area: getProp(page, "Area", "") || "",
     name: getProp(page, "Name", "") || "",
     category: getProp(page, "Category", "景點") || "景點",
     description: getProp(page, "Description", "") || "",
-    sourceId: sourceId || "",
+    sourceId: sourceId.trim(),
     sourceTitle: source?.title || getProp(page, "SourceTitleCache", "") || "",
     sourceUrl: source?.url || "",
     bestTime: getProp(page, "BestTime", "下午") || "下午",
     stayMinutes: getProp(page, "StayMinutes", 30) ?? 30,
-    tags: ensureArray(getProp(page, "Tags", [])),
+    tags,
     lat: getProp(page, "Lat", 0) ?? 0,
     lng: getProp(page, "Lng", 0) ?? 0,
     confidence: getProp(page, "Confidence", "推定") || "推定",
@@ -237,26 +210,31 @@ function normalizeSpot(page, citiesById, sourcesById) {
   };
 }
 
-function normalizeEvent(page, citiesById, sourcesById) {
-  const cityRelations = ensureArray(getProp(page, "City", []));
-  const cityId = cityRelations[0] || null;
-  const city = cityId ? citiesById.get(cityId) : null;
-  const sourceRelations = ensureArray(getProp(page, "SourceLinks", []));
-  const sourceId = sourceRelations[0] || null;
-  const source = sourceId ? sourcesById.get(sourceId) : null;
+function normalizeEvent(page, sourcesById) {
+  // CitySlug 是 rich_text，City 是 rich_text
+  const citySlug = getProp(page, "CitySlug", "") || "";
+  const cityLabel = getProp(page, "City", "") || "";
+
+  // SourceLinks 是 rich_text，存的是 source page ID
+  const sourceId = getProp(page, "SourceLinks", "") || "";
+  const source = sourceId ? sourcesById.get(sourceId.trim()) : null;
+
+  // Tags 是 rich_text，逗號分隔
+  const tagsRaw = getProp(page, "Tags", "") || "";
+  const tags = richTextToArray(tagsRaw);
 
   return {
     id: page.id,
-    city: city?.label || getProp(page, "CityName", "") || "",
-    citySlug: city?.slug || getProp(page, "CitySlug", "") || "",
+    city: cityLabel,
+    citySlug,
     area: getProp(page, "Area", "") || "",
     name: getProp(page, "Name", "") || "",
     category: getProp(page, "Category", "活動") || "活動",
     description: getProp(page, "Description", "") || "",
-    sourceId: sourceId || "",
+    sourceId: sourceId.trim(),
     sourceTitle: source?.title || "",
     sourceUrl: source?.url || getProp(page, "OfficialUrl", "") || "",
-    tags: ensureArray(getProp(page, "Tags", [])),
+    tags,
     lat: getProp(page, "Lat", 0) ?? 0,
     lng: getProp(page, "Lng", 0) ?? 0,
     thumbnail: getProp(page, "Thumbnail", "🎫") || "🎫",
@@ -301,17 +279,15 @@ async function main() {
   const cities = citiesPages.map(normalizeCity).filter((city) => city.published);
   cities.sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label, "zh-Hant"));
 
-  const citiesById = new Map(cities.map((city) => [city.id, city]));
-
   const sources = sourcesPages.map(normalizeSource).filter((source) => source.published);
   const sourcesById = new Map(sources.map((source) => [source.id, source]));
 
   const spots = spotsPages
-    .map((page) => normalizeSpot(page, citiesById, sourcesById))
+    .map((page) => normalizeSpot(page, sourcesById))
     .filter((spot) => spot.published && spot.citySlug);
 
   const events = eventsPages
-    .map((page) => normalizeEvent(page, citiesById, sourcesById))
+    .map((page) => normalizeEvent(page, sourcesById))
     .filter((event) => event.published && event.citySlug);
 
   const publicDataDir = path.join(process.cwd(), "public", "data");
@@ -334,9 +310,7 @@ async function main() {
       .sort((a, b) => (a.startsOn || "").localeCompare(b.startsOn || "") || a.name.localeCompare(b.name, "zh-Hant"));
 
     const linkedSourceIds = new Set(
-      [...citySpots, ...cityEvents]
-        .map((item) => item.sourceId)
-        .filter(Boolean)
+      [...citySpots, ...cityEvents].map((item) => item.sourceId).filter(Boolean)
     );
 
     const citySources = sources.filter((source) => linkedSourceIds.has(source.id));
@@ -355,7 +329,7 @@ async function main() {
       spots: citySpots,
       events: cityEvents,
       sources: citySources,
-      meta: buildMeta(city.slug === "all" ? "virtual-all" : NOTION_SPOTS_DATA_SOURCE_ID, citySpots.length + cityEvents.length),
+      meta: buildMeta(NOTION_SPOTS_DATA_SOURCE_ID, citySpots.length + cityEvents.length),
     };
 
     await writeJsonFile(path.join(citiesDir, `${city.slug}.json`), payload);
@@ -363,14 +337,9 @@ async function main() {
 
   const allPayload = {
     city: {
-      slug: "all",
-      label: "全部城市",
-      emoji: "🗺️",
-      region: "Japan",
+      slug: "all", label: "全部城市", emoji: "🗺️", region: "全部",
       description: "彙整所有已發布城市的景點、活動與來源。",
-      status: "active",
-      spotlight: [],
-      heroArea: "",
+      status: "active", spotlight: [], heroArea: "",
     },
     spots: spots.sort((a, b) => a.citySlug.localeCompare(b.citySlug) || a.name.localeCompare(b.name, "zh-Hant")),
     events: events.sort((a, b) => (a.startsOn || "").localeCompare(b.startsOn || "") || a.name.localeCompare(b.name, "zh-Hant")),
