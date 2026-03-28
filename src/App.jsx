@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-
 const BASE_URL = (() => {
   try {
     if (
@@ -52,83 +51,46 @@ const CATEGORY_THEME = {
 
 const CITY_INDEX_SEED = [
   {
-    slug: "kyoto",
-    label: "京都",
-    emoji: "⛩️",
-    region: "關西",
+    slug: "kyoto", label: "京都", emoji: "⛩️", region: "關西",
     description: "寺社、散步、甜點與選物密度高，適合慢節奏安排。",
-    heroArea: "佛光寺周邊",
-    spotlight: ["寺社", "甜點", "散步"],
+    heroArea: "佛光寺周邊", spotlight: ["寺社", "甜點", "散步"],
   },
   {
-    slug: "osaka",
-    label: "大阪",
-    emoji: "🍢",
-    region: "關西",
+    slug: "osaka", label: "大阪", emoji: "🍢", region: "關西",
     description: "小吃、商圈與夜間行程豐富，適合美食導向安排。",
-    heroArea: "新世界／通天閣",
-    spotlight: ["小吃", "商圈", "夜生活"],
+    heroArea: "新世界／通天閣", spotlight: ["小吃", "商圈", "夜生活"],
   },
 ];
 
 const SOURCES_SEED = [
   {
-    id: "src-osaka-gyutan",
-    title: "大阪牛舌 Reel",
+    id: "src-osaka-gyutan", title: "大阪牛舌 Reel",
     url: "https://www.instagram.com/reel/DWOiXYxkf97/",
-    platform: "Instagram Reel",
-    status: "已匯入",
-    note: "已整理成大阪牛舌相關景點。",
+    platform: "Instagram Reel", status: "已匯入", note: "已整理成大阪牛舌相關景點。",
   },
   {
-    id: "src-osaka-shinsekai-food",
-    title: "大阪新世界街邊美食 Reel",
-    url: "https://www.instagram.com/reel/DV_M4ayDcf-/",
-    platform: "Instagram Reel",
-    status: "已匯入",
-    note: "已整理成大阪新世界美食點位。",
-  },
-  {
-    id: "src-kyoto-hidden-list",
-    title: "京都私藏清單 Reel",
+    id: "src-kyoto-hidden-list", title: "京都私藏清單 Reel",
     url: "https://www.instagram.com/reel/DWWQYkuAfHD/",
-    platform: "Instagram Reel",
-    status: "已匯入",
-    note: "已整理成京都選店與寺社點位。",
+    platform: "Instagram Reel", status: "已匯入", note: "已整理成京都選店與寺社點位。",
   },
 ];
 
 const SPOTS_SEED = [
   {
-    id: "osaka-yoshiji",
-    city: "大阪", citySlug: "osaka", area: "心齋橋",
-    name: "吉次牛舌（分店待確認）", category: "餐廳",
-    description: "依 Reel 內容先建為大阪心齋橋區的牛舌名店，適合安排在晚餐時段。",
-    sourceId: "src-osaka-gyutan", sourceUrl: "https://www.instagram.com/reel/DWOiXYxkf97/",
-    bestTime: "晚上", stayMinutes: 75,
-    tags: ["牛舌", "大阪美食", "晚餐", "心齋橋"],
-    lat: 34.6706, lng: 135.5023, thumbnail: "🥩",
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=心齋橋+吉次牛舌",
-  },
-  {
-    id: "osaka-nonkiya",
-    city: "大阪", citySlug: "osaka", area: "新世界／通天閣",
+    id: "osaka-nonkiya", city: "大阪", citySlug: "osaka", area: "新世界／通天閣",
     name: "Nonkiya のんきや", category: "小吃",
-    description: "新世界人氣立食關東煮與土手燒，適合安排為中午或傍晚的小吃站。",
-    sourceId: "src-osaka-shinsekai-food", sourceUrl: "https://www.instagram.com/reel/DV_M4ayDcf-/",
-    bestTime: "下午", stayMinutes: 35,
-    tags: ["關東煮", "土手燒", "立食", "通天閣"],
+    description: "新世界人氣立食關東煮與土手燒。",
+    sourceId: "src-osaka-gyutan", sourceUrl: "https://www.instagram.com/reel/DWOiXYxkf97/",
+    bestTime: "下午", stayMinutes: 35, tags: ["關東煮", "立食"],
     lat: 34.6529, lng: 135.5057, thumbnail: "🍢",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=Nonkiya+大阪",
   },
   {
-    id: "kyoto-bukkouji-dd",
-    city: "京都", citySlug: "kyoto", area: "佛光寺周邊",
+    id: "kyoto-bukkouji-dd", city: "京都", citySlug: "kyoto", area: "佛光寺周邊",
     name: "D&DEPARTMENT KYOTO", category: "逛街",
-    description: "位在佛光寺境內的京都選物店，很適合下午慢逛。",
+    description: "位在佛光寺境內的京都選物店。",
     sourceId: "src-kyoto-hidden-list", sourceUrl: "https://www.instagram.com/reel/DWWQYkuAfHD/",
-    bestTime: "下午", stayMinutes: 50,
-    tags: ["選物店", "佛光寺", "京都設計", "散步"],
+    bestTime: "下午", stayMinutes: 50, tags: ["選物店", "散步"],
     lat: 35.0018, lng: 135.7596, thumbnail: "🛍️",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=D%26DEPARTMENT+KYOTO",
   },
@@ -136,22 +98,18 @@ const SPOTS_SEED = [
 
 const EVENTS_SEED = [
   {
-    id: "evt-kyoto-sakura-night",
-    city: "京都", citySlug: "kyoto", area: "東山周邊",
+    id: "evt-kyoto-sakura-night", city: "京都", citySlug: "kyoto", area: "東山周邊",
     name: "京都夜櫻點燈示意活動", category: "活動",
     description: "示意活動資料。",
     sourceId: "src-kyoto-hidden-list", sourceUrl: "https://www.instagram.com/reel/DWWQYkuAfHD/",
-    tags: ["夜櫻", "期間限定", "春季"],
-    lat: 35.0037, lng: 135.7788, thumbnail: "🌸",
+    tags: ["夜櫻", "春季"], lat: 35.0037, lng: 135.7788, thumbnail: "🌸",
     mapUrl: "https://www.google.com/maps/search/?api=1&query=東山+京都",
     startsOn: "2026-03-25", endsOn: "2026-04-10",
-    startTime: "18:00", endTime: "21:00",
-    ticketType: "現場購票", priceNote: "示意資料",
+    startTime: "18:00", endTime: "21:00", ticketType: "現場購票", priceNote: "示意資料",
   },
 ];
 
 // ── 資料處理 ───────────────────────────────────────────────
-
 function normalizeCitySlugValue(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
@@ -271,25 +229,30 @@ function normalizeCityPayload(payload, fallbackSlug, cityIndex) {
 }
 
 async function fetchCityIndex() {
-  const response = await fetch(cityIndexPath(), { headers: { Accept: "application/json" } });
+  const response = await fetch(cityIndexPath() + "?t=" + Date.now(), { headers: { Accept: "application/json" } });
   if (!response.ok) throw new Error(`無法載入城市索引`);
   return normalizeCityIndexPayload(await response.json());
+}
+
+async function fetchCityIndexMeta() {
+  const response = await fetch(cityIndexPath() + "?t=" + Date.now(), { headers: { Accept: "application/json" } });
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data?.meta?.lastSyncedAt || null;
 }
 
 async function fetchCityDataset(citySlug, cityIndex) {
   const paths = cityDataPaths(citySlug);
   if (!paths.length) return { city: normalizeCity({ slug: "unselected" }, 0), spots: [], events: [], sources: [] };
   for (const path of paths) {
-    const response = await fetch(path, { headers: { Accept: "application/json" } });
+    const response = await fetch(path + "?t=" + Date.now(), { headers: { Accept: "application/json" } });
     if (response.ok) return normalizeCityPayload(await response.json(), normalizeCitySlugValue(citySlug), cityIndex);
   }
   throw new Error(`無法載入城市資料：${citySlug}`);
 }
 
-// ── 分析結果正規化（支援 camelCase，後端回傳格式）─────────
 function normalizeAnalysisPayload(payload, fallback = {}) {
   const items = Array.isArray(payload?.items) ? payload.items : [];
-  // 後端回傳 camelCase：contentKind, sourceTitle, sourcePlatform, citySlug
   const contentKind = payload?.contentKind || payload?.content_kind || fallback.contentKind || "source_only";
   return {
     sourceTitle: payload?.sourceTitle || payload?.source_title || fallback.sourceTitle || "未命名來源",
@@ -299,7 +262,7 @@ function normalizeAnalysisPayload(payload, fallback = {}) {
     area: payload?.area || fallback.area || "",
     confidence: Number.isFinite(payload?.confidence) ? payload.confidence : Number(payload?.confidence) || 0,
     needsReview: payload?.needsReview !== false && payload?.needs_review !== false,
-    summary: payload?.summary || payload?.reasoning || fallback.summary || "",
+    summary: payload?.summary || fallback.summary || "",
     analysis_id: payload?.analysis_id || payload?.analysisId || "",
     cached: Boolean(payload?.cached),
     items: items.map((item, index) => ({
@@ -317,8 +280,6 @@ function normalizeAnalysisPayload(payload, fallback = {}) {
     })),
   };
 }
-
-// ── 地圖 / 推薦 ────────────────────────────────────────────
 
 function normalizeItemsForMap(items) {
   if (!items.length) return [];
@@ -372,7 +333,6 @@ function prettyAnalysisKind(kind) {
 }
 
 // ── UI 元件 ────────────────────────────────────────────────
-
 function chipStyle(category) {
   const theme = CATEGORY_THEME[category] || { bg: COLORS.primarySoft, color: COLORS.text };
   return { display: "inline-flex", alignItems: "center", gap: 6, background: theme.bg, color: theme.color, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 700, border: `1px solid ${theme.bg}` };
@@ -455,6 +415,80 @@ function useResponsiveColumns() {
   return isMobile;
 }
 
+// ── SuccessView ────────────────────────────────────────────
+function SuccessView({ result, onReset }) {
+  const [countdown, setCountdown] = useState(90);
+  const [synced, setSynced] = useState(false);
+
+  useEffect(() => {
+    if (!result.dispatched) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setSynced(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [result.dispatched]);
+
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", marginTop: 40, padding: "0 16px" }}>
+      <div style={{ background: COLORS.successBg, border: `1px solid #bbf7d0`, borderRadius: 24, padding: 28, textAlign: "center" }}>
+        <div style={{ fontSize: 48 }}>✅</div>
+        <div style={{ marginTop: 12, fontSize: 20, fontWeight: 800, color: COLORS.successText }}>已寫入 Notion！</div>
+
+        {result.dispatched ? (
+          <div style={{ marginTop: 16 }}>
+            {!synced ? (
+              <div style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: 16, padding: 16 }}>
+                <div style={{ fontSize: 13, color: COLORS.successText, fontWeight: 600 }}>⚙️ GitHub Actions 同步中...</div>
+                <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#15803d" }}>{countdown}s</div>
+                <div style={{ marginTop: 6, fontSize: 12, color: "#4ade80" }}>約 {countdown} 秒後頁面資料將更新</div>
+                <div style={{ marginTop: 10, background: "#dcfce7", borderRadius: 999, height: 6, overflow: "hidden" }}>
+                  <div style={{ height: "100%", background: "#16a34a", width: `${((90 - countdown) / 90) * 100}%`, transition: "width 1s linear" }} />
+                </div>
+              </div>
+            ) : (
+              <div style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: 16, padding: 16 }}>
+                <div style={{ fontSize: 13, color: COLORS.successText, fontWeight: 600 }}>✨ 同步完成！點下方按鈕查看最新資料</div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ marginTop: 12, fontSize: 13, color: COLORS.subtext }}>資料已寫入，請稍後手動重新整理頁面查看。</div>
+        )}
+
+        <div style={{ marginTop: 20, display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+          {synced && (
+            <button
+              onClick={() => window.location.reload()}
+              style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 14, padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+            >
+              🔄 重新載入查看新資料
+            </button>
+          )}
+          <button
+            onClick={onReset}
+            style={{ background: "#fff", color: COLORS.text, border: `1px solid ${COLORS.border}`, borderRadius: 14, padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+          >
+            再貼一個網址
+          </button>
+        </div>
+
+        {result.created?.sourcePageId && (
+          <div style={{ marginTop: 16, fontSize: 12, color: "#9ca3af" }}>
+            Source ID: <code>{result.created.sourcePageId}</code>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── 主元件 ────────────────────────────────────────────────
 export default function App() {
   const isMobile = useResponsiveColumns();
@@ -467,10 +501,13 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [timeOfDay, setTimeOfDay] = useState("下午");
   const [baseArea, setBaseArea] = useState("");
-  const [favorites, setFavorites] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [activeItemId, setActiveItemId] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
+
+  // 資料版本狀態
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const [syncing, setSyncing] = useState(false);
 
   // 分析流程狀態
   const [submitUrl, setSubmitUrl] = useState("");
@@ -482,15 +519,20 @@ export default function App() {
   const [submitStatus, setSubmitStatus] = useState({ kind: "idle", message: "" });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmResult, setConfirmResult] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const hasCitySelected = selectedCitySlug !== "unselected";
 
+  // 載入城市索引
   useEffect(() => {
     let cancelled = false;
     async function loadIndex() {
       try {
         const payload = await fetchCityIndex();
         if (!cancelled && payload.cities.length) setCityIndex(payload.cities);
+        const meta = await fetchCityIndexMeta();
+        if (!cancelled) setLastSyncedAt(meta);
       } catch {
         if (!cancelled) setCityIndex(CITY_INDEX_SEED);
       }
@@ -499,12 +541,13 @@ export default function App() {
     return () => { cancelled = true; };
   }, [reloadKey]);
 
+  // 載入城市資料
   useEffect(() => {
     let cancelled = false;
     async function loadCityData() {
       if (!hasCitySelected) {
         setLoadedSpots([]); setLoadedEvents([]); setSources(SOURCES_SEED);
-        setActiveItemId(null); setBaseArea(""); setSelectedCategories([]); setFavorites([]);
+        setActiveItemId(null); setBaseArea(""); setSelectedCategories([]);
         return;
       }
       try {
@@ -557,27 +600,37 @@ export default function App() {
     return activeCollection.find((i) => i.id === activeItemId) || activeCollection[0] || null;
   }, [activeCollection, activeItemId]);
 
-  const pickedSpots = useMemo(() => {
-    const favs = filteredSpots.filter((s) => favorites.includes(s.id));
-    return favs.length ? favs : filteredSpots;
-  }, [filteredSpots, favorites]);
-
-  const recommendations = useMemo(() => buildRecommendation(pickedSpots, baseArea, timeOfDay), [pickedSpots, baseArea, timeOfDay]);
+  const recommendations = useMemo(() => buildRecommendation(
+    filteredSpots.length ? filteredSpots : loadedSpots, baseArea, timeOfDay
+  ), [filteredSpots, loadedSpots, baseArea, timeOfDay]);
 
   function toggleCategory(cat) {
     setSelectedCategories((prev) => prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]);
   }
 
-  // ── 分析流程（修正：form submit 不重複觸發）─────────────
+  // 手動更新資料
+  async function handleManualSync() {
+    setSyncing(true);
+    try {
+      const r = await fetch(cityIndexPath() + "?t=" + Date.now());
+      const data = await r.json();
+      const newTime = data?.meta?.lastSyncedAt || null;
+      if (newTime && newTime !== lastSyncedAt) {
+        setLastSyncedAt(newTime);
+        setReloadKey((v) => v + 1);
+      }
+    } catch {}
+    setSyncing(false);
+  }
+
+  // 分析流程
   async function handleAnalyzeUrl(e) {
     e.preventDefault();
     const cleanUrl = submitUrl.trim();
     if (!cleanUrl) { setSubmitStatus({ kind: "error", message: "請先貼上 Reel 或網址。" }); return; }
-
     setIsAnalyzing(true);
     setAnalysisPreview(null);
     setSubmitStatus({ kind: "loading", message: "正在分析網址內容，完成後會先顯示給你確認。" });
-
     try {
       const response = await fetch(ANALYZE_API_PATH, {
         method: "POST",
@@ -592,13 +645,10 @@ export default function App() {
           },
         }),
       });
-
       const text = await response.text();
       let payload = {};
       try { payload = JSON.parse(text); } catch { payload = { raw: text }; }
-
       if (!response.ok) throw new Error(payload?.message || `分析失敗，HTTP ${response.status}`);
-
       const preview = normalizeAnalysisPayload(payload, {
         sourceTitle: submitTitle.trim(),
         contentKind: submitType === "auto" ? "source_only" : submitType,
@@ -615,10 +665,8 @@ export default function App() {
 
   async function handleConfirmAnalysis() {
     if (!analysisPreview) { setSubmitStatus({ kind: "error", message: "目前沒有可確認寫入的分析結果。" }); return; }
-
     setIsConfirming(true);
     setSubmitStatus({ kind: "loading", message: "正在確認並寫入資料庫…" });
-
     try {
       const response = await fetch(CONFIRM_ANALYSIS_API_PATH, {
         method: "POST",
@@ -630,18 +678,15 @@ export default function App() {
           analysis: analysisPreview,
         }),
       });
-
       const text = await response.text();
       let payload = {};
       try { payload = JSON.parse(text); } catch { payload = { raw: text }; }
-
       if (!response.ok) throw new Error(payload?.message || `寫入失敗，HTTP ${response.status}`);
-
-      setSubmitStatus({ kind: "success", message: payload?.message || "已確認寫入。網站會在同步完成後自動更新。" });
+      setConfirmResult(payload);
+      setShowSuccess(true);
       setSubmitUrl(""); setSubmitTitle(""); setSubmitType("auto"); setSubmitCitySlug(""); setSubmitNotes("");
-      if (analysisPreview.citySlug) setSelectedCitySlug(analysisPreview.citySlug);
       setAnalysisPreview(null);
-      setReloadKey((v) => v + 1);
+      setSubmitStatus({ kind: "idle", message: "" });
     } catch (error) {
       setSubmitStatus({ kind: "error", message: error instanceof Error ? error.message : "寫入失敗。" });
     } finally {
@@ -662,10 +707,58 @@ export default function App() {
     picks: recommendations.length,
   };
 
-  // ── render ─────────────────────────────────────────────
+  if (showSuccess && confirmResult) {
+    return (
+      <div style={{ minHeight: "100vh", background: COLORS.pageBg, paddingTop: 60 }}>
+        <SuccessView
+          result={confirmResult}
+          onReset={() => { setShowSuccess(false); setConfirmResult(null); setReloadKey((v) => v + 1); }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: COLORS.pageBg, color: COLORS.text, fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: isMobile ? 16 : 28 }}>
+
+      {/* 右上角資料版本列 */}
+      <div style={{
+        position: "fixed", top: 0, right: 0, zIndex: 999,
+        display: "flex", alignItems: "center", gap: 10,
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(8px)",
+        border: `1px solid ${COLORS.border}`,
+        borderRadius: "0 0 0 16px",
+        padding: "8px 16px",
+        fontSize: 12, color: COLORS.subtext,
+        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+      }}>
+        {lastSyncedAt ? (
+          <span>
+            資料版本：{new Date(lastSyncedAt).toLocaleString("zh-TW", {
+              month: "2-digit", day: "2-digit",
+              hour: "2-digit", minute: "2-digit",
+            })}
+          </span>
+        ) : (
+          <span>載入中...</span>
+        )}
+        <button
+          onClick={handleManualSync}
+          disabled={syncing}
+          style={{
+            background: syncing ? COLORS.primarySoft : COLORS.primary,
+            color: syncing ? COLORS.subtext : "#fff",
+            border: "none", borderRadius: 10,
+            padding: "5px 12px", fontSize: 12, fontWeight: 700,
+            cursor: syncing ? "not-allowed" : "pointer",
+          }}
+        >
+          {syncing ? "檢查中..." : "🔄 更新"}
+        </button>
+      </div>
+
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: isMobile ? 16 : 28, paddingTop: isMobile ? 56 : 56 }}>
 
         {/* Hero + 分析入口 */}
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr", gap: 16, alignItems: "stretch" }}>
@@ -686,12 +779,10 @@ export default function App() {
             </div>
           </SectionCard>
 
-          {/* 分析入口卡片 */}
+          {/* 分析入口 */}
           <div style={{ background: COLORS.primary, color: "#ffffff", borderRadius: 28, padding: 24, boxShadow: "0 10px 35px rgba(0,0,0,0.14)" }}>
             <div style={{ fontSize: 13, color: "#d6d3d1" }}>網址分析入口</div>
             <div style={{ marginTop: 8, fontSize: 30, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
-
-            {/* ↓ form 只綁 onSubmit，按鈕用 type="submit"，不加 onClick */}
             <form onSubmit={handleAnalyzeUrl} style={{ marginTop: 16, display: "grid", gap: 12 }}>
               <input value={submitUrl} onChange={(e) => setSubmitUrl(e.target.value)} placeholder="只貼 Instagram Reel / Threads / 網址 就可以"
                 style={{ width: "100%", borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
@@ -713,14 +804,12 @@ export default function App() {
                 </select>
               </div>
               <textarea value={submitNotes} onChange={(e) => setSubmitNotes(e.target.value)}
-                placeholder="可選：補充提示，例如『這應該是京都咖啡店』"
+                placeholder="可選：補充提示"
                 style={{ width: "100%", minHeight: 80, borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: 16, outline: "none", resize: "vertical", boxSizing: "border-box" }} />
               <div style={{ display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-                {/* type="submit" 觸發 form onSubmit，不重複綁 onClick */}
                 <PrimaryButton type="submit" disabled={isAnalyzing || isConfirming}>
                   {isAnalyzing ? "分析中…" : "先分析網址"}
                 </PrimaryButton>
-                {/* 確認寫入是 type="button"，不觸發 form submit */}
                 <PrimaryButton type="button" secondary onClick={handleConfirmAnalysis} disabled={!analysisPreview || isAnalyzing || isConfirming}>
                   {isConfirming ? "寫入中…" : "確認後寫入"}
                 </PrimaryButton>
@@ -733,39 +822,24 @@ export default function App() {
               </div>
             )}
 
-            {/* 分析預覽區塊 */}
             {analysisPreview && (
               <div style={{ marginTop: 16, borderRadius: 22, background: "rgba(255,255,255,0.10)", padding: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
                   <div>
-                    <div style={{ fontSize: 12, color: "#d6d3d1" }}>
-                      分析預覽 {analysisPreview.cached && "⚡ 快取"}
-                    </div>
+                    <div style={{ fontSize: 12, color: "#d6d3d1" }}>分析預覽 {analysisPreview.cached && "⚡ 快取"}</div>
                     <div style={{ marginTop: 6, fontSize: 18, fontWeight: 800 }}>{analysisPreview.sourceTitle}</div>
-<div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>
-  類型：{prettyAnalysisKind(analysisPreview.contentKind)} ｜ 平台：{analysisPreview.sourcePlatform}
-</div>
-<div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-  <span style={{ fontSize: 12, color: "#d6d3d1" }}>城市（可修正）</span>
-  <input
-    value={analysisPreview.citySlug || ""}
-    onChange={(e) =>
-      setAnalysisPreview((prev) => ({ ...prev, citySlug: e.target.value.toLowerCase().trim() }))
-    }
-    placeholder="例如 seoul、tokyo、taipei"
-    style={{
-      flex: 1,
-      minWidth: 160,
-      borderRadius: 12,
-      border: "1px solid rgba(255,255,255,0.25)",
-      background: "rgba(255,255,255,0.12)",
-      color: "#ffffff",
-      padding: "8px 12px",
-      fontSize: 13,
-      outline: "none",
-    }}
-  />
-</div>
+                    <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>
+                      類型：{prettyAnalysisKind(analysisPreview.contentKind)} ｜ 平台：{analysisPreview.sourcePlatform} ｜ 城市：{analysisPreview.citySlug || "待判定"}
+                    </div>
+                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 12, color: "#d6d3d1" }}>城市（可修正）</span>
+                      <input
+                        value={analysisPreview.citySlug || ""}
+                        onChange={(e) => setAnalysisPreview((prev) => ({ ...prev, citySlug: e.target.value.toLowerCase().trim() }))}
+                        placeholder="如 seoul / tokyo"
+                        style={{ flex: 1, minWidth: 120, borderRadius: 10, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", padding: "6px 10px", fontSize: 12, outline: "none" }}
+                      />
+                    </div>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 12, background: "rgba(255,255,255,0.12)", color: "#fff" }}>
@@ -801,21 +875,25 @@ export default function App() {
         {/* 來源清單 */}
         <div style={{ marginTop: 20 }}>
           <SectionCard title="來源清單">
-            <div style={{ display: "grid", gap: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
-              {sources.map((source) => (
-                <div key={source.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.card, padding: 18 }}>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{source.platform}</span>
-                    <span style={{ borderRadius: 999, background: "#ffffff", border: `1px solid ${COLORS.border}`, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{source.status}</span>
+            {sources.length > 0 ? (
+              <div style={{ display: "grid", gap: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
+                {sources.map((source) => (
+                  <div key={source.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.card, padding: 18 }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{source.platform}</span>
+                      <span style={{ borderRadius: 999, background: "#ffffff", border: `1px solid ${COLORS.border}`, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{source.status}</span>
+                    </div>
+                    <div style={{ marginTop: 12, fontSize: 18, fontWeight: 800 }}>{source.title}</div>
+                    <div style={{ marginTop: 8, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{source.note}</div>
+                    <div style={{ marginTop: 14 }}>
+                      <PrimaryButton href={source.url} block secondary>開啟原始來源</PrimaryButton>
+                    </div>
                   </div>
-                  <div style={{ marginTop: 12, fontSize: 18, fontWeight: 800 }}>{source.title}</div>
-                  <div style={{ marginTop: 8, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{source.note}</div>
-                  <div style={{ marginTop: 14 }}>
-                    <PrimaryButton href={source.url} block secondary>開啟原始來源</PrimaryButton>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: COLORS.subtext, fontSize: 14 }}>請先選擇城市以顯示對應來源清單。</div>
+            )}
           </SectionCard>
         </div>
 
@@ -848,8 +926,8 @@ export default function App() {
             <SectionCard title={selectedCity ? `${selectedCity.label} 旅遊地圖` : "城市地圖"}
               right={
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜尋景點、活動、地區、標籤"
-                    style={{ minWidth: 220, borderRadius: 14, border: `1px solid ${COLORS.border}`, padding: "10px 12px", outline: "none" }} disabled={!hasCitySelected} />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜尋景點、活動、地區"
+                    style={{ minWidth: 180, borderRadius: 14, border: `1px solid ${COLORS.border}`, padding: "10px 12px", outline: "none" }} disabled={!hasCitySelected} />
                   <select value={selectedCitySlug} onChange={(e) => setSelectedCitySlug(e.target.value)}
                     style={{ borderRadius: 14, border: `1px solid ${COLORS.border}`, padding: "10px 12px", outline: "none" }}>
                     <option value="unselected">請先選擇城市</option>
@@ -865,7 +943,7 @@ export default function App() {
                     return (
                       <button key={mode} type="button" onClick={() => setSelectedContentMode(mode)}
                         style={{ borderRadius: 999, padding: "10px 14px", border: `1px solid ${active ? COLORS.primary : COLORS.border}`, background: active ? COLORS.primary : "#ffffff", color: active ? "#ffffff" : COLORS.text, cursor: "pointer", fontWeight: 700 }}>
-                        {mode === "spots" ? `景點 Spots (${loadedSpots.length})` : `活動 Events (${loadedEvents.length})`}
+                        {mode === "spots" ? `景點 (${loadedSpots.length})` : `活動 (${loadedEvents.length})`}
                       </button>
                     );
                   })}
@@ -922,7 +1000,6 @@ export default function App() {
                       {activeItem.sourceUrl && <PrimaryButton href={activeItem.sourceUrl} block secondary>查看原始來源</PrimaryButton>}
                     </>}
                   </div>
-                  <div style={{ marginTop: 14, fontSize: 12, color: COLORS.subtext, lineHeight: 1.7 }}>這一區保留互動地圖體驗，但不依賴外部地圖套件，因此更適合直接部署成靜態網站。</div>
                 </div>
               </div>
             </SectionCard>
