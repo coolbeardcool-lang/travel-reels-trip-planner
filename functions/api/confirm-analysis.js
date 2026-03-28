@@ -45,9 +45,11 @@ export async function onRequestPost(context) {
     const items = Array.isArray(analysis.items) ? analysis.items : [];
 
     // 若有 citySlug 且有 Cities 表，先確保城市存在
-    if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
-      await ensureCityExists(env, citySlug);
-    }
+if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
+  await ensureCityExists(env, citySlug);
+} else {
+  console.log("skip ensureCity, citySlug=", citySlug, "citiesDbId=", env.NOTION_CITIES_DATA_SOURCE_ID);
+}
 
     const sourcePage = await createSourcePage({
       env, sourceTitle, url, platform, notes,
