@@ -530,6 +530,25 @@
   ],
   "sources": [
     {
+      "id": "33124c5d-f0b3-81e8-8fff-d2ca64a8ce84",
+      "title": "Instagram 來源",
+      "url": "https://www.instagram.com/reel/DWbB04-hJd9",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33124c5d-f0b3-815e-b267-f4d70cc61ae3",
       "title": "Instagram 景點・changhua",
       "url": "https://www.instagram.com/reel/DWMB274EjKQ",
@@ -745,7 +764,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T18:55:26.195Z",
+    "lastSyncedAt": "2026-03-28T18:57:17.341Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
