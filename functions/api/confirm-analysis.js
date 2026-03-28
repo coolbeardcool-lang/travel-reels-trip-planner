@@ -44,20 +44,20 @@ export async function onRequestPost(context) {
     const confidence = Number(analysis.confidence || 0);
     const items = Array.isArray(analysis.items) ? analysis.items : [];
 
-    const debugInfo = {
-      citySlug,
-      hasCitiesDb: !!env.NOTION_CITIES_DATA_SOURCE_ID,
-      cityEnsureError,
-    };
-
 let cityEnsureError = null;
-    if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
-      try {
-        await ensureCityExists(env, citySlug);
-      } catch (e) {
-        cityEnsureError = e?.message || String(e);
-      }
-    }
+if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
+  try {
+    await ensureCityExists(env, citySlug);
+  } catch (e) {
+    cityEnsureError = e?.message || String(e);
+  }
+}
+
+const debugInfo = {
+  citySlug,
+  hasCitiesDb: !!env.NOTION_CITIES_DATA_SOURCE_ID,
+  cityEnsureError,
+};
 
     const sourcePage = await createSourcePage({
       env, sourceTitle, url, platform, notes,
