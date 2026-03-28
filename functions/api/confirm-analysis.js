@@ -47,10 +47,16 @@ export async function onRequestPost(context) {
     const debugInfo = {
       citySlug,
       hasCitiesDb: !!env.NOTION_CITIES_DATA_SOURCE_ID,
+      cityEnsureError,
     };
 
+let cityEnsureError = null;
     if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
-      await ensureCityExists(env, citySlug);
+      try {
+        await ensureCityExists(env, citySlug);
+      } catch (e) {
+        cityEnsureError = e?.message || String(e);
+      }
     }
 
     const sourcePage = await createSourcePage({
