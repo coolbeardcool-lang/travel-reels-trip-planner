@@ -1,5 +1,19 @@
 // functions/api/confirm-analysis.js
 
+const NOTION_VERSION = "2022-06-28";
+const CITY_LABEL_MAP = {
+  tokyo: "東京", kyoto: "京都", osaka: "大阪", nara: "奈良",
+  okinawa: "沖繩", hokkaido: "北海道", fukuoka: "福岡",
+  taipei: "台北", taichung: "台中", tainan: "台南",
+  kaohsiung: "高雄", seoul: "首爾", busan: "釜山",
+};
+const CITY_EMOJI_MAP = {
+  tokyo: "🗼", kyoto: "⛩️", osaka: "🍢", nara: "🦌",
+  okinawa: "🌺", hokkaido: "🐻", fukuoka: "🍜",
+  taipei: "🏙️", taichung: "🌳", tainan: "🏯",
+  kaohsiung: "🌊", seoul: "🇰🇷", busan: "🌊",
+};
+
 export async function onRequestPost(context) {
   try {
     const env = context.env;
@@ -29,6 +43,11 @@ export async function onRequestPost(context) {
     const summary = String(analysis.summary || "");
     const confidence = Number(analysis.confidence || 0);
     const items = Array.isArray(analysis.items) ? analysis.items : [];
+
+    // 若有 citySlug 且有 Cities 表，先確保城市存在
+    if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
+      await ensureCityExists(env, citySlug);
+    }
 
     const sourcePage = await createSourcePage({
       env, sourceTitle, url, platform, notes,
@@ -66,9 +85,67 @@ export async function onRequestPost(context) {
   }
 }
 
+// ── 自動確保城市存在 ───────────────────────────────────────
+async function ensureCityExists(env, citySlug) {
+  try {
+    // 查詢 Cities 表，找有沒有相同 slug
+    const res = await fetch(
+      `https://api.notion.com/v1/data_sources/${env.NOTION_CITIES_DATA_SOURCE_ID}/query`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.NOTION_TOKEN}`,
+          "Content-Type": "application/json",
+          "Notion-Version": NOTION_VERSION,
+        },
+        body: JSON.stringify({ page_size: 100 }),
+      }
+    );
+
+    if (!res.ok) return; // 查詢失敗不中斷主流程
+
+    const data = await res.json();
+    const pages = data.results || [];
+
+    // 取得所有現有 slug
+    const existingSlugs = pages.map((page) => {
+      const slugProp = page.properties?.Slug;
+      if (slugProp?.type === "rich_text") {
+        return (slugProp.rich_text || []).map((r) => r.plain_text || "").join("").trim().toLowerCase();
+      }
+      return "";
+    }).filter(Boolean);
+
+    // slug 已存在就跳過
+    if (existingSlugs.includes(citySlug.toLowerCase())) return;
+
+    // 不存在才新增
+    const label = CITY_LABEL_MAP[citySlug] || citySlug;
+    const emoji = CITY_EMOJI_MAP[citySlug] || "📍";
+
+    await fetch("https://api.notion.com/v1/pages", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.NOTION_TOKEN}`,
+        "Content-Type": "application/json",
+        "Notion-Version": NOTION_VERSION,
+      },
+      body: JSON.stringify({
+        parent: { data_source_id: env.NOTION_CITIES_DATA_SOURCE_ID },
+        properties: {
+          Name: { title: [{ text: { content: label } }] },
+          Slug: { rich_text: [{ text: { content: citySlug } }] },
+          Emoji: { rich_text: [{ text: { content: emoji } }] },
+          Published: { checkbox: false }, // 預設不發布，需人工審核後再勾
+        },
+      }),
+    });
+  } catch {
+    // 城市新增失敗不中斷主流程
+  }
+}
+
 // ── Sources ────────────────────────────────────────────────
-// Name=title, SourceUrl=url, Platform=rich_text, SourceType=rich_text
-// Status=rich_text, Note=rich_text, Published=checkbox
 async function createSourcePage({
   env, sourceTitle, url, platform, notes,
   summary, contentKind, citySlug, confidence, items,
@@ -99,12 +176,9 @@ async function createSourcePage({
 }
 
 // ── Spots ──────────────────────────────────────────────────
-// Name=title, Area=rich_text, BestTime=rich_text, Category=rich_text
-// CitySlug=select, Description=rich_text, Lat=number, Lng=number
-// MapUrl=url, Notes=rich_text, PriorityScore=number, Published=checkbox
-// StayMinutes=number, Tags=rich_text, Thumbnail=rich_text
 async function createSpotPage({ env, item, citySlug, sourceUrl }) {
   const tags = Array.isArray(item.tags) ? item.tags.join(", ") : "";
+  const cityLabel = CITY_LABEL_MAP[citySlug] || citySlug;
 
   const payload = {
     parent: { data_source_id: env.NOTION_SPOTS_DATA_SOURCE_ID },
@@ -113,6 +187,7 @@ async function createSpotPage({ env, item, citySlug, sourceUrl }) {
       Area: { rich_text: [{ text: { content: String(item.area || "") } }] },
       BestTime: { rich_text: [{ text: { content: String(item.best_time || "") } }] },
       Category: { rich_text: [{ text: { content: String(item.category || "景點") } }] },
+      City: { select: { name: cityLabel || "未分類" } },
       CitySlug: { select: { name: String(citySlug || "未分類") } },
       Description: { rich_text: [{ text: { content: String(item.description || "").slice(0, 2000) } }] },
       MapUrl: { url: String(item.map_url || sourceUrl || "") || null },
@@ -129,14 +204,9 @@ async function createSpotPage({ env, item, citySlug, sourceUrl }) {
 }
 
 // ── Events ─────────────────────────────────────────────────
-// Name=title, Area=rich_text, Category=select, City=rich_text
-// CitySlug=rich_text, Description=rich_text, EndTimeText=rich_text
-// EndsOn=date, MapUrl=url, OfficialUrl=url, PriceNote=rich_text
-// Published=checkbox, RecurringType=select, StartTimeText=rich_text
-// StartsOn=date, Status=select, Tags=rich_text, TicketType=rich_text
-// VenueName=rich_text
 async function createEventPage({ env, item, citySlug, sourceUrl }) {
   const tags = Array.isArray(item.tags) ? item.tags.join(", ") : "";
+  const cityLabel = CITY_LABEL_MAP[citySlug] || citySlug;
 
   const payload = {
     parent: { data_source_id: env.NOTION_EVENTS_DATA_SOURCE_ID },
@@ -144,7 +214,7 @@ async function createEventPage({ env, item, citySlug, sourceUrl }) {
       Name: { title: [{ text: { content: String(item.name || "未命名活動").slice(0, 200) } }] },
       Area: { rich_text: [{ text: { content: String(item.area || "") } }] },
       Category: { select: { name: String(item.category || "活動") } },
-      City: { rich_text: [{ text: { content: "" } }] },
+      City: { rich_text: [{ text: { content: cityLabel } }] },
       CitySlug: { rich_text: [{ text: { content: String(citySlug || "") } }] },
       Description: { rich_text: [{ text: { content: String(item.description || "").slice(0, 2000) } }] },
       EndTimeText: { rich_text: [{ text: { content: String(item.end_time || "") } }] },
@@ -173,7 +243,7 @@ async function notionCreatePage(env, payload) {
     headers: {
       Authorization: `Bearer ${env.NOTION_TOKEN}`,
       "Content-Type": "application/json",
-      "Notion-Version": "2022-06-28",
+      "Notion-Version": NOTION_VERSION,
     },
     body: JSON.stringify(payload),
   });
