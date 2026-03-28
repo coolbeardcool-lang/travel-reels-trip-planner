@@ -3,19 +3,19 @@
 const NOTION_VERSION = "2022-06-28";
 
 const CITY_DATA_MAP = {
-  tokyo:     { label: "東京",   emoji: "🗼",  region: "日本", timezone: "Asia/Tokyo",  lat: 35.6762, lng: 139.6503, sort: 10,  heroArea: "新宿／澀谷",   spotlight: "購物,美食,文化",   description: "融合傳統與現代的大都市，購物、美食與文化密度極高。" },
-  kyoto:     { label: "京都",   emoji: "⛩️",  region: "日本", timezone: "Asia/Tokyo",  lat: 35.0116, lng: 135.7681, sort: 20,  heroArea: "佛光寺周邊",   spotlight: "寺社,甜點,散步",   description: "寺社、散步、甜點與選物密度高，適合慢節奏安排。" },
-  osaka:     { label: "大阪",   emoji: "🍢",  region: "日本", timezone: "Asia/Tokyo",  lat: 34.6937, lng: 135.5023, sort: 30,  heroArea: "新世界／通天閣", spotlight: "小吃,商圈,夜生活", description: "小吃、商圈與夜間行程豐富，適合美食導向安排。" },
-  nara:      { label: "奈良",   emoji: "🦌",  region: "日本", timezone: "Asia/Tokyo",  lat: 34.6851, lng: 135.8048, sort: 40,  heroArea: "奈良公園",     spotlight: "景點,自然,歷史",   description: "鹿群漫步的古都，世界遺產與自然景觀並存。" },
-  fukuoka:   { label: "福岡",   emoji: "🍜",  region: "日本", timezone: "Asia/Tokyo",  lat: 33.5904, lng: 130.4017, sort: 50,  heroArea: "天神／博多",   spotlight: "拉麵,美食,購物",   description: "九州最大城市，拉麵與海鮮聞名，生活感十足。" },
-  hokkaido:  { label: "北海道", emoji: "🐻",  region: "日本", timezone: "Asia/Tokyo",  lat: 43.0642, lng: 141.3469, sort: 60,  heroArea: "札幌市區",     spotlight: "自然,美食,滑雪",   description: "四季分明的北國，自然景觀與乳製品美食著稱。" },
-  okinawa:   { label: "沖繩",   emoji: "🌺",  region: "日本", timezone: "Asia/Tokyo",  lat: 26.2124, lng: 127.6809, sort: 70,  heroArea: "國際通",       spotlight: "海灘,文化,美食",   description: "熱帶海島風情，珊瑚礁海灘與獨特琉球文化。" },
-  taipei:    { label: "台北",   emoji: "🏙️",  region: "台灣", timezone: "Asia/Taipei", lat: 25.0330, lng: 121.5654, sort: 80,  heroArea: "大安／信義",   spotlight: "美食,夜市,文化",   description: "美食、夜市與文創密度極高，交通便利易遊。" },
-  taichung:  { label: "台中",   emoji: "🌳",  region: "台灣", timezone: "Asia/Taipei", lat: 24.1477, lng: 120.6736, sort: 90,  heroArea: "審計新村",     spotlight: "文創,咖啡,美食",   description: "文創咖啡廳密集，氣候宜人適合悠閒散步。" },
-  tainan:    { label: "台南",   emoji: "🏯",  region: "台灣", timezone: "Asia/Taipei", lat: 22.9999, lng: 120.2269, sort: 100, heroArea: "安平古堡周邊", spotlight: "古蹟,小吃,歷史",   description: "台灣最古老城市，古蹟與傳統小吃文化深厚。" },
-  kaohsiung: { label: "高雄",   emoji: "🌊",  region: "台灣", timezone: "Asia/Taipei", lat: 22.6273, lng: 120.3014, sort: 110, heroArea: "駁二藝術特區", spotlight: "港口,文創,美食",   description: "港都風情濃厚，文創聚落與海港夜景值得一遊。" },
-  seoul:     { label: "首爾",   emoji: "🇰🇷", region: "韓國", timezone: "Asia/Seoul",  lat: 37.5665, lng: 126.9780, sort: 120, heroArea: "明洞／弘大",   spotlight: "美食,購物,文化",   description: "韓流文化發源地，美食、購物與歷史景點密集。" },
-  busan:     { label: "釜山",   emoji: "🌊",  region: "韓國", timezone: "Asia/Seoul",  lat: 35.1796, lng: 129.0756, sort: 130, heroArea: "海雲台",       spotlight: "海灘,美食,文化",   description: "韓國第二大城市，海灘、海鮮與山城景觀著稱。" },
+  tokyo:     { label: "東京",   emoji: "🗼",  region: "日本", timezone: "Asia/Tokyo",  lat: 35.6762, lng: 139.6503, sort: 10,  heroArea: "新宿／澀谷",    spotlight: "購物,美食,文化",   description: "融合傳統與現代的大都市，購物、美食與文化密度極高。" },
+  kyoto:     { label: "京都",   emoji: "⛩️",  region: "日本", timezone: "Asia/Tokyo",  lat: 35.0116, lng: 135.7681, sort: 20,  heroArea: "佛光寺周邊",    spotlight: "寺社,甜點,散步",   description: "寺社、散步、甜點與選物密度高，適合慢節奏安排。" },
+  osaka:     { label: "大阪",   emoji: "🍢",  region: "日本", timezone: "Asia/Tokyo",  lat: 34.6937, lng: 135.5023, sort: 30,  heroArea: "新世界／通天閣",  spotlight: "小吃,商圈,夜生活", description: "小吃、商圈與夜間行程豐富，適合美食導向安排。" },
+  nara:      { label: "奈良",   emoji: "🦌",  region: "日本", timezone: "Asia/Tokyo",  lat: 34.6851, lng: 135.8048, sort: 40,  heroArea: "奈良公園",      spotlight: "景點,自然,歷史",   description: "鹿群漫步的古都，世界遺產與自然景觀並存。" },
+  fukuoka:   { label: "福岡",   emoji: "🍜",  region: "日本", timezone: "Asia/Tokyo",  lat: 33.5904, lng: 130.4017, sort: 50,  heroArea: "天神／博多",    spotlight: "拉麵,美食,購物",   description: "九州最大城市，拉麵與海鮮聞名，生活感十足。" },
+  hokkaido:  { label: "北海道", emoji: "🐻",  region: "日本", timezone: "Asia/Tokyo",  lat: 43.0642, lng: 141.3469, sort: 60,  heroArea: "札幌市區",      spotlight: "自然,美食,滑雪",   description: "四季分明的北國，自然景觀與乳製品美食著稱。" },
+  okinawa:   { label: "沖繩",   emoji: "🌺",  region: "日本", timezone: "Asia/Tokyo",  lat: 26.2124, lng: 127.6809, sort: 70,  heroArea: "國際通",        spotlight: "海灘,文化,美食",   description: "熱帶海島風情，珊瑚礁海灘與獨特琉球文化。" },
+  taipei:    { label: "台北",   emoji: "🏙️",  region: "台灣", timezone: "Asia/Taipei", lat: 25.0330, lng: 121.5654, sort: 80,  heroArea: "大安／信義",    spotlight: "美食,夜市,文化",   description: "美食、夜市與文創密度極高，交通便利易遊。" },
+  taichung:  { label: "台中",   emoji: "🌳",  region: "台灣", timezone: "Asia/Taipei", lat: 24.1477, lng: 120.6736, sort: 90,  heroArea: "審計新村",      spotlight: "文創,咖啡,美食",   description: "文創咖啡廳密集，氣候宜人適合悠閒散步。" },
+  tainan:    { label: "台南",   emoji: "🏯",  region: "台灣", timezone: "Asia/Taipei", lat: 22.9999, lng: 120.2269, sort: 100, heroArea: "安平古堡周邊",  spotlight: "古蹟,小吃,歷史",   description: "台灣最古老城市，古蹟與傳統小吃文化深厚。" },
+  kaohsiung: { label: "高雄",   emoji: "🌊",  region: "台灣", timezone: "Asia/Taipei", lat: 22.6273, lng: 120.3014, sort: 110, heroArea: "駁二藝術特區",  spotlight: "港口,文創,美食",   description: "港都風情濃厚，文創聚落與海港夜景值得一遊。" },
+  seoul:     { label: "首爾",   emoji: "🇰🇷", region: "韓國", timezone: "Asia/Seoul",  lat: 37.5665, lng: 126.9780, sort: 120, heroArea: "明洞／弘大",    spotlight: "美食,購物,文化",   description: "韓流文化發源地，美食、購物與歷史景點密集。" },
+  busan:     { label: "釜山",   emoji: "🌊",  region: "韓國", timezone: "Asia/Seoul",  lat: 35.1796, lng: 129.0756, sort: 130, heroArea: "海雲台",        spotlight: "海灘,美食,文化",   description: "韓國第二大城市，海灘、海鮮與山城景觀著稱。" },
 };
 
 export async function onRequestPost(context) {
@@ -48,6 +48,7 @@ export async function onRequestPost(context) {
     const confidence = Number(analysis.confidence || 0);
     const items = Array.isArray(analysis.items) ? analysis.items : [];
 
+    // 確保城市存在
     let cityEnsureError = null;
     if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
       try {
@@ -57,29 +58,51 @@ export async function onRequestPost(context) {
       }
     }
 
+    // 先寫 Source，拿到 page ID
     const sourcePage = await createSourcePage({
       env, sourceTitle, url, platform, notes,
       summary, contentKind, citySlug, confidence, items,
     });
+    const sourcePageId = sourcePage?.id || null;
 
     const created = {
-      sourcePageId: sourcePage?.id || null,
+      sourcePageId,
       spots: [],
       events: [],
     };
 
+    const spotPageIds = [];
+    const eventPageIds = [];
+
+    // 寫 Spots，帶入 source page ID
     if (contentKind === "spot" && env.NOTION_SPOTS_DATA_SOURCE_ID) {
       for (const item of items) {
-        const spotPage = await createSpotPage({ env, item, citySlug, sourceUrl: url });
-        created.spots.push({ id: spotPage?.id || null, name: item.name || "未命名景點" });
+        const spotPage = await createSpotPage({
+          env, item, citySlug, sourceUrl: url,
+          sourcePageId, sourceTitle,
+        });
+        const spotId = spotPage?.id || null;
+        if (spotId) spotPageIds.push(spotId);
+        created.spots.push({ id: spotId, name: item.name || "未命名景點" });
       }
     }
 
+    // 寫 Events，帶入 source page ID
     if (contentKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
       for (const item of items) {
-        const eventPage = await createEventPage({ env, item, citySlug, sourceUrl: url });
-        created.events.push({ id: eventPage?.id || null, name: item.name || "未命名活動" });
+        const eventPage = await createEventPage({
+          env, item, citySlug, sourceUrl: url,
+          sourcePageId, sourceTitle,
+        });
+        const eventId = eventPage?.id || null;
+        if (eventId) eventPageIds.push(eventId);
+        created.events.push({ id: eventId, name: item.name || "未命名活動" });
       }
+    }
+
+    // 回寫 Source 的 RelatedSpots / RelatedEvents
+    if (sourcePageId && (spotPageIds.length > 0 || eventPageIds.length > 0)) {
+      await updateSourceRelations(env, sourcePageId, spotPageIds, eventPageIds, citySlug);
     }
 
     let dispatched = false;
@@ -90,6 +113,43 @@ export async function onRequestPost(context) {
     return json({ message: "已確認寫入。", created, dispatched, cityEnsureError });
   } catch (error) {
     return json({ message: error instanceof Error ? error.message : "確認寫入失敗。" }, 500);
+  }
+}
+
+// ── 回寫 Source 的 relation 欄位 ──────────────────────────
+async function updateSourceRelations(env, sourcePageId, spotIds, eventIds, citySlug) {
+  try {
+    const properties = {};
+
+    if (spotIds.length > 0) {
+      properties.RelatedSpots = {
+        relation: spotIds.map((id) => ({ id })),
+      };
+    }
+    if (eventIds.length > 0) {
+      properties.RelatedEvents = {
+        relation: eventIds.map((id) => ({ id })),
+      };
+    }
+    if (citySlug) {
+      properties.CityHints = {
+        rich_text: [{ text: { content: citySlug } }],
+      };
+    }
+
+    if (Object.keys(properties).length === 0) return;
+
+    await fetch(`https://api.notion.com/v1/pages/${sourcePageId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${env.NOTION_TOKEN}`,
+        "Content-Type": "application/json",
+        "Notion-Version": NOTION_VERSION,
+      },
+      body: JSON.stringify({ properties }),
+    });
+  } catch {
+    // relation 回寫失敗不中斷主流程
   }
 }
 
@@ -175,25 +235,25 @@ async function createSourcePage({
   env, sourceTitle, url, platform, notes,
   summary, contentKind, citySlug, confidence, items,
 }) {
-  const noteContent = [
-    notes,
-    summary,
-    `kind=${contentKind}`,
-    citySlug ? `city=${citySlug}` : "",
-    `confidence=${confidence}`,
-    items.length ? `items=${items.map((i) => i.name).join(" / ")}` : "",
-  ].filter(Boolean).join("\n");
+  // Name 用摘要版：平台 + 城市 + summary
+  const cityData = CITY_DATA_MAP[citySlug];
+  const cityLabel = cityData?.label || citySlug;
+  const kindLabel = contentKind === "event" ? "活動" : contentKind === "spot" ? "景點" : "來源";
+  const shortName = summary
+    ? `${cityLabel ? cityLabel + "・" : ""}${summary}`.slice(0, 80)
+    : `${platform} ${kindLabel}${cityLabel ? "・" + cityLabel : ""}`.slice(0, 80);
 
   const payload = {
     parent: { data_source_id: env.NOTION_SOURCES_DATA_SOURCE_ID },
     properties: {
-      Name:       { title: [{ text: { content: sourceTitle.slice(0, 200) } }] },
+      Name:       { title: [{ text: { content: shortName } }] },
       SourceUrl:  { url },
       Platform:   { rich_text: [{ text: { content: platform } }] },
       SourceType: { rich_text: [{ text: { content: contentKind === "event" ? "活動資訊" : contentKind === "spot" ? "景點美食" : "手動整理" } }] },
       Status:     { rich_text: [{ text: { content: "已匯入" } }] },
-      Note:       { rich_text: [{ text: { content: noteContent.slice(0, 2000) } }] },
-      Published:  { checkbox: false },
+      Note:       { rich_text: [{ text: { content: (notes || summary || "").slice(0, 2000) } }] },
+      CityHints:  { rich_text: [{ text: { content: citySlug || "" } }] },
+      Published:  { checkbox: true },
     },
   };
 
@@ -201,75 +261,94 @@ async function createSourcePage({
 }
 
 // ── Spots ──────────────────────────────────────────────────
-async function createSpotPage({ env, item, citySlug, sourceUrl }) {
+async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
   const tags = Array.isArray(item.tags) ? item.tags.join(", ") : item.category || "景點";
 
-  // Google Maps 搜尋連結
   const mapQuery = encodeURIComponent(`${item.name} ${cityLabel}`);
   const mapUrl = item.map_url ||
-    (item.name ? `https://www.google.com/maps/search/?api=1&query=${mapQuery}` : sourceUrl || "");
+    `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
-  const payload = {
-    parent: { data_source_id: env.NOTION_SPOTS_DATA_SOURCE_ID },
-    properties: {
-      Name:          { title: [{ text: { content: String(item.name || "未命名景點").slice(0, 200) } }] },
-      Area:          { rich_text: [{ text: { content: String(item.area || cityLabel) } }] },
-      BestTime:      { rich_text: [{ text: { content: String(item.best_time || guessBestTime(item.category)) } }] },
-      Category:      { rich_text: [{ text: { content: String(item.category || "景點") } }] },
-      City:          { select: { name: cityLabel || "未分類" } },
-      CitySlug:      { select: { name: String(citySlug || "未分類") } },
-      Description:   { rich_text: [{ text: { content: String(item.description || `${cityLabel}的${item.category || "景點"}，值得一訪。`).slice(0, 2000) } }] },
-      MapUrl:        { url: mapUrl || null },
-      Notes:         { rich_text: [{ text: { content: String(item.reason || "") } }] },
-      PriorityScore: { number: 0 },
-      Published:     { checkbox: false },
-      StayMinutes:   { number: Number(item.stay_minutes || guessStayMinutes(item.category)) },
-      Tags:          { rich_text: [{ text: { content: tags } }] },
-      Thumbnail:     { rich_text: [{ text: { content: String(item.thumbnail || guessThumbnail(item.category)) } }] },
-    },
+  const lat = typeof item.lat === "number" && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
+  const lng = typeof item.lng === "number" && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
+
+  const properties = {
+    Name:             { title: [{ text: { content: String(item.name || "未命名景點").slice(0, 200) } }] },
+    Area:             { rich_text: [{ text: { content: String(item.area || cityLabel) } }] },
+    BestTime:         { rich_text: [{ text: { content: String(item.best_time || guessBestTime(item.category)) } }] },
+    Category:         { rich_text: [{ text: { content: String(item.category || "景點") } }] },
+    City:             { select: { name: cityLabel || "未分類" } },
+    CitySlug:         { select: { name: String(citySlug || "未分類") } },
+    Description:      { rich_text: [{ text: { content: String(item.description || `${cityLabel}的${item.category || "景點"}，值得一訪。`).slice(0, 2000) } }] },
+    Lat:              { number: lat },
+    Lng:              { number: lng },
+    MapUrl:           { url: mapUrl || null },
+    Notes:            { rich_text: [{ text: { content: String(item.reason || "") } }] },
+    PriorityScore:    { number: 0 },
+    Published:        { checkbox: true },
+    SourceTitleCache: { rich_text: [{ text: { content: String(sourceTitle || "").slice(0, 200) } }] },
+    StayMinutes:      { number: Number(item.stay_minutes || guessStayMinutes(item.category)) },
+    Tags:             { rich_text: [{ text: { content: tags } }] },
+    Thumbnail:        { rich_text: [{ text: { content: String(item.thumbnail || guessThumbnail(item.category)) } }] },
   };
 
-  return await notionCreatePage(env, payload);
+  // SourceLinks relation
+  if (sourcePageId) {
+    properties.SourceLinks = { relation: [{ id: sourcePageId }] };
+  }
+
+  return await notionCreatePage(env, {
+    parent: { data_source_id: env.NOTION_SPOTS_DATA_SOURCE_ID },
+    properties,
+  });
 }
 
 // ── Events ─────────────────────────────────────────────────
-async function createEventPage({ env, item, citySlug, sourceUrl }) {
+async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
   const tags = Array.isArray(item.tags) ? item.tags.join(", ") : item.category || "活動";
 
   const mapQuery = encodeURIComponent(`${item.venue_name || item.name} ${cityLabel}`);
   const mapUrl = item.map_url ||
-    (item.name ? `https://www.google.com/maps/search/?api=1&query=${mapQuery}` : "");
+    `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
-  const payload = {
-    parent: { data_source_id: env.NOTION_EVENTS_DATA_SOURCE_ID },
-    properties: {
-      Name:          { title: [{ text: { content: String(item.name || "未命名活動").slice(0, 200) } }] },
-      Area:          { rich_text: [{ text: { content: String(item.area || cityLabel) } }] },
-      Category:      { select: { name: String(item.category || "活動") } },
-      City:          { rich_text: [{ text: { content: cityLabel } }] },
-      CitySlug:      { rich_text: [{ text: { content: String(citySlug || "") } }] },
-      Description:   { rich_text: [{ text: { content: String(item.description || `${cityLabel}的${item.category || "活動"}，詳情請洽官網。`).slice(0, 2000) } }] },
-      EndTimeText:   { rich_text: [{ text: { content: String(item.end_time || "") } }] },
-      EndsOn:        item.ends_on ? { date: { start: String(item.ends_on) } } : { date: null },
-      MapUrl:        { url: mapUrl || null },
-      OfficialUrl:   { url: String(item.official_url || sourceUrl || "") || null },
-      PriceNote:     { rich_text: [{ text: { content: String(item.price_note || "請洽官網") } }] },
-      Published:     { checkbox: false },
-      RecurringType: { select: { name: "一次性" } },
-      StartTimeText: { rich_text: [{ text: { content: String(item.start_time || "") } }] },
-      StartsOn:      item.starts_on ? { date: { start: String(item.starts_on) } } : { date: null },
-      Status:        { select: { name: "待整理" } },
-      Tags:          { rich_text: [{ text: { content: tags } }] },
-      TicketType:    { rich_text: [{ text: { content: String(item.ticket_type || "請洽官網") } }] },
-      VenueName:     { rich_text: [{ text: { content: String(item.venue_name || item.name || "") } }] },
-    },
+  const lat = typeof item.lat === "number" && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
+  const lng = typeof item.lng === "number" && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
+
+  const properties = {
+    Name:          { title: [{ text: { content: String(item.name || "未命名活動").slice(0, 200) } }] },
+    Area:          { rich_text: [{ text: { content: String(item.area || cityLabel) } }] },
+    Category:      { select: { name: String(item.category || "活動") } },
+    City:          { rich_text: [{ text: { content: cityLabel } }] },
+    CitySlug:      { rich_text: [{ text: { content: String(citySlug || "") } }] },
+    Description:   { rich_text: [{ text: { content: String(item.description || `${cityLabel}的${item.category || "活動"}，詳情請洽官網。`).slice(0, 2000) } }] },
+    EndTimeText:   { rich_text: [{ text: { content: String(item.end_time || "") } }] },
+    EndsOn:        item.ends_on ? { date: { start: String(item.ends_on) } } : { date: null },
+    Lat:           { number: lat },
+    Lng:           { number: lng },
+    MapUrl:        { url: mapUrl || null },
+    OfficialUrl:   { url: String(item.official_url || sourceUrl || "") || null },
+    PriceNote:     { rich_text: [{ text: { content: String(item.price_note || "請洽官網") } }] },
+    Published:     { checkbox: true },
+    RecurringType: { select: { name: "一次性" } },
+    StartTimeText: { rich_text: [{ text: { content: String(item.start_time || "") } }] },
+    StartsOn:      item.starts_on ? { date: { start: String(item.starts_on) } } : { date: null },
+    Status:        { select: { name: "待整理" } },
+    Tags:          { rich_text: [{ text: { content: tags } }] },
+    TicketType:    { rich_text: [{ text: { content: String(item.ticket_type || "請洽官網") } }] },
+    VenueName:     { rich_text: [{ text: { content: String(item.venue_name || item.name || "") } }] },
   };
 
-  return await notionCreatePage(env, payload);
+  if (sourcePageId) {
+    properties.SourceLinks = { relation: [{ id: sourcePageId }] };
+  }
+
+  return await notionCreatePage(env, {
+    parent: { data_source_id: env.NOTION_EVENTS_DATA_SOURCE_ID },
+    properties,
+  });
 }
 
 // ── 智慧預設值 ─────────────────────────────────────────────
