@@ -1,389 +1,213 @@
-// functions/api/analyze-url.js
+// functions/api/confirm-analysis.js
 
-// ── 平台偵測 ──────────────────────────────────────────────
-const PLATFORM_MAP = {
-  "instagram.com": "Instagram",
-  "threads.net": "Threads",
-  "facebook.com": "Facebook",
-  "youtube.com": "YouTube",
-  "youtu.be": "YouTube",
-  "tiktok.com": "TikTok",
-  "twitter.com": "Twitter",
-  "x.com": "Twitter",
-};
-
-function detectPlatform(url) {
+export async function onRequestPost(context) {
   try {
-    const host = new URL(url).hostname.replace(/^www\./, "");
-    return PLATFORM_MAP[host] || "Website";
-  } catch {
-    return "Website";
-  }
-}
+    const env = context.env;
+    const body = await context.request.json();
 
-// ── URL 正規化（移除 tracking params）────────────────────
-function normalizeUrl(raw) {
-  try {
-    const u = new URL(raw);
-    const remove = [
-      "utm_source", "utm_medium", "utm_campaign",
-      "utm_content", "utm_term", "fbclid", "igshid",
-      "ref", "share",
-    ];
-    remove.forEach((p) => u.searchParams.delete(p));
-    return u.toString();
-  } catch {
-    return raw;
-  }
-}
+    const url = String(body?.url || "").trim();
+    const sourceTitle = String(body?.sourceTitle || "").trim() || "未命名來源";
+    const notes = String(body?.notes || "").trim();
+    const analysis = body?.analysis || {};
 
-// ── SHA-256 hash（用於 analysis_id 與快取 key）───────────
-async function sha256(str) {
-  const buf = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(str)
-  );
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("")
-    .slice(0, 24); // 只取前 24 碼，夠用且短
-}
+    if (!url || !/^https?:\/\//i.test(url)) {
+      return json({ message: "url 不可空白，且必須是 http/https 網址。" }, 400);
+    }
+    if (!analysis || typeof analysis !== "object") {
+      return json({ message: "缺少 analysis，請先完成分析。" }, 400);
+    }
+    if (!analysis.contentKind || !analysis.sourcePlatform) {
+      return json({ message: "analysis 格式不完整，請重新分析。" }, 400);
+    }
+    if (!env.NOTION_TOKEN || !env.NOTION_SOURCES_DATA_SOURCE_ID) {
+      return json({ message: "Notion 環境變數尚未設定。" }, 500);
+    }
 
-// ── 快取讀寫（ANALYSIS_CACHE = Cloudflare KV binding）────
-async function getCachedAnalysis(env, analysisId) {
-  if (!env.ANALYSIS_CACHE) return null;
-  try {
-    return await env.ANALYSIS_CACHE.get(analysisId, { type: "json" });
-  } catch {
-    return null;
-  }
-}
+    const platform = String(analysis.sourcePlatform || "Website");
+    const contentKind = String(analysis.contentKind || "source_only");
+    const citySlug = String(analysis.citySlug || "");
+    const summary = String(analysis.summary || "");
+    const confidence = Number(analysis.confidence || 0);
+    const items = Array.isArray(analysis.items) ? analysis.items : [];
 
-async function setCachedAnalysis(env, analysisId, data) {
-  if (!env.ANALYSIS_CACHE) return;
-  try {
-    // TTL 24 小時
-    await env.ANALYSIS_CACHE.put(analysisId, JSON.stringify(data), {
-      expirationTtl: 86400,
-    });
-  } catch {
-    // 快取失敗不中斷主流程
-  }
-}
-
-// ── 抓 metadata（og:title / og:description / title）──────
-async function scrapeUrl(url) {
-  const result = {
-    title: null,
-    description: null,
-    ogTitle: null,
-    ogDescription: null,
-  };
-
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; TravelReelsBot/1.0; +https://github.com)",
-      },
-      signal: AbortSignal.timeout(7000),
-      redirect: "follow",
+    const sourcePage = await createSourcePage({
+      env, sourceTitle, url, platform, notes,
+      summary, contentKind, citySlug, confidence, items,
     });
 
-    if (!res.ok) return result;
-
-    const html = await res.text();
-
-    const get = (pattern) => {
-      const m = html.match(pattern);
-      if (!m) return null;
-      return m[1]
-        .replace(/&amp;/g, "&")
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .trim()
-        .slice(0, 500);
+    const created = {
+      sourcePageId: sourcePage?.id || null,
+      spots: [],
+      events: [],
     };
 
-    result.ogTitle =
-      get(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
-      get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
-
-    result.ogDescription =
-      get(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
-      get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
-
-    result.title = get(/<title[^>]*>([^<]+)<\/title>/i);
-
-    result.description =
-      get(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
-      get(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
-  } catch {
-    // scrape 失敗回空值即可，不中斷
-  }
-
-  return result;
-}
-
-// ── Heuristic 分類（不花 token）──────────────────────────
-const CITY_MAP = {
-  東京: "tokyo", 京都: "kyoto", 大阪: "osaka", 奈良: "nara",
-  沖繩: "okinawa", 北海道: "hokkaido", 福岡: "fukuoka",
-  台北: "taipei", 台中: "taichung", 台南: "tainan", 高雄: "kaohsiung",
-  首爾: "seoul", 釜山: "busan",
-  tokyo: "tokyo", kyoto: "kyoto", osaka: "osaka", nara: "nara",
-  okinawa: "okinawa", hokkaido: "hokkaido", fukuoka: "fukuoka",
-  taipei: "taipei", taichung: "taichung", tainan: "tainan",
-  kaohsiung: "kaohsiung", seoul: "seoul", busan: "busan",
-};
-
-const EVENT_KEYWORDS = [
-  "活動", "展覽", "演唱會", "音樂節", "市集", "節慶", "開幕",
-  "講座", "祭", "花火", "煙火", "限定", "快閃",
-  "event", "festival", "concert", "exhibition", "market",
-  "fair", "workshop", "popup", "pop-up",
-];
-
-const SPOT_KEYWORDS = [
-  "餐廳", "咖啡", "景點", "美食", "小吃", "住宿", "飯店",
-  "旅館", "海灘", "公園", "博物館", "夜市", "老街", "神社",
-  "寺", "瀑布", "溫泉", "onsen",
-  "restaurant", "cafe", "coffee", "hotel", "beach",
-  "park", "museum", "street food", "shrine", "temple",
-];
-
-function cheapHeuristicAnalysis({ sourceTitle, sourcePlatform, mergedText, cityHint, typeHint }) {
-  const text = mergedText.toLowerCase();
-
-  // 強制 hint
-  let contentKind = null;
-  if (typeHint === "event") contentKind = "event";
-  if (typeHint === "spot") contentKind = "spot";
-
-  // Keyword 計分
-  let eventScore = 0;
-  let spotScore = 0;
-  EVENT_KEYWORDS.forEach((k) => { if (text.includes(k)) eventScore++; });
-  SPOT_KEYWORDS.forEach((k) => { if (text.includes(k)) spotScore++; });
-
-  if (!contentKind) {
-    if (eventScore >= 2 && eventScore > spotScore) contentKind = "event";
-    else if (spotScore >= 2 && spotScore > eventScore) contentKind = "spot";
-    else if (eventScore === 1 && spotScore === 0) contentKind = "event";
-    else if (spotScore === 1 && eventScore === 0) contentKind = "spot";
-    else contentKind = "source_only";
-  }
-
-  // 信心度
-  const maxScore = Math.max(eventScore, spotScore);
-  let confidence = 0.3;
-  if (maxScore >= 3) confidence = 0.85;
-  else if (maxScore === 2) confidence = 0.72;
-  else if (maxScore === 1) confidence = 0.55;
-  if (typeHint) confidence = Math.max(confidence, 0.8);
-
-  // 城市偵測
-  let citySlug = cityHint || null;
-  if (!citySlug) {
-    for (const [keyword, slug] of Object.entries(CITY_MAP)) {
-      if (text.includes(keyword.toLowerCase())) {
-        citySlug = slug;
-        break;
+    if (contentKind === "spot" && env.NOTION_SPOTS_DATA_SOURCE_ID) {
+      for (const item of items) {
+        const spotPage = await createSpotPage({ env, item, citySlug, sourceUrl: url });
+        created.spots.push({ id: spotPage?.id || null, name: item.name || "未命名景點" });
       }
     }
-  }
 
-  return {
-    sourceTitle,
-    sourcePlatform,
-    contentKind,
-    citySlug: citySlug || null,
-    area: null,
-    confidence,
-    needsReview: confidence < 0.7,
-    summary: "",
-    items: [],
-  };
-}
-
-// ── 判斷是否需要打 OpenAI ─────────────────────────────────
-function shouldUseOpenAI(heuristic, mergedText) {
-  // 信心度夠高，直接用 heuristic
-  if (heuristic.confidence >= 0.75) return false;
-  // 沒有任何文字可分析，打了也沒用
-  if (!mergedText || mergedText.length < 20) return false;
-  // 其餘情況才打 OpenAI
-  return true;
-}
-
-// ── 呼叫 OpenAI（只有必要時）─────────────────────────────
-async function callOpenAI(apiKey, url, mergedText) {
-  const prompt = `你是旅遊資訊萃取助手。請分析以下內容，回傳 JSON（不要有任何其他文字）。
-
-URL: ${url}
-內容: ${mergedText.slice(0, 800)}
-
-回傳格式：
-{
-  "contentKind": "spot" | "event" | "source_only",
-  "citySlug": "tokyo" | "osaka" | "kyoto" | "taipei" | "seoul" 等小寫英文，不確定填 null,
-  "area": "區域名或 null",
-  "confidence": 0.0~1.0,
-  "needsReview": true | false,
-  "summary": "一句話中文摘要",
-  "items": [
-    {
-      "name": "景點或活動名稱",
-      "area": "區域或 null",
-      "category": "類別",
-      "description": "簡短說明"
+    if (contentKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
+      for (const item of items) {
+        const eventPage = await createEventPage({ env, item, citySlug, sourceUrl: url });
+        created.events.push({ id: eventPage?.id || null, name: item.name || "未命名活動" });
+      }
     }
-  ]
-}`;
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    let dispatched = false;
+    if (env.GITHUB_TOKEN && env.GITHUB_OWNER && env.GITHUB_REPO) {
+      dispatched = await triggerGitHubDispatch(env);
+    }
+
+    return json({ message: "已確認寫入。", created, dispatched });
+  } catch (error) {
+    return json({ message: error instanceof Error ? error.message : "確認寫入失敗。" }, 500);
+  }
+}
+
+// ── Sources ────────────────────────────────────────────────
+// 欄位型別依據 Notion 實際設定：
+// Name=title, SourceUrl=url, Platform=rich_text, SourceType=rich_text
+// Status=rich_text, Note=rich_text, Published=checkbox
+async function createSourcePage({
+  env, sourceTitle, url, platform, notes,
+  summary, contentKind, citySlug, confidence, items,
+}) {
+  const noteContent = [
+    notes,
+    summary,
+    `kind=${contentKind}`,
+    citySlug ? `city=${citySlug}` : "",
+    `confidence=${confidence}`,
+    items.length ? `items=${items.map((i) => i.name).join(" / ")}` : "",
+  ].filter(Boolean).join("\n");
+
+  const payload = {
+    parent: { data_source_id: env.NOTION_SOURCES_DATA_SOURCE_ID },
+    properties: {
+      Name: { title: [{ text: { content: sourceTitle.slice(0, 200) } }] },
+      SourceUrl: { url },
+      Platform: { rich_text: [{ text: { content: platform } }] },
+      SourceType: { rich_text: [{ text: { content: "手動整理" } }] },
+      Status: { rich_text: [{ text: { content: "已匯入" } }] },
+      Note: { rich_text: [{ text: { content: noteContent.slice(0, 2000) } }] },
+      Published: { checkbox: false },
+    },
+  };
+
+  return await notionCreatePage(env, payload);
+}
+
+// ── Spots ──────────────────────────────────────────────────
+// 欄位型別依據 Notion 實際設定：
+// Name=title, Area=rich_text, BestTime=rich_text, Category=rich_text
+// CitySlug=select, Description=rich_text, Lat=number, Lng=number
+// MapUrl=url, Notes=rich_text, PriorityScore=number, Published=checkbox
+// StayMinutes=number, Tags=rich_text, Thumbnail=rich_text
+async function createSpotPage({ env, item, citySlug, sourceUrl }) {
+  const tags = Array.isArray(item.tags) ? item.tags.join(", ") : "";
+
+  const payload = {
+    parent: { data_source_id: env.NOTION_SPOTS_DATA_SOURCE_ID },
+    properties: {
+      Name: { title: [{ text: { content: String(item.name || "未命名景點").slice(0, 200) } }] },
+      Area: { rich_text: [{ text: { content: String(item.area || "") } }] },
+      BestTime: { rich_text: [{ text: { content: String(item.best_time || "") } }] },
+      Category: { rich_text: [{ text: { content: String(item.category || "景點") } }] },
+      CitySlug: { select: { name: String(citySlug || "未分類") } },
+      Description: { rich_text: [{ text: { content: String(item.description || "").slice(0, 2000) } }] },
+      MapUrl: { url: String(item.map_url || sourceUrl || "") || null },
+      Notes: { rich_text: [{ text: { content: String(item.reason || "") } }] },
+      PriorityScore: { number: 0 },
+      Published: { checkbox: false },
+      StayMinutes: { number: Number(item.stay_minutes || 60) },
+      Tags: { rich_text: [{ text: { content: tags } }] },
+      Thumbnail: { rich_text: [{ text: { content: String(item.thumbnail || "📍") } }] },
+    },
+  };
+
+  return await notionCreatePage(env, payload);
+}
+
+// ── Events ─────────────────────────────────────────────────
+// 欄位型別依據 Notion 實際設定：
+// Name=title, Area=rich_text, Category=select, City=rich_text
+// CitySlug=rich_text, Description=rich_text, EndTimeText=rich_text
+// EndsOn=date, Lat=number, Lng=number, MapUrl=url, OfficialUrl=url
+// PriceNote=rich_text, Published=checkbox, RecurringType=select
+// StartTimeText=rich_text, StartsOn=date, Status=select
+// Tags=rich_text, TicketType=rich_text, VenueName=rich_text
+async function createEventPage({ env, item, citySlug, sourceUrl }) {
+  const tags = Array.isArray(item.tags) ? item.tags.join(", ") : "";
+
+  const payload = {
+    parent: { data_source_id: env.NOTION_EVENTS_DATA_SOURCE_ID },
+    properties: {
+      Name: { title: [{ text: { content: String(item.name || "未命名活動").slice(0, 200) } }] },
+      Area: { rich_text: [{ text: { content: String(item.area || "") } }] },
+      Category: { select: { name: String(item.category || "活動") } },
+      City: { rich_text: [{ text: { content: "" } }] },
+      CitySlug: { rich_text: [{ text: { content: String(citySlug || "") } }] },
+      Description: { rich_text: [{ text: { content: String(item.description || "").slice(0, 2000) } }] },
+      EndTimeText: { rich_text: [{ text: { content: String(item.end_time || "") } }] },
+      EndsOn: item.ends_on ? { date: { start: String(item.ends_on) } } : { date: null },
+      MapUrl: { url: String(item.map_url || "") || null },
+      OfficialUrl: { url: String(item.official_url || sourceUrl || "") || null },
+      PriceNote: { rich_text: [{ text: { content: String(item.price_note || "") } }] },
+      Published: { checkbox: false },
+      RecurringType: { select: { name: "一次性" } },
+      StartTimeText: { rich_text: [{ text: { content: String(item.start_time || "") } }] },
+      StartsOn: item.starts_on ? { date: { start: String(item.starts_on) } } : { date: null },
+      Status: { select: { name: "待整理" } },
+      Tags: { rich_text: [{ text: { content: tags } }] },
+      TicketType: { rich_text: [{ text: { content: String(item.ticket_type || "") } }] },
+      VenueName: { rich_text: [{ text: { content: String(item.venue_name || "") } }] },
+    },
+  };
+
+  return await notionCreatePage(env, payload);
+}
+
+// ── Notion API ─────────────────────────────────────────────
+async function notionCreatePage(env, payload) {
+  const resp = await fetch("https://api.notion.com/v1/pages", {
     method: "POST",
     headers: {
+      Authorization: `Bearer ${env.NOTION_TOKEN}`,
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      "Notion-Version": "2022-06-28",
     },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      max_tokens: 600,
-      temperature: 0,
-      response_format: { type: "json_object" },
-      messages: [{ role: "user", content: prompt }],
-    }),
+    body: JSON.stringify(payload),
   });
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || "OpenAI error");
-
-  const raw = data.choices?.[0]?.message?.content || "{}";
-  return JSON.parse(raw);
+  const jsonBody = await resp.json();
+  if (!resp.ok) throw new Error(jsonBody?.message || "寫入 Notion 失敗。");
+  return jsonBody;
 }
 
-// ── 主 handler ────────────────────────────────────────────
-export async function onRequestPost(context) {
-  const { request, env } = context;
-
-  const corsHeaders = {
-    "Content-Type": "application/json; charset=utf-8",
-    "Access-Control-Allow-Origin": "*",
-  };
-
-  // 1. 解析 body
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response(
-      JSON.stringify({ message: "Invalid JSON" }),
-      { status: 400, headers: corsHeaders }
-    );
-  }
-
-  const rawUrl = String(body?.url || "").trim();
-  const hints = body?.hints || {};
-
-  // 2. 驗證 URL
-  if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) {
-    return new Response(
-      JSON.stringify({ message: "url 不可空白，且必須是 http/https 網址。" }),
-      { status: 400, headers: corsHeaders }
-    );
-  }
-
-  // 3. 驗證 OpenAI key（先確認有設定，即使不一定用到）
-  if (!env.OPENAI_API_KEY) {
-    return new Response(
-      JSON.stringify({ message: "OPENAI_API_KEY 尚未設定。" }),
-      { status: 500, headers: corsHeaders }
-    );
-  }
-
-  // 4. URL 正規化 + analysis_id
-  const normalizedUrl = normalizeUrl(rawUrl);
-  const analysisId = await sha256(normalizedUrl);
-
-  // 5. 查快取
-  const cached = await getCachedAnalysis(env, analysisId);
-  if (cached) {
-    return new Response(
-      JSON.stringify({ ...cached, cached: true, analysis_id: analysisId }),
-      { status: 200, headers: corsHeaders }
-    );
-  }
-
-  // 6. 抓 metadata
-  const scraped = await scrapeUrl(normalizedUrl);
-  const sourcePlatform = detectPlatform(normalizedUrl);
-  const sourceTitle =
-    String(hints.title || "").trim() ||
-    scraped.ogTitle ||
-    scraped.title ||
-    "未命名來源";
-
-  const mergedText = [
-    sourceTitle,
-    scraped.ogTitle,
-    scraped.ogDescription,
-    scraped.title,
-    scraped.description,
-    hints.notes || "",
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
-  // 7. Heuristic 判斷
-  const heuristic = cheapHeuristicAnalysis({
-    sourceTitle,
-    sourcePlatform,
-    mergedText,
-    cityHint: hints.citySlug || "",
-    typeHint: hints.type || "",
-  });
-
-  // 8. 決定是否打 OpenAI
-  let result = { ...heuristic };
-  let usedAI = false;
-
-  if (shouldUseOpenAI(heuristic, mergedText)) {
-    try {
-      const aiResult = await callOpenAI(env.OPENAI_API_KEY, normalizedUrl, mergedText);
-      // 合併：AI 結果優先，但 sourceTitle / sourcePlatform 保留 scrape 的
-      result = {
-        sourceTitle,
-        sourcePlatform,
-        contentKind: aiResult.contentKind || heuristic.contentKind,
-        citySlug: aiResult.citySlug || heuristic.citySlug || null,
-        area: aiResult.area || null,
-        confidence: aiResult.confidence ?? heuristic.confidence,
-        needsReview: aiResult.needsReview ?? true,
-        summary: aiResult.summary || "",
-        items: Array.isArray(aiResult.items) ? aiResult.items : [],
-      };
-      usedAI = true;
-    } catch (e) {
-      // OpenAI 失敗 → fallback 到 heuristic，不中斷
-      result.needsReview = true;
+// ── GitHub Actions ─────────────────────────────────────────
+async function triggerGitHubDispatch(env) {
+  const resp = await fetch(
+    `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/dispatches`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "User-Agent": "TravelReelsBot/1.0",
+      },
+      body: JSON.stringify({ event_type: "sync_notion_after_reel_submit" }),
     }
-  }
-
-  // 9. 寫快取
-  await setCachedAnalysis(env, analysisId, result);
-
-  // 10. 回傳
-  return new Response(
-    JSON.stringify({
-      ...result,
-      cached: false,
-      analysis_id: analysisId,
-      _usedAI: usedAI,
-    }),
-    { status: 200, headers: corsHeaders }
   );
+  return resp.ok;
+}
+
+// ── 工具 ───────────────────────────────────────────────────
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
 }
