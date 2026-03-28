@@ -18,8 +18,10 @@ const BASE_URL = (() => {
 })();
 
 const SUBMIT_API_PATH = `${BASE_URL}api/submit-reel`;
+const ANALYZE_API_PATH = `${BASE_URL}api/analyze-url`;
+const CONFIRM_ANALYSIS_API_PATH = `${BASE_URL}api/confirm-analysis`;
 const CONTENT_MODES = ["spots", "events"];
-const REEL_TYPES = ["spot", "event"];
+const ANALYZE_TYPE_OPTIONS = ["auto", "spot", "event"];
 
 const CITY_INDEX_SEED = [
   {
@@ -483,6 +485,44 @@ function formatEventWindow(event) {
   return `${startDate} ～ ${endDate}${timePart}`;
 }
 
+function prettyAnalysisKind(kind) {
+  if (kind === "event") return "活動";
+  if (kind === "spot") return "景點 / 美食";
+  return "來源待整理";
+}
+
+function normalizeAnalysisPayload(payload, fallback = {}) {
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  return {
+    sourceTitle: payload?.source_title || fallback.sourceTitle || "未命名來源",
+    sourcePlatform: payload?.source_platform || fallback.sourcePlatform || "未知來源",
+    contentKind: payload?.content_kind || fallback.contentKind || "source_only",
+    citySlug: normalizeCitySlugValue(payload?.city_slug || fallback.citySlug || ""),
+    area: payload?.area || fallback.area || "",
+    confidence: Number.isFinite(payload?.confidence) ? payload.confidence : Number(payload?.confidence) || 0,
+    needsReview: payload?.needs_review !== false,
+    summary: payload?.summary || payload?.reasoning || fallback.summary || "",
+    items: items.map((item, index) => ({
+      id: item.id || `analysis-item-${index}`,
+      name: item.name || `候選項目 ${index + 1}`,
+      category: item.category || (payload?.content_kind === "event" ? "活動" : "景點"),
+      description: item.description || "",
+      tags: Array.isArray(item.tags) ? item.tags : [],
+      area: item.area || payload?.area || fallback.area || "",
+      best_time: item.best_time || "",
+      stay_minutes: Number.isFinite(item.stay_minutes) ? item.stay_minutes : Number(item.stay_minutes) || 0,
+      starts_on: item.starts_on || null,
+      ends_on: item.ends_on || null,
+      start_time: item.start_time || "",
+      end_time: item.end_time || "",
+      ticket_type: item.ticket_type || "",
+      price_note: item.price_note || "",
+      map_url: item.map_url || "",
+      reason: item.reason || "",
+    })),
+  };
+}
+
 function chipStyle(category) {
   const theme = CATEGORY_THEME[category] || { bg: COLORS.primarySoft, color: COLORS.text };
   return {
@@ -659,11 +699,13 @@ export default function TravelReelsTripPlanner() {
   const [reloadKey, setReloadKey] = useState(0);
   const [submitUrl, setSubmitUrl] = useState("");
   const [submitTitle, setSubmitTitle] = useState("");
-  const [submitType, setSubmitType] = useState("spot");
-  const [submitCitySlug, setSubmitCitySlug] = useState("kyoto");
+  const [submitType, setSubmitType] = useState("auto");
+  const [submitCitySlug, setSubmitCitySlug] = useState("");
   const [submitNotes, setSubmitNotes] = useState("");
+  const [analysisPreview, setAnalysisPreview] = useState(null);
   const [submitStatus, setSubmitStatus] = useState({ kind: "idle", message: "" });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   const isMobile = useResponsiveColumns();
 
   const hasCitySelected = selectedCitySlug !== "unselected";
@@ -789,7 +831,7 @@ export default function TravelReelsTripPlanner() {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   }
 
-  async function handleSubmitReel(event) {
+  async function handleAnalyzeUrl(event) {
     event.preventDefault();
     const cleanUrl = submitUrl.trim();
     if (!cleanUrl) {
@@ -797,19 +839,22 @@ export default function TravelReelsTripPlanner() {
       return;
     }
 
-    setIsSubmitting(true);
-    setSubmitStatus({ kind: "loading", message: "正在送出，若 API 已接好，會把 Reel 送到整理流程。" });
+    setIsAnalyzing(true);
+    setAnalysisPreview(null);
+    setSubmitStatus({ kind: "loading", message: "正在分析網址內容，完成後會先顯示給你確認。" });
 
     try {
-      const response = await fetch(SUBMIT_API_PATH, {
+      const response = await fetch(ANALYZE_API_PATH, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url: cleanUrl,
-          title: submitTitle.trim(),
-          type: submitType,
-          citySlug: normalizeCitySlugValue(submitCitySlug),
-          notes: submitNotes.trim(),
+          hints: {
+            title: submitTitle.trim(),
+            type: submitType === "auto" ? "" : submitType,
+            citySlug: normalizeCitySlugValue(submitCitySlug),
+            notes: submitNotes.trim(),
+          },
         }),
       });
 
@@ -824,28 +869,92 @@ export default function TravelReelsTripPlanner() {
       }
 
       if (!response.ok) {
-        const message = payload?.message || `送出失敗，HTTP ${response.status}`;
+        const message = payload?.message || `分析失敗，HTTP ${response.status}`;
+        throw new Error(message);
+      }
+
+      const preview = normalizeAnalysisPayload(payload, {
+        sourceTitle: submitTitle.trim(),
+        contentKind: submitType === "auto" ? "source_only" : submitType,
+        citySlug: submitCitySlug,
+      });
+
+      setAnalysisPreview(preview);
+      setSubmitStatus({
+        kind: "success",
+        message: "分析完成。請先檢查下方結果，確認無誤後再寫入資料庫。",
+      });
+    } catch (error) {
+      setSubmitStatus({
+        kind: "error",
+        message: error instanceof Error
+          ? `${error.message}。目前需要後端提供 /api/analyze-url，前端才會先顯示分析結果。`
+          : "分析失敗。",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+
+  async function handleConfirmAnalysis() {
+    if (!analysisPreview) {
+      setSubmitStatus({ kind: "error", message: "目前沒有可確認寫入的分析結果。" });
+      return;
+    }
+
+    setIsConfirming(true);
+    setSubmitStatus({ kind: "loading", message: "正在確認並寫入資料庫，完成後會自動重新整理。" });
+
+    try {
+      const response = await fetch(CONFIRM_ANALYSIS_API_PATH, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: submitUrl.trim(),
+          sourceTitle: submitTitle.trim(),
+          notes: submitNotes.trim(),
+          analysis: analysisPreview,
+        }),
+      });
+
+      let payload = {};
+      const text = await response.text();
+      if (text) {
+        try {
+          payload = JSON.parse(text);
+        } catch (_error) {
+          payload = { raw: text };
+        }
+      }
+
+      if (!response.ok) {
+        const message = payload?.message || `寫入失敗，HTTP ${response.status}`;
         throw new Error(message);
       }
 
       setSubmitStatus({
         kind: "success",
-        message: payload?.message || "已送出 Reel。若後端已接 Notion / GitHub workflow，網站會在整理完成後自動更新。",
+        message: payload?.message || "已確認寫入。若後端已接 Notion / GitHub workflow，網站會在整理完成後自動更新。",
       });
       setSubmitUrl("");
       setSubmitTitle("");
+      setSubmitType("auto");
+      setSubmitCitySlug("");
       setSubmitNotes("");
-      setSelectedCitySlug(normalizeCitySlugValue(submitCitySlug) || selectedCitySlug);
+      setAnalysisPreview(null);
+      if (analysisPreview.citySlug) {
+        setSelectedCitySlug(analysisPreview.citySlug);
+      }
       setReloadKey((value) => value + 1);
     } catch (error) {
       setSubmitStatus({
         kind: "error",
         message: error instanceof Error
-          ? `${error.message}。目前前端已經接到投稿 API，但還需要把 /api/submit-reel 後端接上，才能真的自動寫入 Notion 並重建網站。`
-          : "送出失敗。",
+          ? `${error.message}。目前需要後端提供 /api/confirm-analysis，確認後才會真的寫入 Notion 並重建網站。`
+          : "寫入失敗。",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsConfirming(false);
     }
   }
 
@@ -885,23 +994,24 @@ export default function TravelReelsTripPlanner() {
           </SectionCard>
 
           <div style={{ background: COLORS.primary, color: "#ffffff", borderRadius: 28, padding: 24, boxShadow: "0 10px 35px rgba(0,0,0,0.14)" }}>
-            <div style={{ fontSize: 13, color: "#d6d3d1" }}>Reel 投稿</div>
-            <div style={{ marginTop: 8, fontSize: 30, fontWeight: 900 }}>貼網址，自動送整理</div>
-            <form onSubmit={handleSubmitReel} style={{ marginTop: 16, display: "grid", gap: 12 }}>
+            <div style={{ fontSize: 13, color: "#d6d3d1" }}>網址分析入口</div>
+            <div style={{ marginTop: 8, fontSize: 30, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
+            <form onSubmit={handleAnalyzeUrl} style={{ marginTop: 16, display: "grid", gap: 12 }}>
               <input
                 value={submitUrl}
                 onChange={(e) => setSubmitUrl(e.target.value)}
-                placeholder="貼上 Instagram Reel / Threads / 網址"
+                placeholder="只貼 Instagram Reel / Threads / 網址 就可以"
                 style={{ width: "100%", borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none" }}
               />
               <input
                 value={submitTitle}
                 onChange={(e) => setSubmitTitle(e.target.value)}
-                placeholder="可選：幫這個 Reel 先取一個標題"
+                placeholder="可選：人工補充標題提示"
                 style={{ width: "100%", borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none" }}
               />
               <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
                 <select value={submitCitySlug} onChange={(e) => setSubmitCitySlug(e.target.value)} style={{ borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none" }}>
+                  <option value="" style={{ color: COLORS.text }}>自動判斷城市</option>
                   {cityIndex.map((city) => (
                     <option key={city.slug} value={city.slug} style={{ color: COLORS.text }}>
                       {city.label}
@@ -909,9 +1019,9 @@ export default function TravelReelsTripPlanner() {
                   ))}
                 </select>
                 <select value={submitType} onChange={(e) => setSubmitType(e.target.value)} style={{ borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none" }}>
-                  {REEL_TYPES.map((type) => (
+                  {ANALYZE_TYPE_OPTIONS.map((type) => (
                     <option key={type} value={type} style={{ color: COLORS.text }}>
-                      {type === "spot" ? "景點 / 美食" : "活動 / 展覽"}
+                      {type === "auto" ? "自動判斷類型" : type === "spot" ? "偏向景點 / 美食" : "偏向活動 / 展覽"}
                     </option>
                   ))}
                 </select>
@@ -919,19 +1029,82 @@ export default function TravelReelsTripPlanner() {
               <textarea
                 value={submitNotes}
                 onChange={(e) => setSubmitNotes(e.target.value)}
-                placeholder="可選：補充備註，例如『想整理成大阪心齋橋晚餐』或『這是期間限定活動』"
+                placeholder="可選：補充提示，例如『這支影片應該是京都咖啡店』或『這是期間限定活動』"
                 style={{ width: "100%", minHeight: 96, borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: 16, outline: "none", resize: "vertical" }}
               />
-              <PrimaryButton type="submit" onClick={handleSubmitReel} disabled={isSubmitting}>
-                {isSubmitting ? "送出中…" : "送到整理流程"}
-              </PrimaryButton>
+              <div style={{ display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+                <PrimaryButton type="submit" onClick={handleAnalyzeUrl} disabled={isAnalyzing || isConfirming}>
+                  {isAnalyzing ? "分析中…" : "先分析網址"}
+                </PrimaryButton>
+                <PrimaryButton secondary onClick={handleConfirmAnalysis} disabled={!analysisPreview || isAnalyzing || isConfirming}>
+                  {isConfirming ? "寫入中…" : "確認後寫入"}
+                </PrimaryButton>
+              </div>
             </form>
             <div style={{ marginTop: 14, fontSize: 12, lineHeight: 1.8, color: "#e7e5e4" }}>
-              前端已經會把 Reel POST 到 <code style={{ color: "#fff" }}>{SUBMIT_API_PATH}</code>。要做到真的自動更新網站，後端需要接這支 API，寫入 Notion 或 GitHub，並觸發重建。
+              前端現在會先呼叫 <code style={{ color: "#fff" }}>{ANALYZE_API_PATH}</code> 做分析，顯示結果給你檢查；你按確認後，才會呼叫 <code style={{ color: "#fff" }}>{CONFIRM_ANALYSIS_API_PATH}</code> 真正寫入資料庫。
             </div>
             {submitStatus.kind !== "idle" ? (
               <div style={{ marginTop: 14, borderRadius: 18, padding: 14, fontSize: 13, lineHeight: 1.8, ...submitStatusStyle }}>
                 {submitStatus.message}
+              </div>
+            ) : null}
+            {analysisPreview ? (
+              <div style={{ marginTop: 16, borderRadius: 22, background: "rgba(255,255,255,0.10)", padding: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: "#d6d3d1" }}>分析預覽</div>
+                    <div style={{ marginTop: 6, fontSize: 18, fontWeight: 800 }}>{analysisPreview.sourceTitle}</div>
+                    <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>
+                      類型：{prettyAnalysisKind(analysisPreview.contentKind)} ｜ 平台：{analysisPreview.sourcePlatform} ｜ 城市：{analysisPreview.citySlug || "待判定"}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 12, background: "rgba(255,255,255,0.12)", color: "#fff" }}>
+                      信心 {Math.round((analysisPreview.confidence || 0) * 100)}%
+                    </span>
+                    <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 12, background: analysisPreview.needsReview ? COLORS.warningBg : COLORS.successBg, color: analysisPreview.needsReview ? COLORS.warningText : COLORS.successText }}>
+                      {analysisPreview.needsReview ? "建議人工確認" : "可直接寫入"}
+                    </span>
+                  </div>
+                </div>
+                {analysisPreview.summary ? (
+                  <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.8, color: "#f5f5f4" }}>{analysisPreview.summary}</div>
+                ) : null}
+                <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                  {analysisPreview.items.length ? analysisPreview.items.map((item) => (
+                    <div key={item.id} style={{ borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                        <div style={{ fontWeight: 800 }}>{item.name}</div>
+                        <span style={{ borderRadius: 999, padding: "4px 10px", fontSize: 12, background: "rgba(255,255,255,0.12)", color: "#fff" }}>{item.category}</span>
+                      </div>
+                      {item.area ? <div style={{ marginTop: 6, fontSize: 12, color: "#d6d3d1" }}>區域：{item.area}</div> : null}
+                      {item.description ? <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>{item.description}</div> : null}
+                      {item.tags?.length ? (
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                          {item.tags.map((tag) => (
+                            <span key={tag} style={{ borderRadius: 999, background: "rgba(255,255,255,0.10)", padding: "4px 8px", fontSize: 12, color: "#fff" }}>#{tag}</span>
+                          ))}
+                        </div>
+                      ) : null}
+                      {analysisPreview.contentKind === "event" ? (
+                        <div style={{ marginTop: 8, fontSize: 12, color: "#d6d3d1" }}>
+                          活動期間：{item.starts_on || "未定"} ～ {item.ends_on || "未定"}
+                        </div>
+                      ) : null}
+                      {analysisPreview.contentKind === "spot" && item.best_time ? (
+                        <div style={{ marginTop: 8, fontSize: 12, color: "#d6d3d1" }}>
+                          建議時段：{item.best_time}{item.stay_minutes ? ` ／ 停留 ${item.stay_minutes} 分` : ""}
+                        </div>
+                      ) : null}
+                      {item.reason ? <div style={{ marginTop: 8, fontSize: 12, color: "#d6d3d1" }}>判斷依據：{item.reason}</div> : null}
+                    </div>
+                  )) : (
+                    <div style={{ borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14, fontSize: 13, color: "#f5f5f4", lineHeight: 1.8 }}>
+                      目前沒有拆出明確的景點或活動項目，確認後會先以來源資料寫入待整理清單。
+                    </div>
+                  )}
+                </div>
               </div>
             ) : null}
           </div>
@@ -1025,165 +1198,4 @@ export default function TravelReelsTripPlanner() {
                         key={mode}
                         type="button"
                         onClick={() => setSelectedContentMode(mode)}
-                        style={{
-                          borderRadius: 999,
-                          padding: "10px 14px",
-                          border: `1px solid ${active ? COLORS.primary : COLORS.border}`,
-                          background: active ? COLORS.primary : "#ffffff",
-                          color: active ? "#ffffff" : COLORS.text,
-                          cursor: "pointer",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {mode === "spots" ? `景點 (${loadedSpots.length})` : `活動 (${loadedEvents.length})`}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {allCategories.map((category) => {
-                    const active = selectedCategories.includes(category);
-                    return (
-                      <button
-                        key={category}
-                        type="button"
-                        onClick={() => toggleCategory(category)}
-                        style={{
-                          ...chipStyle(category),
-                          cursor: "pointer",
-                          background: active ? (CATEGORY_THEME[category]?.bg || COLORS.primarySoft) : "#ffffff",
-                          color: active ? (CATEGORY_THEME[category]?.color || COLORS.text) : COLORS.subtext,
-                          border: `1px solid ${active ? (CATEGORY_THEME[category]?.bg || COLORS.primarySoft) : COLORS.border}`,
-                          opacity: hasCitySelected ? 1 : 0.5,
-                        }}
-                        disabled={!hasCitySelected}
-                      >
-                        {category}
-                      </button>
-                    );
-                  })}
-                </div>
-                {selectedCity ? (
-                  <div style={{ borderRadius: 18, background: COLORS.primarySoft, padding: 14, fontSize: 13, color: COLORS.subtext, lineHeight: 1.8 }}>
-                    {selectedCity.emoji} {selectedCity.label}：{selectedCity.description}
-                  </div>
-                ) : null}
-              </div>
-
-              {hasCitySelected ? (
-                <VisualMap items={activeCollection} activeItemId={activeItem?.id || null} onSelect={setActiveItemId} />
-              ) : (
-                <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 28, textAlign: "center", color: COLORS.subtext }}>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.text }}>請先選擇城市</div>
-                  <div style={{ marginTop: 10, lineHeight: 1.8 }}>
-                    先選擇想看的城市，即可切換對應的景點、活動與推薦安排。
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.2fr 0.8fr", gap: 16, marginTop: 16 }}>
-                <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.card, padding: 20 }}>
-                  {activeItem ? (
-                    <>
-                      <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
-                        <div style={{ fontSize: 42 }}>{activeItem.thumbnail}</div>
-                        <div>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <span style={chipStyle(activeItem.category)}>{activeItem.category}</span>
-                          </div>
-                          <div style={{ marginTop: 10, fontSize: 22, fontWeight: 900 }}>{activeItem.name}</div>
-                          <div style={{ marginTop: 6, fontSize: 14, color: COLORS.subtext }}>{activeItem.city}・{activeItem.area}</div>
-                        </div>
-                      </div>
-                      <div style={{ marginTop: 14, fontSize: 14, color: COLORS.subtext, lineHeight: 1.8 }}>{activeItem.description}</div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-                        {activeItem.tags.map((tag) => (
-                          <span key={tag} style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>#{tag}</span>
-                        ))}
-                      </div>
-                      {selectedContentMode === "events" ? (
-                        <div style={{ marginTop: 14, borderRadius: 18, background: COLORS.warningBg, color: COLORS.warningText, padding: 14, fontSize: 13, lineHeight: 1.8 }}>
-                          活動期間：{formatEventWindow(activeItem)}
-                        </div>
-                      ) : null}
-                    </>
-                  ) : (
-                    <div style={{ color: COLORS.subtext }}>目前沒有可顯示的內容。</div>
-                  )}
-                </div>
-
-                <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 20 }}>
-                  <div style={{ fontSize: 13, color: COLORS.subtext }}>快速操作</div>
-                  <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-                    {activeItem ? (
-                      <>
-                        <PrimaryButton href={activeItem.mapUrl} block>開啟 Google Maps</PrimaryButton>
-                        <PrimaryButton href={activeItem.sourceUrl} block secondary>查看原始來源</PrimaryButton>
-                      </>
-                    ) : null}
-                  </div>
-                  <div style={{ marginTop: 14, fontSize: 12, color: COLORS.subtext, lineHeight: 1.7 }}>
-                    可直接開啟 Google Maps 或查看對應來源，方便安排實際路線與收藏靈感。
-                  </div>
-                </div>
-              </div>
-            </SectionCard>
-          </div>
-
-          <SectionCard title="推薦安排">
-            <div style={{ display: "grid", gap: 14 }}>
-              <div>
-                <div style={{ fontSize: 13, color: COLORS.subtext, marginBottom: 8 }}>目前時間</div>
-                <select value={timeOfDay} onChange={(e) => setTimeOfDay(e.target.value)} style={{ width: "100%", borderRadius: 14, border: `1px solid ${COLORS.border}`, padding: "12px 12px", outline: "none" }} disabled={!hasCitySelected}>
-                  <option value="早上">早上</option>
-                  <option value="中午">中午</option>
-                  <option value="下午">下午</option>
-                  <option value="晚上">晚上</option>
-                </select>
-              </div>
-              <div>
-                <div style={{ fontSize: 13, color: COLORS.subtext, marginBottom: 8 }}>你人在哪一區附近</div>
-                <select value={baseArea} onChange={(e) => setBaseArea(e.target.value)} style={{ width: "100%", borderRadius: 14, border: `1px solid ${COLORS.border}`, padding: "12px 12px", outline: "none" }} disabled={!hasCitySelected || !allAreas.length || selectedContentMode === "events"}>
-                  {allAreas.length ? allAreas.map((area) => (
-                    <option key={area} value={area}>{area}</option>
-                  )) : <option value="">請先選城市</option>}
-                </select>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 16, borderRadius: 20, background: COLORS.primarySoft, padding: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14, color: COLORS.subtext }}>
-                <span>推薦停留總時數</span>
-                <span>{Math.round((recommendations.reduce((sum, spot) => sum + spot.stayMinutes, 0) / 60) * 10) / 10} 小時</span>
-              </div>
-              <div style={{ marginTop: 8, fontSize: 12, color: COLORS.subtext }}>
-                依目前時間與所在區域，快速挑出比較順路的景點安排。
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-              {recommendations.map((item) => (
-                <div key={item.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 22, background: COLORS.card, padding: 16 }}>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 999, background: COLORS.primary, color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 }}>{item.order}</div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 800 }}>{item.name}</div>
-                        <span style={{ border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{item.bestTime}</span>
-                      </div>
-                      <div style={{ marginTop: 8, fontSize: 14, color: COLORS.subtext }}>{item.reason}</div>
-                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 12, color: COLORS.subtext }}>
-                        <span>{item.stayMinutes} 分</span>
-                        <span>{item.city}・{item.area}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-        </div>
-      </div>
-    </div>
-  );
-}
+ 
