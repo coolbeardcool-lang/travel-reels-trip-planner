@@ -741,9 +741,30 @@ export default function App() {
                       分析預覽 {analysisPreview.cached && "⚡ 快取"}
                     </div>
                     <div style={{ marginTop: 6, fontSize: 18, fontWeight: 800 }}>{analysisPreview.sourceTitle}</div>
-                    <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>
-                      類型：{prettyAnalysisKind(analysisPreview.contentKind)} ｜ 平台：{analysisPreview.sourcePlatform} ｜ 城市：{analysisPreview.citySlug || "待判定"}
-                    </div>
+<div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>
+  類型：{prettyAnalysisKind(analysisPreview.contentKind)} ｜ 平台：{analysisPreview.sourcePlatform}
+</div>
+<div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+  <span style={{ fontSize: 12, color: "#d6d3d1" }}>城市（可修正）</span>
+  <input
+    value={analysisPreview.citySlug || ""}
+    onChange={(e) =>
+      setAnalysisPreview((prev) => ({ ...prev, citySlug: e.target.value.toLowerCase().trim() }))
+    }
+    placeholder="例如 seoul、tokyo、taipei"
+    style={{
+      flex: 1,
+      minWidth: 160,
+      borderRadius: 12,
+      border: "1px solid rgba(255,255,255,0.25)",
+      background: "rgba(255,255,255,0.12)",
+      color: "#ffffff",
+      padding: "8px 12px",
+      fontSize: 13,
+      outline: "none",
+    }}
+  />
+</div>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 12, background: "rgba(255,255,255,0.12)", color: "#fff" }}>
