@@ -322,6 +322,33 @@
       "priorityScore": 0,
       "lastReviewedAt": null,
       "notes": ""
+    },
+    {
+      "id": "33124c5d-f0b3-81ab-a786-e05aa11ed302",
+      "city": "大阪",
+      "citySlug": "大阪",
+      "area": "台北市",
+      "name": "ニク サングルマン",
+      "category": "餐廳",
+      "description": "提供歐姆蛋漢堡排和厚切牛舌漢堡排，口味獨特。",
+      "sourceId": "33124c5d-f0b3-81c3-9f3b-d0e561395196",
+      "sourceTitle": "大阪・ニク サングルマン美味漢堡",
+      "sourceUrl": "https://www.instagram.com/reel/DWbB04-hJd9",
+      "bestTime": "中午",
+      "stayMinutes": 60,
+      "tags": [
+        "漢堡",
+        "美食"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E3%83%8B%E3%82%AF%20%E3%82%B5%E3%83%B3%E3%82%B0%E3%83%AB%E3%83%9E%E3%83%B3%20%E5%A4%A7%E9%98%AA",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": ""
     }
   ],
   "events": [
@@ -455,6 +482,31 @@
     }
   ],
   "sources": [
+    {
+      "id": "33124c5d-f0b3-81c3-9f3b-d0e561395196",
+      "title": "大阪・ニク サングルマン美味漢堡",
+      "url": "https://www.instagram.com/reel/DWbB04-hJd9",
+      "platform": "Instagram",
+      "sourceType": "景點美食",
+      "status": "已匯入",
+      "note": "ニク サングルマン美味漢堡",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "大阪"
+      ],
+      "relatedCityIds": [
+        [
+          "大阪"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33124c5d-f0b3-81ab-a786-e05aa11ed302"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
     {
       "id": "33124c5d-f0b3-8107-8224-fa8cc31d0909",
       "title": "京都・京都隱藏亮點明信片漫步活動",
@@ -709,10 +761,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T15:06:18.154Z",
+    "lastSyncedAt": "2026-03-28T15:06:51.252Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 15
+    "count": 16
   }
 }
