@@ -94,6 +94,26 @@ const SPOT_KEYWORDS = [
   "onsen",
 ];
 
+const ITEM_STOPWORDS = new Set([
+  "instagram",
+  "reel",
+  "threads",
+  "facebook",
+  "youtube",
+  "tiktok",
+  "twitter",
+  "x",
+  "travel",
+  "trip",
+  "vlog",
+  "推薦",
+  "分享",
+  "旅遊",
+  "景點",
+  "活動",
+  "美食",
+]);
+
 function detectPlatform(url) {
   try {
     const host = new URL(url).hostname.replace(/^www\./, "");
@@ -270,6 +290,106 @@ function buildHeuristicReviewReason({ confidence, contentKind, mergedText }) {
   return null;
 }
 
+function detectItemKindFromText(text, fallback) {
+  const lower = String(text || "").toLowerCase();
+  const hasEvent = EVENT_KEYWORDS.some((k) => lower.includes(k));
+  const hasSpot = SPOT_KEYWORDS.some((k) => lower.includes(k));
+  if (hasEvent && hasSpot) return "source_only";
+  if (hasEvent) return "event";
+  if (hasSpot) return "spot";
+  return fallback === "mixed" ? "source_only" : fallback;
+}
+
+function normalizeCandidateName(value) {
+  return String(value || "")
+    .replace(/https?:\/\/\S+/gi, " ")
+    .replace(/[#＠@][\w\u4e00-\u9fff_-]+/g, " ")
+    .replace(/[|｜]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
+function extractCandidatesFromText(mergedText) {
+  const text = String(mergedText || "");
+  if (!text) return [];
+
+  const candidates = [];
+  const lineLikeParts = text
+    .split(/[\n\r]+|(?<=[。！？!?.])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  candidates.push(...lineLikeParts);
+
+  const numberedRegex = /(?:^|[\n\r])\s*(?:\d{1,2}[.)、]|[•●▪\-])\s*([^\n\r]+)/g;
+  let match;
+  while ((match = numberedRegex.exec(text))) {
+    candidates.push(match[1]);
+  }
+
+  return candidates;
+}
+
+function buildHeuristicItems({ mergedText, contentKind, citySlug, area, confidence }) {
+  const seen = new Set();
+  const candidates = extractCandidatesFromText(mergedText);
+  const items = [];
+
+  for (const raw of candidates) {
+    const name = normalizeCandidateName(raw);
+    const lower = name.toLowerCase();
+    if (!name || name.length < 2) continue;
+    if (name.length > 60) continue;
+    if (ITEM_STOPWORDS.has(lower)) continue;
+    if (seen.has(lower)) continue;
+    seen.add(lower);
+
+    const itemKind = detectItemKindFromText(name, contentKind);
+    const inferredCity = inferCitySlug(lower, citySlug);
+
+    items.push({
+      id: `heuristic-item-${items.length + 1}`,
+      name,
+      itemKind,
+      item_kind: itemKind,
+      category: itemKind === "event" ? "活動" : itemKind === "spot" ? "景點" : "",
+      description: "",
+      tags: [],
+      citySlug: inferredCity || null,
+      city_slug: inferredCity || null,
+      area: area || null,
+      best_time: null,
+      stay_minutes: null,
+      starts_on: null,
+      ends_on: null,
+      start_time: "",
+      end_time: "",
+      lat: null,
+      lng: null,
+      map_url: null,
+      official_url: null,
+      venue_name: null,
+      price_note: null,
+      ticket_type: null,
+      thumbnail: null,
+      itemConfidence: Math.min(confidence, 0.58),
+      item_confidence: Math.min(confidence, 0.58),
+      sourceCredibility: "low",
+      source_credibility: "low",
+      needsReview: true,
+      needs_review: true,
+      reviewReason: "heuristic extraction from limited source text",
+      review_reason: "heuristic extraction from limited source text",
+      evidence: [{ type: "metadata", value: name }],
+      reason: "Derived from source text segment only.",
+    });
+
+    if (items.length >= 8) break;
+  }
+
+  return items;
+}
+
 function cheapHeuristicAnalysis({
   sourceTitle,
   sourcePlatform,
@@ -303,6 +423,13 @@ function cheapHeuristicAnalysis({
     contentKind,
     mergedText,
   });
+  const items = buildHeuristicItems({
+    mergedText,
+    contentKind,
+    citySlug: citySlug || null,
+    area: null,
+    confidence,
+  });
 
   return {
     schemaVersion: "2.0",
@@ -325,7 +452,7 @@ function cheapHeuristicAnalysis({
     source_evidence: mergedText
       ? [{ type: "metadata", value: mergedText.slice(0, 220) }]
       : [],
-    items: [],
+    items,
   };
 }
 
@@ -408,7 +535,7 @@ function inferItemKind(item, fallbackContentKind) {
     return fallbackContentKind;
   }
 
-  return "spot";
+  return "source_only";
 }
 
 function normalizeAIItem(item, index, fallbackContentKind, fallbackCitySlug, fallbackArea, fallbackText) {
@@ -428,14 +555,24 @@ function normalizeAIItem(item, index, fallbackContentKind, fallbackCitySlug, fal
     item?.reviewReason ||
     item?.review_reason ||
     (needsReview ? "item evidence requires review" : null);
+  const stayMinutesRaw = item?.stay_minutes;
+  const stayMinutes =
+    stayMinutesRaw === null || stayMinutesRaw === undefined || stayMinutesRaw === ""
+      ? null
+      : Number.isFinite(stayMinutesRaw)
+        ? stayMinutesRaw
+        : Number.isFinite(Number(stayMinutesRaw))
+          ? Number(stayMinutesRaw)
+          : null;
+  const normalizedName = String(item?.name || "").trim();
 
   return {
     id: item?.id || `analysis-item-${index + 1}`,
-    name: String(item?.name || `候選項目 ${index + 1}`).trim(),
+    name: normalizedName || null,
     itemKind,
     item_kind: itemKind,
     category: String(
-      item?.category || (itemKind === "event" ? "活動" : "景點")
+      item?.category || (itemKind === "event" ? "活動" : itemKind === "spot" ? "景點" : "")
     ).trim(),
     description: String(item?.description || "").trim(),
     tags: normalizeStringArray(item?.tags),
@@ -443,9 +580,7 @@ function normalizeAIItem(item, index, fallbackContentKind, fallbackCitySlug, fal
     city_slug: citySlug,
     area: String(item?.area || fallbackArea || "").trim() || null,
     best_time: item?.best_time || null,
-    stay_minutes: Number.isFinite(item?.stay_minutes)
-      ? item.stay_minutes
-      : Number(item?.stay_minutes) || 0,
+    stay_minutes: stayMinutes,
     starts_on: item?.starts_on || null,
     ends_on: item?.ends_on || null,
     start_time: item?.start_time || "",
