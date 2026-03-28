@@ -74,14 +74,22 @@ async function scrapeUrl(url) {
     });
     if (!res.ok) return result;
     const html = await res.text();
+
     const get = (pattern) => {
       const m = html.match(pattern);
       if (!m) return null;
       return m[1]
-        .replace(/&amp;/g, "&").replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-        .trim().slice(0, 500);
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+        .replace(/&#([0-9]+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+        .trim()
+        .slice(0, 500);
     };
+
     result.ogTitle =
       get(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
       get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
