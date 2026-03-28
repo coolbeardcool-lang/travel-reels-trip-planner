@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const MASTER_PATH = path.resolve(__dirname, "../public/data/cities-master.json");
-const OUTPUT_PATH = path.resolve(__dirname, "../shared/city-aliases.js");
+const OUTPUT_PATH = path.resolve(__dirname, "../functions/api/city-aliases.js");
 
 function normalize(value) {
   return String(value || "").trim();

@@ -70,28 +70,25 @@ export async function onRequestPost(context) {
 
     if (items.length && (env.NOTION_SPOTS_DATA_SOURCE_ID || env.NOTION_EVENTS_DATA_SOURCE_ID)) {
       for (const item of items) {
-        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "").trim();
-        const itemKind = normalizeItemKind(item, contentKind);
-        const itemName = cleanText(item?.name) || (itemKind === "event" ? "未命名活動" : "未命名項目");
+        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "");
+        const spotPage = await createSpotPage({
+          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
+        });
+        const spotId = spotPage?.id || null;
+        if (spotId) spotPageIds.push(spotId);
+        created.spots.push({ id: spotId, name: item.name || "未命名景點" });
+      }
+    }
 
-        if (itemKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
-          const eventPage = await createEventPage({
-            env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
-          });
-          const eventId = eventPage?.id || null;
-          if (eventId) eventPageIds.push(eventId);
-          created.events.push({ id: eventId, name: itemName });
-          continue;
-        }
-
-        if (env.NOTION_SPOTS_DATA_SOURCE_ID) {
-          const spotPage = await createSpotPage({
-            env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
-          });
-          const spotId = spotPage?.id || null;
-          if (spotId) spotPageIds.push(spotId);
-          created.spots.push({ id: spotId, name: itemName });
-        }
+    if (contentKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
+      for (const item of items) {
+        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "");
+        const eventPage = await createEventPage({
+          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
+        });
+        const eventId = eventPage?.id || null;
+        if (eventId) eventPageIds.push(eventId);
+        created.events.push({ id: eventId, name: item.name || "未命名活動" });
       }
     }
 
@@ -272,13 +269,15 @@ async function createSourcePage({
 async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
-  const normalizedTags = normalizeTags(item.tags);
+  const normalizedTags = Array.isArray(item.tags)
+    ? item.tags.map((t) => String(t || "").trim()).filter(Boolean)
+    : [];
   const tags = normalizedTags.length
     ? normalizedTags.join(", ")
-    : [cleanText(item.category) || "待分類", cleanText(item.area), cleanText(citySlug)].filter(Boolean).join(", ");
+    : [item.category || "景點", item.area || "", citySlug || ""].filter(Boolean).join(", ");
 
-  const mapQuery = encodeURIComponent(joinClean([item.name, item.area, cityLabel], " "));
-  const mapUrl = cleanText(item.map_url) || (mapQuery ? `https://www.google.com/maps/search/?api=1&query=${mapQuery}` : null);
+  const mapQuery = encodeURIComponent(`${item.name} ${cityLabel}`);
+  const mapUrl = item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
   const lat = Number.isFinite(item?.lat) && Math.abs(item.lat) <= 90 && item.lat !== 0 ? item.lat : null;
   const lng = Number.isFinite(item?.lng) && Math.abs(item.lng) <= 180 && item.lng !== 0 ? item.lng : null;
@@ -304,9 +303,6 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
     Tags:             { rich_text: [{ text: { content: tags } }] },
     Thumbnail:        { rich_text: [{ text: { content: cleanText(item.thumbnail || guessThumbnail(item.category)) } }] },
   };
-  if (Number.isFinite(Number(item?.stay_minutes)) && Number(item.stay_minutes) > 0) {
-    properties.StayMinutes = { number: Number(item.stay_minutes) };
-  }
   if (lat !== null) properties.Lat = { number: lat };
   if (lng !== null) properties.Lng = { number: lng };
 

@@ -1,4 +1,4 @@
-import { CITY_ALIASES } from "../../shared/city-aliases.js";
+import { CITY_ALIASES } from "./city-aliases.js";
 
 const PLATFORM_MAP = {
   "instagram.com": "Instagram",
