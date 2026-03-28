@@ -50,7 +50,7 @@ export async function onRequestPost(context) {
 
     // 確保城市存在（需要 READ_ID 查詢 + WRITE_ID 寫入）
     let cityEnsureError = null;
-    if (citySlug && env.NOTION_CITIES_READ_ID && env.NOTION_CITIES_WRITE_ID) {
+    if (citySlug && env.NOTION_CITIES_WRITE_ID) {
       try {
         await ensureCityExists(env, citySlug);
       } catch (e) {
@@ -160,7 +160,7 @@ async function ensureCityExists(env, citySlug) {
   try {
     // 查詢用 database ID（NOTION_CITIES_READ_ID）
     const res = await fetch(
-      `https://api.notion.com/v1/databases/${env.NOTION_CITIES_READ_ID}/query`,
+      `https://api.notion.com/v1/data_sources/${env.NOTION_CITIES_WRITE_ID}/query`,
       {
         method: "POST",
         headers: {
