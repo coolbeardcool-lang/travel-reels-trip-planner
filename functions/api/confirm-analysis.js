@@ -34,4 +34,5 @@ export async function onRequestPost(context) {
     const summary = String(analysis.summary || "");
     const confidence = Number(analysis.confidence || 0);
     const items = Array.isArray(analysis.items) ? analysis.items : [];
+
 }
