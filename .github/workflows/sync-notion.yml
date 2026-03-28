@@ -2,6 +2,8 @@ name: Sync Notion Data
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [sync_notion_after_reel_submit]
   schedule:
     - cron: "17 */6 * * *"
   push:
