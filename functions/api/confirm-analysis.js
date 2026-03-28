@@ -48,7 +48,6 @@ export async function onRequestPost(context) {
     const confidence = Number(analysis.confidence || 0);
     const items = Array.isArray(analysis.items) ? analysis.items : [];
 
-    // 確保城市存在
     let cityEnsureError = null;
     if (citySlug && env.NOTION_CITIES_DATA_SOURCE_ID) {
       try {
@@ -58,28 +57,20 @@ export async function onRequestPost(context) {
       }
     }
 
-    // 先寫 Source，拿到 page ID
     const sourcePage = await createSourcePage({
       env, sourceTitle, url, platform, notes,
       summary, contentKind, citySlug, confidence, items,
     });
     const sourcePageId = sourcePage?.id || null;
 
-    const created = {
-      sourcePageId,
-      spots: [],
-      events: [],
-    };
-
+    const created = { sourcePageId, spots: [], events: [] };
     const spotPageIds = [];
     const eventPageIds = [];
 
-    // 寫 Spots，帶入 source page ID
     if (contentKind === "spot" && env.NOTION_SPOTS_DATA_SOURCE_ID) {
       for (const item of items) {
         const spotPage = await createSpotPage({
-          env, item, citySlug, sourceUrl: url,
-          sourcePageId, sourceTitle,
+          env, item, citySlug, sourceUrl: url, sourcePageId, sourceTitle,
         });
         const spotId = spotPage?.id || null;
         if (spotId) spotPageIds.push(spotId);
@@ -87,12 +78,10 @@ export async function onRequestPost(context) {
       }
     }
 
-    // 寫 Events，帶入 source page ID
     if (contentKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
       for (const item of items) {
         const eventPage = await createEventPage({
-          env, item, citySlug, sourceUrl: url,
-          sourcePageId, sourceTitle,
+          env, item, citySlug, sourceUrl: url, sourcePageId, sourceTitle,
         });
         const eventId = eventPage?.id || null;
         if (eventId) eventPageIds.push(eventId);
@@ -100,7 +89,6 @@ export async function onRequestPost(context) {
       }
     }
 
-    // 回寫 Source 的 RelatedSpots / RelatedEvents
     if (sourcePageId && (spotPageIds.length > 0 || eventPageIds.length > 0)) {
       await updateSourceRelations(env, sourcePageId, spotPageIds, eventPageIds, citySlug);
     }
@@ -122,19 +110,13 @@ async function updateSourceRelations(env, sourcePageId, spotIds, eventIds, cityS
     const properties = {};
 
     if (spotIds.length > 0) {
-      properties.RelatedSpots = {
-        relation: spotIds.map((id) => ({ id })),
-      };
+      properties.RelatedSpots = { relation: spotIds.map((id) => ({ id })) };
     }
     if (eventIds.length > 0) {
-      properties.RelatedEvents = {
-        relation: eventIds.map((id) => ({ id })),
-      };
+      properties.RelatedEvents = { relation: eventIds.map((id) => ({ id })) };
     }
     if (citySlug) {
-      properties.CityHints = {
-        rich_text: [{ text: { content: citySlug } }],
-      };
+      properties.CityHints = { multi_select: [{ name: citySlug }] };
     }
 
     if (Object.keys(properties).length === 0) return;
@@ -235,7 +217,6 @@ async function createSourcePage({
   env, sourceTitle, url, platform, notes,
   summary, contentKind, citySlug, confidence, items,
 }) {
-  // Name 用摘要版：平台 + 城市 + summary
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
   const kindLabel = contentKind === "event" ? "活動" : contentKind === "spot" ? "景點" : "來源";
@@ -252,7 +233,7 @@ async function createSourcePage({
       SourceType: { rich_text: [{ text: { content: contentKind === "event" ? "活動資訊" : contentKind === "spot" ? "景點美食" : "手動整理" } }] },
       Status:     { rich_text: [{ text: { content: "已匯入" } }] },
       Note:       { rich_text: [{ text: { content: (notes || summary || "").slice(0, 2000) } }] },
-      CityHints:  { rich_text: [{ text: { content: citySlug || "" } }] },
+      CityHints:  { multi_select: citySlug ? [{ name: citySlug }] : [] },
       Published:  { checkbox: true },
     },
   };
@@ -293,7 +274,6 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
     Thumbnail:        { rich_text: [{ text: { content: String(item.thumbnail || guessThumbnail(item.category)) } }] },
   };
 
-  // SourceLinks relation
   if (sourcePageId) {
     properties.SourceLinks = { relation: [{ id: sourcePageId }] };
   }
