@@ -263,6 +263,23 @@
   ],
   "sources": [
     {
+      "id": "33124c5d-f0b3-8167-9e36-f9456da47071",
+      "title": "測試dispatch",
+      "url": "https://www.instagram.com/reel/testdispatch/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "測試dispatch",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [],
+      "relatedCityIds": [],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33124c5d-f0b3-8177-8967-dba34be66dbd",
       "title": "京都夜櫻活動範例",
       "url": "https://example.com/kyoto-night-event",
@@ -371,7 +388,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T11:51:55.950Z",
+    "lastSyncedAt": "2026-03-28T11:53:11.670Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
