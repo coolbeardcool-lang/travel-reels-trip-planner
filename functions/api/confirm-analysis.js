@@ -30,18 +30,9 @@ export async function onRequestPost(context) {
     const confidence = Number(analysis.confidence || 0);
     const items = Array.isArray(analysis.items) ? analysis.items : [];
 
-    // ── 寫入 Sources（一律寫）──────────────────────────────
     const sourcePage = await createSourcePage({
-      env,
-      sourceTitle,
-      url,
-      platform,
-      notes,
-      summary,
-      contentKind,
-      citySlug,
-      confidence,
-      items,
+      env, sourceTitle, url, platform, notes,
+      summary, contentKind, citySlug, confidence, items,
     });
 
     const created = {
@@ -50,29 +41,20 @@ export async function onRequestPost(context) {
       events: [],
     };
 
-    // ── 寫入 Spots ─────────────────────────────────────────
     if (contentKind === "spot" && env.NOTION_SPOTS_DATA_SOURCE_ID) {
       for (const item of items) {
         const spotPage = await createSpotPage({ env, item, citySlug, sourceUrl: url });
-        created.spots.push({
-          id: spotPage?.id || null,
-          name: item.name || "未命名景點",
-        });
+        created.spots.push({ id: spotPage?.id || null, name: item.name || "未命名景點" });
       }
     }
 
-    // ── 寫入 Events ────────────────────────────────────────
     if (contentKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
       for (const item of items) {
         const eventPage = await createEventPage({ env, item, citySlug, sourceUrl: url });
-        created.events.push({
-          id: eventPage?.id || null,
-          name: item.name || "未命名活動",
-        });
+        created.events.push({ id: eventPage?.id || null, name: item.name || "未命名活動" });
       }
     }
 
-    // ── 觸發 GitHub Actions sync ───────────────────────────
     let dispatched = false;
     if (env.GITHUB_TOKEN && env.GITHUB_OWNER && env.GITHUB_REPO) {
       dispatched = await triggerGitHubDispatch(env);
@@ -80,14 +62,13 @@ export async function onRequestPost(context) {
 
     return json({ message: "已確認寫入。", created, dispatched });
   } catch (error) {
-    return json(
-      { message: error instanceof Error ? error.message : "確認寫入失敗。" },
-      500
-    );
+    return json({ message: error instanceof Error ? error.message : "確認寫入失敗。" }, 500);
   }
 }
 
 // ── Sources ────────────────────────────────────────────────
+// Name=title, SourceUrl=url, Platform=rich_text, SourceType=rich_text
+// Status=rich_text, Note=rich_text, Published=checkbox
 async function createSourcePage({
   env, sourceTitle, url, platform, notes,
   summary, contentKind, citySlug, confidence, items,
@@ -104,25 +85,13 @@ async function createSourcePage({
   const payload = {
     parent: { data_source_id: env.NOTION_SOURCES_DATA_SOURCE_ID },
     properties: {
-      Name: {
-        title: [{ text: { content: sourceTitle } }],
-      },
-      SourceUrl: {
-        url,
-      },
-      // ↓ rich_text（不是 select）
-      Platform: {
-        rich_text: [{ text: { content: platform } }],
-      },
-      SourceType: {
-        rich_text: [{ text: { content: "手動整理" } }],
-      },
-      Status: {
-        rich_text: [{ text: { content: "已匯入" } }],
-      },
-      Note: {
-        rich_text: [{ text: { content: noteContent.slice(0, 2000) } }],
-      },
+      Name: { title: [{ text: { content: sourceTitle.slice(0, 200) } }] },
+      SourceUrl: { url },
+      Platform: { rich_text: [{ text: { content: platform } }] },
+      SourceType: { rich_text: [{ text: { content: "手動整理" } }] },
+      Status: { rich_text: [{ text: { content: "已匯入" } }] },
+      Note: { rich_text: [{ text: { content: noteContent.slice(0, 2000) } }] },
+      Published: { checkbox: false },
     },
   };
 
@@ -130,46 +99,29 @@ async function createSourcePage({
 }
 
 // ── Spots ──────────────────────────────────────────────────
+// Name=title, Area=rich_text, BestTime=rich_text, Category=rich_text
+// CitySlug=select, Description=rich_text, Lat=number, Lng=number
+// MapUrl=url, Notes=rich_text, PriorityScore=number, Published=checkbox
+// StayMinutes=number, Tags=rich_text, Thumbnail=rich_text
 async function createSpotPage({ env, item, citySlug, sourceUrl }) {
+  const tags = Array.isArray(item.tags) ? item.tags.join(", ") : "";
+
   const payload = {
     parent: { data_source_id: env.NOTION_SPOTS_DATA_SOURCE_ID },
     properties: {
-      Name: {
-        title: [{ text: { content: String(item.name || "未命名景點") } }],
-      },
-      CitySlug: {
-        rich_text: [{ text: { content: String(citySlug || "") } }],
-      },
-      Area: {
-        rich_text: [{ text: { content: String(item.area || "") } }],
-      },
-      // Category 若你的 Notion 是 rich_text 請保持這樣；若是 select 請告訴我
-      Category: {
-        rich_text: [{ text: { content: String(item.category || "景點") } }],
-      },
-      Description: {
-        rich_text: [{ text: { content: String(item.description || "").slice(0, 2000) } }],
-      },
-      Tags: {
-        multi_select: (Array.isArray(item.tags) ? item.tags : []).map((tag) => ({
-          name: String(tag),
-        })),
-      },
-      BestTime: {
-        rich_text: [{ text: { content: String(item.best_time || "下午") } }],
-      },
-      StayMinutes: {
-        number: Number(item.stay_minutes || 60),
-      },
-      MapUrl: {
-        url: String(item.map_url || sourceUrl || "") || null,
-      },
-      Published: {
-        checkbox: false,
-      },
-      Notes: {
-        rich_text: [{ text: { content: String(item.reason || "") } }],
-      },
+      Name: { title: [{ text: { content: String(item.name || "未命名景點").slice(0, 200) } }] },
+      Area: { rich_text: [{ text: { content: String(item.area || "") } }] },
+      BestTime: { rich_text: [{ text: { content: String(item.best_time || "") } }] },
+      Category: { rich_text: [{ text: { content: String(item.category || "景點") } }] },
+      CitySlug: { select: { name: String(citySlug || "未分類") } },
+      Description: { rich_text: [{ text: { content: String(item.description || "").slice(0, 2000) } }] },
+      MapUrl: { url: String(item.map_url || sourceUrl || "") || null },
+      Notes: { rich_text: [{ text: { content: String(item.reason || "") } }] },
+      PriorityScore: { number: 0 },
+      Published: { checkbox: false },
+      StayMinutes: { number: Number(item.stay_minutes || 60) },
+      Tags: { rich_text: [{ text: { content: tags } }] },
+      Thumbnail: { rich_text: [{ text: { content: String(item.thumbnail || "📍") } }] },
     },
   };
 
@@ -177,52 +129,44 @@ async function createSpotPage({ env, item, citySlug, sourceUrl }) {
 }
 
 // ── Events ─────────────────────────────────────────────────
+// Name=title, Area=rich_text, Category=select, City=rich_text
+// CitySlug=rich_text, Description=rich_text, EndTimeText=rich_text
+// EndsOn=date, MapUrl=url, OfficialUrl=url, PriceNote=rich_text
+// Published=checkbox, RecurringType=select, StartTimeText=rich_text
+// StartsOn=date, Status=select, Tags=rich_text, TicketType=rich_text
+// VenueName=rich_text
 async function createEventPage({ env, item, citySlug, sourceUrl }) {
+  const tags = Array.isArray(item.tags) ? item.tags.join(", ") : "";
+
   const payload = {
     parent: { data_source_id: env.NOTION_EVENTS_DATA_SOURCE_ID },
     properties: {
-      Name: {
-        title: [{ text: { content: String(item.name || "未命名活動") } }],
-      },
-      CitySlug: {
-        rich_text: [{ text: { content: String(citySlug || "") } }],
-      },
-      Area: {
-        rich_text: [{ text: { content: String(item.area || "") } }],
-      },
-      Category: {
-        rich_text: [{ text: { content: String(item.category || "活動") } }],
-      },
-      Description: {
-        rich_text: [{ text: { content: String(item.description || "").slice(0, 2000) } }],
-      },
-      Tags: {
-        multi_select: (Array.isArray(item.tags) ? item.tags : []).map((tag) => ({
-          name: String(tag),
-        })),
-      },
-      StartsOn: item.starts_on
-        ? { date: { start: String(item.starts_on) } }
-        : { date: null },
-      EndsOn: item.ends_on
-        ? { date: { start: String(item.ends_on) } }
-        : { date: null },
-      OfficialUrl: {
-        url: String(item.official_url || sourceUrl || "") || null,
-      },
-      Published: {
-        checkbox: false,
-      },
-      PriceNote: {
-        rich_text: [{ text: { content: String(item.price_note || item.reason || "") } }],
-      },
+      Name: { title: [{ text: { content: String(item.name || "未命名活動").slice(0, 200) } }] },
+      Area: { rich_text: [{ text: { content: String(item.area || "") } }] },
+      Category: { select: { name: String(item.category || "活動") } },
+      City: { rich_text: [{ text: { content: "" } }] },
+      CitySlug: { rich_text: [{ text: { content: String(citySlug || "") } }] },
+      Description: { rich_text: [{ text: { content: String(item.description || "").slice(0, 2000) } }] },
+      EndTimeText: { rich_text: [{ text: { content: String(item.end_time || "") } }] },
+      EndsOn: item.ends_on ? { date: { start: String(item.ends_on) } } : { date: null },
+      MapUrl: { url: String(item.map_url || "") || null },
+      OfficialUrl: { url: String(item.official_url || sourceUrl || "") || null },
+      PriceNote: { rich_text: [{ text: { content: String(item.price_note || "") } }] },
+      Published: { checkbox: false },
+      RecurringType: { select: { name: "一次性" } },
+      StartTimeText: { rich_text: [{ text: { content: String(item.start_time || "") } }] },
+      StartsOn: item.starts_on ? { date: { start: String(item.starts_on) } } : { date: null },
+      Status: { select: { name: "待整理" } },
+      Tags: { rich_text: [{ text: { content: tags } }] },
+      TicketType: { rich_text: [{ text: { content: String(item.ticket_type || "") } }] },
+      VenueName: { rich_text: [{ text: { content: String(item.venue_name || "") } }] },
     },
   };
 
   return await notionCreatePage(env, payload);
 }
 
-// ── Notion API 呼叫 ────────────────────────────────────────
+// ── Notion API ─────────────────────────────────────────────
 async function notionCreatePage(env, payload) {
   const resp = await fetch("https://api.notion.com/v1/pages", {
     method: "POST",
@@ -235,15 +179,11 @@ async function notionCreatePage(env, payload) {
   });
 
   const jsonBody = await resp.json();
-
-  if (!resp.ok) {
-    throw new Error(jsonBody?.message || "寫入 Notion 失敗。");
-  }
-
+  if (!resp.ok) throw new Error(jsonBody?.message || "寫入 Notion 失敗。");
   return jsonBody;
 }
 
-// ── GitHub Actions 觸發 ────────────────────────────────────
+// ── GitHub Actions ─────────────────────────────────────────
 async function triggerGitHubDispatch(env) {
   const resp = await fetch(
     `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/dispatches`,
@@ -261,7 +201,7 @@ async function triggerGitHubDispatch(env) {
   return resp.ok;
 }
 
-// ── 工具函式 ───────────────────────────────────────────────
+// ── 工具 ───────────────────────────────────────────────────
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
