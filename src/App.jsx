@@ -221,7 +221,13 @@ function inferAnalysisItemKind(item, contentKind) {
     return contentKind;
   }
 
-  return "spot";
+  return "source_only";
+}
+
+function normalizeNullableNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
 }
 
 function normalizeAnalysisPayload(payload, fallback = {}) {
@@ -280,13 +286,16 @@ function normalizeAnalysisPayload(payload, fallback = {}) {
     cached: Boolean(payload?.cached),
     items: items.map((item, index) => {
       const itemKind = inferAnalysisItemKind(item, contentKind);
+      const stayMinutes = normalizeNullableNumber(item.stay_minutes);
+      const lat = normalizeNullableNumber(item.lat);
+      const lng = normalizeNullableNumber(item.lng);
       return {
         id: item.id || `analysis-item-${index}`,
-        name: item.name || `候選項目 ${index + 1}`,
+        name: item.name || "",
         itemKind,
         category:
           item.category ||
-          (itemKind === "event" ? "活動" : "景點"),
+          (itemKind === "event" ? "活動" : itemKind === "spot" ? "景點" : ""),
         description: item.description || "",
         tags: Array.isArray(item.tags) ? item.tags : [],
         citySlug: normalizeCitySlugValue(
@@ -303,15 +312,13 @@ function normalizeAnalysisPayload(payload, fallback = {}) {
           fallback.area ||
           "",
         best_time: item.best_time || "",
-        stay_minutes: Number.isFinite(item.stay_minutes)
-          ? item.stay_minutes
-          : Number(item.stay_minutes) || 0,
+        stay_minutes: stayMinutes,
         starts_on: item.starts_on || null,
         ends_on: item.ends_on || null,
         start_time: item.start_time || "",
         end_time: item.end_time || "",
-        lat: Number.isFinite(item.lat) ? item.lat : Number(item.lat),
-        lng: Number.isFinite(item.lng) ? item.lng : Number(item.lng),
+        lat,
+        lng,
         map_url: item.map_url || "",
         official_url: item.official_url || "",
         venue_name: item.venue_name || "",
@@ -342,7 +349,12 @@ function normalizeAnalysisPayload(payload, fallback = {}) {
 
 function normalizeItemsForMap(items) {
   const validItems = items.filter(
-    (item) => Number.isFinite(item.lat) && Number.isFinite(item.lng)
+    (item) =>
+      Number.isFinite(item.lat) &&
+      Number.isFinite(item.lng) &&
+      Math.abs(item.lat) <= 90 &&
+      Math.abs(item.lng) <= 180 &&
+      !(item.lat === 0 && item.lng === 0)
   );
 
   if (!validItems.length) return [];
@@ -363,6 +375,43 @@ function normalizeItemsForMap(items) {
     left: 10 + ((item.lng - minLng) / lngRange) * 80,
     top: 10 + (1 - (item.lat - minLat) / latRange) * 80,
   }));
+}
+
+const TRAVEL_ITEM_KEYWORDS = [
+  "景點", "活動", "展覽", "餐廳", "小吃", "咖啡", "甜點", "夜市",
+  "museum", "park", "cafe", "restaurant", "event", "festival",
+];
+const NON_TRAVEL_NOISE_KEYWORDS = [
+  "instagram", "on instagram", "總共", "這次吃完", "直接愛上", "店家資訊",
+  "追蹤", "按讚", "分享", "留言", "訂閱", "reel", "豆比",
+];
+
+function isLikelyTravelItem(item) {
+  const name = String(item.name || "").trim();
+  const text = `${name} ${item.category || ""} ${item.description || ""} ${(item.tags || []).join(" ")}`.toLowerCase();
+  const hasKeyword = TRAVEL_ITEM_KEYWORDS.some((k) => text.includes(String(k).toLowerCase()));
+  const hasNoise = NON_TRAVEL_NOISE_KEYWORDS.some((k) => text.includes(String(k).toLowerCase()));
+  const confidence = Number.isFinite(item.itemConfidence)
+    ? item.itemConfidence
+    : Number(item.itemConfidence) || 0;
+  const hasUsefulKind = item.itemKind === "spot" || item.itemKind === "event";
+  const hasName = name.length >= 2 && name.length <= 40;
+  const looksLikeListBlob = /[。！？]|：/.test(name) && name.length > 18;
+  if (!hasName || hasNoise || looksLikeListBlob) return false;
+  return (hasUsefulKind && (hasKeyword || confidence >= 0.35)) || (hasKeyword && confidence >= 0.25);
+}
+
+function filterReviewableItems(items) {
+  const kept = [];
+  let dropped = 0;
+  for (const item of items) {
+    if (isLikelyTravelItem(item)) {
+      kept.push(item);
+    } else {
+      dropped += 1;
+    }
+  }
+  return { kept, dropped };
 }
 
 function distanceScore(spot, baseArea, currentTime) {
@@ -414,6 +463,7 @@ function formatEventWindow(event) {
 function prettyAnalysisKind(kind) {
   if (kind === "event") return "活動";
   if (kind === "spot") return "景點 / 美食";
+  if (kind === "mixed") return "混合（景點＋活動）";
   return "來源待整理";
 }
 
@@ -613,6 +663,7 @@ export default function App() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showCitySources, setShowCitySources] = useState(false);
+  const [selectedAnalysisItemIds, setSelectedAnalysisItemIds] = useState(new Set());
 
   const hasCitySelected = selectedCitySlug !== "unselected";
 
@@ -714,6 +765,15 @@ export default function App() {
     setSelectedCategories((prev) => prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]);
   }
 
+  function toggleAnalysisItemSelection(itemId) {
+    setSelectedAnalysisItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
   // 手動更新資料
   async function handleManualSync() {
     setSyncing(true);
@@ -736,6 +796,7 @@ export default function App() {
     if (!cleanUrl) { setSubmitStatus({ kind: "error", message: "請先貼上 Reel 或網址。" }); return; }
     setIsAnalyzing(true);
     setAnalysisPreview(null);
+    setSelectedAnalysisItemIds(new Set());
     setSubmitStatus({ kind: "loading", message: "正在分析網址內容，完成後會先顯示給你確認。" });
     try {
       const response = await fetch(ANALYZE_API_PATH, {
@@ -760,7 +821,14 @@ export default function App() {
         contentKind: submitType === "auto" ? "source_only" : submitType,
         citySlug: submitCitySlug,
       });
-      setAnalysisPreview(preview);
+      const { kept, dropped } = filterReviewableItems(preview.items);
+      const filteredPreview = {
+        ...preview,
+        items: kept,
+        droppedItemsCount: dropped,
+      };
+      setAnalysisPreview(filteredPreview);
+      setSelectedAnalysisItemIds(new Set(kept.map((item) => item.id)));
       setSubmitStatus({ kind: "success", message: "分析完成。請先檢查下方結果，確認無誤後再寫入資料庫。" });
     } catch (error) {
       setSubmitStatus({ kind: "error", message: error instanceof Error ? error.message : "分析失敗。" });
@@ -771,6 +839,8 @@ export default function App() {
 
   async function handleConfirmAnalysis() {
     if (!analysisPreview) { setSubmitStatus({ kind: "error", message: "目前沒有可確認寫入的分析結果。" }); return; }
+    const selectedItems = analysisPreview.items.filter((item) => selectedAnalysisItemIds.has(item.id));
+    if (!selectedItems.length) { setSubmitStatus({ kind: "error", message: "請至少勾選 1 筆要寫入的項目。" }); return; }
     setIsConfirming(true);
     setSubmitStatus({ kind: "loading", message: "正在確認並寫入資料庫…" });
     try {
@@ -781,7 +851,7 @@ export default function App() {
           url: submitUrl.trim(),
           sourceTitle: submitTitle.trim() || analysisPreview.sourceTitle,
           notes: submitNotes.trim(),
-          analysis: analysisPreview,
+          analysis: { ...analysisPreview, items: selectedItems },
         }),
       });
       const text = await response.text();
@@ -801,6 +871,7 @@ export default function App() {
       }
       setSubmitUrl(""); setSubmitTitle(""); setSubmitType("auto"); setSubmitCitySlug(""); setSubmitNotes("");
       setAnalysisPreview(null);
+      setSelectedAnalysisItemIds(new Set());
       setSubmitStatus({ kind: "idle", message: "" });
     } catch (error) {
       setSubmitStatus({ kind: "error", message: error instanceof Error ? error.message : "寫入失敗。" });
@@ -838,6 +909,25 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.pageBg, color: COLORS.text, fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+      <style>{`
+        .floating-scroll, .preview-items-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.32) rgba(255,255,255,0.08);
+        }
+        .floating-scroll::-webkit-scrollbar, .preview-items-scroll::-webkit-scrollbar {
+          width: 10px;
+        }
+        .floating-scroll::-webkit-scrollbar-track, .preview-items-scroll::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.08);
+          border-radius: 999px;
+        }
+        .floating-scroll::-webkit-scrollbar-thumb, .preview-items-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.32);
+          border-radius: 999px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+      `}</style>
 
       {/* 右上角資料版本列 */}
       <div style={{
@@ -893,12 +983,13 @@ export default function App() {
         {/* 浮動貼網址入口 */}
         <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, maxWidth: isMobile ? "calc(100vw - 48px)" : 420 }}>
           {shouldShowInput ? (
-            <div style={{ background: COLORS.primary, color: "#fff", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
+            <div style={{ background: COLORS.primary, color: "#fff", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.35)", height: "min(76vh, 820px)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div style={{ fontSize: 16, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
-                <button type="button" onClick={() => { setInputExpanded(false); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); }}
+                <button type="button" onClick={() => { setInputExpanded(false); setAnalysisPreview(null); setSelectedAnalysisItemIds(new Set()); setSubmitStatus({ kind: "idle", message: "" }); }}
                   style={{ background: "transparent", border: "none", color: "#a8a29e", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>✕</button>
               </div>
+            <div className="floating-scroll" style={{ overflowY: "auto", paddingRight: 2 }}>
             <form onSubmit={handleAnalyzeUrl} style={{ marginTop: 16, display: "grid", gap: 12 }}>
               <input value={submitUrl} onChange={(e) => setSubmitUrl(e.target.value)} placeholder="只貼 Instagram Reel / Threads / 網址 就可以"
                 style={{ width: "100%", borderRadius: 18, border: `1px solid ${isDuplicateUrl ? "#fb923c" : "rgba(255,255,255,0.15)"}`, background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
@@ -972,11 +1063,39 @@ export default function App() {
                   </div>
                 </div>
                 {analysisPreview.summary && <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.8, color: "#f5f5f4" }}>{analysisPreview.summary}</div>}
-                <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                {analysisPreview.droppedItemsCount > 0 && (
+                  <div style={{ marginTop: 12, borderRadius: 12, padding: "8px 10px", background: "rgba(255,255,255,0.10)", fontSize: 12, color: "#e7e5e4" }}>
+                    已自動略過 {analysisPreview.droppedItemsCount} 筆低信心且非旅遊項目內容。
+                  </div>
+                )}
+                <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: 12, color: "#e7e5e4" }}>
+                    已勾選 {analysisPreview.items.filter((i) => selectedAnalysisItemIds.has(i.id)).length} / {analysisPreview.items.length}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="button" onClick={() => setSelectedAnalysisItemIds(new Set(analysisPreview.items.map((i) => i.id)))}
+                      style={{ borderRadius: 999, border: "1px solid rgba(255,255,255,0.28)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 11, padding: "4px 10px", cursor: "pointer" }}>
+                      全選
+                    </button>
+                    <button type="button" onClick={() => setSelectedAnalysisItemIds(new Set())}
+                      style={{ borderRadius: 999, border: "1px solid rgba(255,255,255,0.28)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 11, padding: "4px 10px", cursor: "pointer" }}>
+                      全不選
+                    </button>
+                  </div>
+                </div>
+                <div className="preview-items-scroll" style={{ marginTop: 14, display: "grid", gap: 10, maxHeight: "34vh", overflowY: "auto", paddingRight: 2 }}>
                   {analysisPreview.items.length ? analysisPreview.items.map((item) => (
-                    <div key={item.id} style={{ borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14 }}>
+                    <div key={item.id} style={{ borderRadius: 18, background: selectedAnalysisItemIds.has(item.id) ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.08)", padding: 14, border: selectedAnalysisItemIds.has(item.id) ? "1px solid rgba(255,255,255,0.2)" : "1px solid transparent" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 800 }}>{item.name}</div>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedAnalysisItemIds.has(item.id)}
+                            onChange={() => toggleAnalysisItemSelection(item.id)}
+                            style={{ width: 16, height: 16, accentColor: "#ffffff" }}
+                          />
+                          <span>{item.name}</span>
+                        </label>
                         <span style={{ borderRadius: 999, padding: "4px 10px", fontSize: 12, background: "rgba(255,255,255,0.12)", color: "#fff" }}>{item.category}</span>
                       </div>
                       {item.area && <div style={{ marginTop: 6, fontSize: 12, color: "#d6d3d1" }}>區域：{item.area}</div>}
@@ -990,6 +1109,7 @@ export default function App() {
                 </div>
               </div>
             )}
+            </div>
             </div>
           ) : (
             <button type="button"
