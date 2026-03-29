@@ -1,0 +1,192 @@
+{
+  "city": {
+    "slug": "taichung",
+    "label": "台中",
+    "emoji": "🌳",
+    "region": "台灣",
+    "description": "文創咖啡廳密集，氣候宜人適合悠閒散步。",
+    "status": "active",
+    "spotlight": [
+      "文創",
+      "咖啡",
+      "美食"
+    ],
+    "heroArea": "審計新村"
+  },
+  "spots": [
+    {
+      "id": "33224c5d-f0b3-81b4-a7cb-de7e339f4281",
+      "city": "台中",
+      "citySlug": "taichung",
+      "area": "花壇",
+      "name": "文德宮龍泉豆花",
+      "category": "餐廳",
+      "description": "提供豆花的甜品店",
+      "sourceId": "33224c5d-f0b3-818b-9b7e-df7b1997bcb3",
+      "sourceTitle": "台中・花壇的美食推薦",
+      "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "豆花",
+        "甜品"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E6%96%87%E5%BE%B7%E5%AE%AE%E9%BE%8D%E6%B3%89%E8%B1%86%E8%8A%B1%20%E5%8F%B0%E4%B8%AD",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 受歡迎的甜品選擇"
+    },
+    {
+      "id": "33224c5d-f0b3-8140-96d4-e653279d3c54",
+      "city": "台中",
+      "citySlug": "taichung",
+      "area": "花壇",
+      "name": "安昌肉圓",
+      "category": "餐廳",
+      "description": "知名的肉圓攤位",
+      "sourceId": "33224c5d-f0b3-818b-9b7e-df7b1997bcb3",
+      "sourceTitle": "台中・花壇的美食推薦",
+      "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "肉圓",
+        "小吃"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E5%AE%89%E6%98%8C%E8%82%89%E5%9C%93%20%E5%8F%B0%E4%B8%AD",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 受歡迎的當地小吃"
+    },
+    {
+      "id": "33224c5d-f0b3-8183-9519-cb41e5f4c3e0",
+      "city": "台中",
+      "citySlug": "taichung",
+      "area": "花壇",
+      "name": "花壇市場素食麵",
+      "category": "餐廳",
+      "description": "素食麵專賣店",
+      "sourceId": "33224c5d-f0b3-818b-9b7e-df7b1997bcb3",
+      "sourceTitle": "台中・花壇的美食推薦",
+      "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "素食",
+        "麵"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E8%8A%B1%E5%A3%87%E5%B8%82%E5%A0%B4%E7%B4%A0%E9%A3%9F%E9%BA%B5%20%E5%8F%B0%E4%B8%AD",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 適合素食者的選擇"
+    },
+    {
+      "id": "33224c5d-f0b3-81d0-b94f-f203d200ba48",
+      "city": "台中",
+      "citySlug": "taichung",
+      "area": "花壇",
+      "name": "阿宏豬腳爌肉專賣店",
+      "category": "餐廳",
+      "description": "專賣豬腳和爌肉的店",
+      "sourceId": "33224c5d-f0b3-818b-9b7e-df7b1997bcb3",
+      "sourceTitle": "台中・花壇的美食推薦",
+      "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "豬腳",
+        "爌肉"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E9%98%BF%E5%AE%8F%E8%B1%AC%E8%85%B3%E7%88%8C%E8%82%89%E5%B0%88%E8%B3%A3%E5%BA%97%20%E5%8F%B0%E4%B8%AD",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 當地知名的豬腳料理"
+    },
+    {
+      "id": "33224c5d-f0b3-8111-b658-fdbe5fda808b",
+      "city": "台中",
+      "citySlug": "taichung",
+      "area": "花壇",
+      "name": "阿來羊肉",
+      "category": "餐廳",
+      "description": "提供羊肉料理的餐廳",
+      "sourceId": "33224c5d-f0b3-818b-9b7e-df7b1997bcb3",
+      "sourceTitle": "台中・花壇的美食推薦",
+      "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "羊肉",
+        "餐廳"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E9%98%BF%E4%BE%86%E7%BE%8A%E8%82%89%20%E5%8F%B0%E4%B8%AD",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 當地特色羊肉料理"
+    }
+  ],
+  "events": [],
+  "sources": [
+    {
+      "id": "33224c5d-f0b3-818b-9b7e-df7b1997bcb3",
+      "title": "台中・花壇的美食推薦",
+      "url": "https://www.instagram.com/reel/DWMB274EjKQ",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "花壇的美食推薦",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "taichung"
+      ],
+      "relatedCityIds": [
+        [
+          "taichung"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-8140-96d4-e653279d3c54",
+        "33224c5d-f0b3-8111-b658-fdbe5fda808b",
+        "33224c5d-f0b3-8183-9519-cb41e5f4c3e0",
+        "33224c5d-f0b3-81d0-b94f-f203d200ba48",
+        "33224c5d-f0b3-81b4-a7cb-de7e339f4281"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    }
+  ],
+  "meta": {
+    "lastSyncedAt": "2026-03-29T03:52:29.726Z",
+    "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
+    "generatedBy": "github-actions",
+    "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
+    "count": 5
+  }
+}
