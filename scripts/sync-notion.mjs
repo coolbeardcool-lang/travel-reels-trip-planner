@@ -137,6 +137,17 @@ function richTextToArray(value) {
   return [];
 }
 
+// SYNC-2: mapUrl 依 confidence 選格式
+// 已確認 → 座標型 URL；推定 → search query URL（或保留 Notion 儲存值）
+function buildSpotMapUrl(confidence, lat, lng, storedUrl, name, cityLabel) {
+  if (confidence === "已確認" && lat && lat !== 0 && lng && lng !== 0) {
+    return `https://www.google.com/maps?q=${lat},${lng}`;
+  }
+  if (storedUrl) return storedUrl;
+  const query = encodeURIComponent([name, cityLabel].filter(Boolean).join(" "));
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
 function normalizeCity(page) {
   const name = getProp(page, "Name", "");
   const rawSlug = getProp(page, "Slug", "") || slugify(name);
@@ -213,7 +224,14 @@ function normalizeSpot(page, sourcesById) {
     lng: getProp(page, "Lng", 0) ?? 0,
     confidence: getProp(page, "Confidence", "推定") || "推定",
     thumbnail: getProp(page, "Thumbnail", "📍") || "📍",
-    mapUrl: getProp(page, "MapUrl", "") || "",
+    mapUrl: buildSpotMapUrl(
+      getProp(page, "Confidence", "推定") || "推定",
+      getProp(page, "Lat", 0) ?? 0,
+      getProp(page, "Lng", 0) ?? 0,
+      getProp(page, "MapUrl", "") || "",
+      getProp(page, "Name", "") || "",
+      cityLabel
+    ),
     published: Boolean(getProp(page, "Published", false)),
     priorityScore: getProp(page, "PriorityScore", 0) ?? 0,
     lastReviewedAt: getProp(page, "LastReviewedAt", null)?.start || null,

@@ -14,7 +14,7 @@ const CITY_DATA_MAP = {
   taichung:  { label: "台中",   emoji: "🌳",  region: "台灣", timezone: "Asia/Taipei", lat: 24.1477, lng: 120.6736, sort: 90,  heroArea: "審計新村",      spotlight: "文創,咖啡,美食",   description: "文創咖啡廳密集，氣候宜人適合悠閒散步。" },
   tainan:    { label: "台南",   emoji: "🏯",  region: "台灣", timezone: "Asia/Taipei", lat: 22.9999, lng: 120.2269, sort: 100, heroArea: "安平古堡周邊",  spotlight: "古蹟,小吃,歷史",   description: "台灣最古老城市，古蹟與傳統小吃文化深厚。" },
   kaohsiung: { label: "高雄",   emoji: "🌊",  region: "台灣", timezone: "Asia/Taipei", lat: 22.6273, lng: 120.3014, sort: 110, heroArea: "駁二藝術特區",  spotlight: "港口,文創,美食",   description: "港都風情濃厚，文創聚落與海港夜景值得一遊。" },
-  seoul:     { label: "首爾",   emoji: "🇰🇷", region: "韓國", timezone: "Asia/Seoul",  lat: 37.5665, lng: 126.9780, sort: 120, heroArea: "明洞／弘大",    spotlight: "美食,購物,文化",   description: "韓流文化發源地，美食、購物與歷史景點密集。" },
+  seoul:     { label: "首爾",   emoji: "🇰🇷", region: "韓國", timezone: "Asia/Seoul",  lat: 37.5665, lng: 126.9780, sort: 120, heroArea: "望遠洞／弘大",    spotlight: "美食,市場,燒肉",   description: "市場小吃、韓牛燒烤與弘大街頭文化密集，適合美食導向安排。" },
   busan:     { label: "釜山",   emoji: "🌊",  region: "韓國", timezone: "Asia/Seoul",  lat: 35.1796, lng: 129.0756, sort: 130, heroArea: "海雲台",        spotlight: "海灘,美食,文化",   description: "韓國第二大城市，海灘、海鮮與山城景觀著稱。" },
 };
 
