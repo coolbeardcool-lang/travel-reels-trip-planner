@@ -324,6 +324,34 @@
       "notes": "reason: Derived from source text segment only."
     },
     {
+      "id": "33224c5d-f0b3-81fb-8656-dc0bcdd00807",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "弘大入口",
+      "name": "保承會館",
+      "category": "餐廳",
+      "description": "專門提供血腸和水煮豬肉湯飯的餐廳，適合獨旅者用餐。",
+      "sourceId": "33224c5d-f0b3-817c-9d05-c7422bda5a25",
+      "sourceTitle": "首爾・推薦的獨旅餐廳保承會館，專門提供血腸和水煮豬肉湯飯。",
+      "sourceUrl": "https://hikorealife.com/%E9%A6%96%E7%88%BE%E5%BC%98%E5%A4%A7%E5%85%A5%E5%8F%A3%E5%9C%A8%E5%9C%B0%E9%9F%93%E5%9C%8B%E5%A5%BD%E5%91%B3-%E4%BF%9D%E6%89%BF%E6%9C%83%E9%A4%A8%EB%B3%B4%EC%8A%B9%ED%9A%8C%EA%B4%80-%E8%A1%80/",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "韓國料理",
+        "獨旅",
+        "湯飯"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BF%9D%E6%89%BF%E6%9C%83%E9%A4%A8%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 推薦的獨旅餐廳"
+    },
+    {
       "id": "33224c5d-f0b3-811e-a003-d76dc26a3b48",
       "city": "首爾",
       "citySlug": "seoul",
@@ -613,6 +641,31 @@
   ],
   "sources": [
     {
+      "id": "33224c5d-f0b3-817c-9d05-c7422bda5a25",
+      "title": "首爾・推薦的獨旅餐廳保承會館，專門提供血腸和水煮豬肉湯飯。",
+      "url": "https://hikorealife.com/%E9%A6%96%E7%88%BE%E5%BC%98%E5%A4%A7%E5%85%A5%E5%8F%A3%E5%9C%A8%E5%9C%B0%E9%9F%93%E5%9C%8B%E5%A5%BD%E5%91%B3-%E4%BF%9D%E6%89%BF%E6%9C%83%E9%A4%A8%EB%B3%B4%EC%8A%B9%ED%9A%8C%EA%B4%80-%E8%A1%80/",
+      "platform": "Website",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "推薦的獨旅餐廳保承會館，專門提供血腸和水煮豬肉湯飯。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        [
+          "seoul"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-81fb-8656-dc0bcdd00807"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33224c5d-f0b3-8177-a73b-da2a4af7134f",
       "title": "Instagram 來源・大阪",
       "url": "https://www.instagram.com/reel/DWbB04-hJd9",
@@ -894,10 +947,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T10:01:44.742Z",
+    "lastSyncedAt": "2026-03-29T10:11:52.983Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 21
+    "count": 22
   }
 }
