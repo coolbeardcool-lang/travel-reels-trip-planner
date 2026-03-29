@@ -11,7 +11,11 @@
       "甜點",
       "散步"
     ],
-    "heroArea": "佛光寺周邊"
+    "heroArea": "佛光寺周邊",
+    "defaultMapLat": 35.0116,
+    "defaultMapLng": 135.7681,
+    "coverImageUrl": "",
+    "timezone": "Asia/Tokyo"
   },
   "spots": [
     {
@@ -37,7 +41,7 @@
       "lng": 135.7575,
       "confidence": "已確認",
       "thumbnail": "🍵",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=麓壽庵+kyoto",
+      "mapUrl": "https://www.google.com/maps?q=35.0107,135.7575",
       "published": true,
       "priorityScore": 93,
       "lastReviewedAt": "2026-03-28",
@@ -66,7 +70,7 @@
       "lng": 135.7596,
       "confidence": "已確認",
       "thumbnail": "🛍️",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=D%26DEPARTMENT+KYOTO",
+      "mapUrl": "https://www.google.com/maps?q=35.0018,135.7596",
       "published": true,
       "priorityScore": 92,
       "lastReviewedAt": "2026-03-28",
@@ -95,7 +99,7 @@
       "lng": 135.7582,
       "confidence": "已確認",
       "thumbnail": "🐾",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=平等寺+因幡堂+京都",
+      "mapUrl": "https://www.google.com/maps?q=35.0013,135.7582",
       "published": true,
       "priorityScore": 88,
       "lastReviewedAt": "2026-03-28",
@@ -223,7 +227,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T14:06:57.534Z",
+    "lastSyncedAt": "2026-03-29T18:42:27.384Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",

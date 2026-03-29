@@ -16,8 +16,7 @@
       "coverImageUrl": "",
       "timezone": "Asia/Tokyo",
       "defaultMapLat": 35.0116,
-      "defaultMapLng": 135.7681,
-      "lastReviewedAt": "2026-03-28"
+      "defaultMapLng": 135.7681
     },
     {
       "slug": "osaka",
@@ -35,8 +34,7 @@
       "coverImageUrl": "",
       "timezone": "Asia/Tokyo",
       "defaultMapLat": 34.6937,
-      "defaultMapLng": 135.5023,
-      "lastReviewedAt": "2026-03-28"
+      "defaultMapLng": 135.5023
     },
     {
       "slug": "seoul",
@@ -54,12 +52,11 @@
       "coverImageUrl": "",
       "timezone": "Asia/Seoul",
       "defaultMapLat": 37.5665,
-      "defaultMapLng": 126.978,
-      "lastReviewedAt": "2026-03-29"
+      "defaultMapLng": 126.978
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T14:06:57.531Z",
+    "lastSyncedAt": "2026-03-29T18:42:27.383Z",
     "notionDataSourceId": "33124c5d-f0b3-8087-84f4-000b2b0702f9",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
