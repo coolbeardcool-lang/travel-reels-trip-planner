@@ -45,8 +45,8 @@ export default function App() {
   const [submitStatus, setSubmitStatus] = useState({ kind: "idle", message: "" });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [confirmResult, setConfirmResult] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [writeOverlay, setWriteOverlay] = useState({ status: "idle", dispatched: false, submittedItems: [], result: null });
+  const [selectedAnalysisItemIds, setSelectedAnalysisItemIds] = useState(new Set());
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showCitySources, setShowCitySources] = useState(false);
   const [visibleItemIds, setVisibleItemIds] = useState(null); // null = all visible
@@ -140,6 +140,15 @@ export default function App() {
     return () => { cancelled = true; };
   }, [selectedCitySlug, selectedContentMode, hasCitySelected, cityIndex, reloadKey]);
 
+  // 分析預覽變更時初始化全選
+  useEffect(() => {
+    if (analysisPreview?.items?.length) {
+      setSelectedAnalysisItemIds(new Set(analysisPreview.items.map((i) => i.id)));
+    } else {
+      setSelectedAnalysisItemIds(new Set());
+    }
+  }, [analysisPreview]);
+
   // 套用分享行程的待處理 IDs
   useEffect(() => {
     if (!pendingRouteIds || !loadedSpots.length) return;
@@ -166,9 +175,14 @@ export default function App() {
     return cat && srch;
   }), [loadedEvents, selectedCategories, search]);
 
-  const activeCollection = selectedContentMode === "events"
-    ? (filteredEvents.length ? filteredEvents : loadedEvents)
-    : (filteredSpots.length ? filteredSpots : loadedSpots);
+  const activeCollection = selectedContentMode === "all"
+    ? [
+        ...(filteredSpots.length ? filteredSpots : loadedSpots),
+        ...(filteredEvents.length ? filteredEvents : loadedEvents),
+      ]
+    : selectedContentMode === "events"
+      ? (filteredEvents.length ? filteredEvents : loadedEvents)
+      : (filteredSpots.length ? filteredSpots : loadedSpots);
 
 
   const effectiveVisibleIds = useMemo(() => {
@@ -344,7 +358,10 @@ export default function App() {
 
   async function handleConfirmAnalysis() {
     if (!analysisPreview) { setSubmitStatus({ kind: "error", message: "目前沒有可確認寫入的分析結果。" }); return; }
+    const selectedItems = analysisPreview.items.filter((i) => selectedAnalysisItemIds.has(i.id));
+    const previewToSubmit = { ...analysisPreview, items: selectedItems };
     setIsConfirming(true);
+    setWriteOverlay({ status: "writing", dispatched: false, submittedItems: selectedItems, result: null });
     setSubmitStatus({ kind: "loading", message: "正在確認並寫入資料庫…" });
     try {
       const response = await fetch(CONFIRM_ANALYSIS_API_PATH, {
@@ -354,15 +371,16 @@ export default function App() {
           url: submitUrl.trim(),
           sourceTitle: submitTitle.trim() || analysisPreview.sourceTitle,
           notes: submitNotes.trim(),
-          analysis: analysisPreview,
+          analysis: previewToSubmit,
         }),
       });
       const text = await response.text();
       let payload = {};
       try { payload = JSON.parse(text); } catch { payload = { raw: text }; }
-      if (!response.ok) throw new Error(payload?.message || `寫入失敗，HTTP ${response.status}`);
-      setConfirmResult(payload);
-      setShowSuccess(true);
+      if (!response.ok) {
+        setWriteOverlay({ status: "idle", dispatched: false, submittedItems: [], result: null });
+        throw new Error(payload?.message || `寫入失敗，HTTP ${response.status}`);
+      }
       const confirmedUrl = submitUrl.trim();
       if (confirmedUrl) {
         setSubmittedUrls((prev) => {
@@ -372,6 +390,8 @@ export default function App() {
           return next;
         });
       }
+      setWriteOverlay({ status: "syncing", dispatched: Boolean(payload.dispatched), submittedItems: selectedItems, result: payload });
+      setInputExpanded(false);
       setSubmitUrl(""); setSubmitTitle(""); setSubmitType("auto"); setSubmitCitySlug(""); setSubmitNotes("");
       setAnalysisPreview(null);
       setSubmitStatus({ kind: "idle", message: "" });
@@ -391,19 +411,17 @@ export default function App() {
   const isDuplicateUrl = Boolean(submitUrl.trim() && submittedUrls.has(submitUrl.trim()));
   const shouldShowInput = inputExpanded || Boolean(submitUrl || analysisPreview);
 
-  if (showSuccess && confirmResult) {
-    return (
-      <div style={{ minHeight: "100vh", background: COLORS.pageBg, paddingTop: 60 }}>
-        <SuccessView
-          result={confirmResult}
-          onReset={() => { setShowSuccess(false); setConfirmResult(null); setReloadKey((v) => v + 1); }}
-        />
-      </div>
-    );
-  }
-
   return (
     <div style={{ minHeight: "100vh", background: COLORS.pageBg, color: COLORS.text, fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+
+      <WriteOverlay
+        status={writeOverlay.status}
+        dispatched={writeOverlay.dispatched}
+        submittedItems={writeOverlay.submittedItems}
+        result={writeOverlay.result}
+        onClose={() => { setWriteOverlay({ status: "idle", dispatched: false, submittedItems: [], result: null }); setReloadKey((v) => v + 1); }}
+        onReload={() => window.location.reload()}
+      />
 
       {/* 右上角資料版本列 */}
       <div style={{
@@ -526,17 +544,40 @@ export default function App() {
                   </div>
                 </div>
                 {analysisPreview.summary && <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.8, color: "#f5f5f4" }}>{analysisPreview.summary}</div>}
-                <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                  {analysisPreview.items.length ? analysisPreview.items.map((item) => (
-                    <div key={item.id} style={{ borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 800 }}>{item.name}</div>
-                        <span style={{ borderRadius: 999, padding: "4px 10px", fontSize: 12, background: "rgba(255,255,255,0.12)", color: "#fff" }}>{item.category}</span>
+                {analysisPreview.items.length > 0 && (
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, color: "#d6d3d1" }}>已選 {selectedAnalysisItemIds.size} / {analysisPreview.items.length}</span>
+                    <button type="button" onClick={() => setSelectedAnalysisItemIds(new Set(analysisPreview.items.map((i) => i.id)))}
+                      style={{ fontSize: 11, padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>全選</button>
+                    <button type="button" onClick={() => setSelectedAnalysisItemIds(new Set())}
+                      style={{ fontSize: 11, padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>全取消</button>
+                  </div>
+                )}
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  {analysisPreview.items.length ? analysisPreview.items.map((item) => {
+                    const checked = selectedAnalysisItemIds.has(item.id);
+                    return (
+                      <div key={item.id}
+                        onClick={() => setSelectedAnalysisItemIds((prev) => { const next = new Set(prev); if (next.has(item.id)) next.delete(item.id); else next.add(item.id); return next; })}
+                        style={{ borderRadius: 18, background: checked ? "rgba(255,255,255,0.13)" : "rgba(255,255,255,0.04)", padding: 14, cursor: "pointer", border: `1px solid ${checked ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.08)"}`, opacity: checked ? 1 : 0.55 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <div style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${checked ? "#fff" : "rgba(255,255,255,0.4)"}`, background: checked ? "#fff" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              {checked && <span style={{ color: COLORS.primary, fontSize: 11, fontWeight: 900 }}>✓</span>}
+                            </div>
+                            <div style={{ fontWeight: 800 }}>{item.name}</div>
+                          </div>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <span style={{ borderRadius: 999, padding: "3px 8px", fontSize: 11, background: "rgba(255,255,255,0.12)", color: "#fff" }}>{item.category}</span>
+                            {item.needsReview && <span style={{ borderRadius: 999, padding: "3px 8px", fontSize: 11, background: COLORS.warningBg, color: COLORS.warningText }}>需確認</span>}
+                          </div>
+                        </div>
+                        {item.area && <div style={{ marginTop: 5, fontSize: 12, color: "#d6d3d1" }}>📍 {item.area}</div>}
+                        {item.description && <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.7, color: "#f5f5f4" }}>{item.description}</div>}
+                        {item.reason && <div style={{ marginTop: 5, fontSize: 11, color: "#a8a29e", fontStyle: "italic" }}>💡 {item.reason}</div>}
                       </div>
-                      {item.area && <div style={{ marginTop: 6, fontSize: 12, color: "#d6d3d1" }}>區域：{item.area}</div>}
-                      {item.description && <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>{item.description}</div>}
-                    </div>
-                  )) : (
+                    );
+                  }) : (
                     <div style={{ borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14, fontSize: 13, color: "#f5f5f4", lineHeight: 1.8 }}>
                       目前沒有拆出明確的景點或活動項目，確認後會先以來源資料寫入待整理清單。
                     </div>
@@ -659,10 +700,13 @@ export default function App() {
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {CONTENT_MODES.map((mode) => {
                     const active = selectedContentMode === mode;
+                    const label = mode === "all"
+                      ? `全部 (${loadedSpots.length + loadedEvents.length})`
+                      : mode === "spots" ? `景點 (${loadedSpots.length})` : `活動 (${loadedEvents.length})`;
                     return (
                       <button key={mode} type="button" onClick={() => setSelectedContentMode(mode)}
                         style={{ borderRadius: 999, padding: "10px 14px", border: `1px solid ${active ? COLORS.primary : COLORS.border}`, background: active ? COLORS.primary : "#ffffff", color: active ? "#ffffff" : COLORS.text, cursor: "pointer", fontWeight: 700 }}>
-                        {mode === "spots" ? `景點 (${loadedSpots.length})` : `活動 (${loadedEvents.length})`}
+                        {label}
                       </button>
                     );
                   })}
@@ -755,7 +799,7 @@ export default function App() {
                           </div>
                         </div>
                         {item.description && <div style={{ marginTop: 10, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{item.description}</div>}
-                        {selectedContentMode === "events" && (
+                        {(item.startsOn || item.endsOn) && (
                           <div style={{ marginTop: 10, borderRadius: 12, background: COLORS.warningBg, color: COLORS.warningText, padding: 10, fontSize: 12 }}>
                             {formatEventWindow(item)} ｜ {item.ticketType || "未設定票務"}{item.priceNote ? ` ／ ${item.priceNote}` : ""}
                           </div>

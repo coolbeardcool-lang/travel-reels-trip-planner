@@ -2,7 +2,7 @@ const BASE_URL = import.meta.env.BASE_URL;
 
 export const ANALYZE_API_PATH = `${BASE_URL}api/analyze-url`;
 export const CONFIRM_ANALYSIS_API_PATH = `${BASE_URL}api/confirm-analysis`;
-export const CONTENT_MODES = ["spots", "events"];
+export const CONTENT_MODES = ["all", "spots", "events"];
 export const ANALYZE_TYPE_OPTIONS = ["auto", "spot", "event"];
 
 export const COLORS = {
