@@ -37,13 +37,32 @@
       "defaultMapLat": 34.6937,
       "defaultMapLng": 135.5023,
       "lastReviewedAt": "2026-03-28"
+    },
+    {
+      "slug": "seoul",
+      "label": "首爾",
+      "emoji": "🇰🇷",
+      "region": "韓國",
+      "description": "韓流文化發源地，美食、購物與歷史景點密集。",
+      "status": "active",
+      "spotlight": [
+        "美食",
+        "購物",
+        "文化"
+      ],
+      "heroArea": "明洞／弘大",
+      "coverImageUrl": "",
+      "timezone": "Asia/Seoul",
+      "defaultMapLat": 37.5665,
+      "defaultMapLng": 126.978,
+      "lastReviewedAt": null
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-28T13:21:59.783Z",
+    "lastSyncedAt": "2026-03-29T03:20:06.316Z",
     "notionDataSourceId": "33124c5d-f0b3-8087-84f4-000b2b0702f9",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 2
+    "count": 3
   }
 }

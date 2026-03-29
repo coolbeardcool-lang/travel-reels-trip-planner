@@ -1,4 +1,4 @@
-// functions/api/analyze-url.js
+import { CITY_ALIASES } from "./city-aliases.js";
 
 const PLATFORM_MAP = {
   "instagram.com": "Instagram",
@@ -10,6 +10,90 @@ const PLATFORM_MAP = {
   "twitter.com": "Twitter",
   "x.com": "Twitter",
 };
+
+const CITY_ALIAS_MAP = CITY_ALIASES.reduce((acc, entry) => {
+  const alias = String(entry?.alias || "").trim().toLowerCase();
+  const slug = String(entry?.slug || "").trim().toLowerCase();
+  if (alias && slug) acc[alias] = slug;
+  if (slug) acc[slug] = slug;
+  return acc;
+}, {});
+
+const EVENT_KEYWORDS = [
+  "活動",
+  "展覽",
+  "演唱會",
+  "音樂節",
+  "市集",
+  "節慶",
+  "開幕",
+  "講座",
+  "祭",
+  "花火",
+  "煙火",
+  "限定",
+  "快閃",
+  "event",
+  "festival",
+  "concert",
+  "exhibition",
+  "market",
+  "fair",
+  "workshop",
+  "popup",
+  "pop-up",
+];
+
+const SPOT_KEYWORDS = [
+  "餐廳",
+  "咖啡",
+  "景點",
+  "美食",
+  "小吃",
+  "住宿",
+  "飯店",
+  "旅館",
+  "海灘",
+  "公園",
+  "博物館",
+  "夜市",
+  "老街",
+  "神社",
+  "寺",
+  "瀑布",
+  "溫泉",
+  "restaurant",
+  "cafe",
+  "coffee",
+  "hotel",
+  "beach",
+  "park",
+  "museum",
+  "street food",
+  "shrine",
+  "temple",
+  "onsen",
+];
+
+const ITEM_STOPWORDS = new Set([
+  "instagram",
+  "reel",
+  "threads",
+  "facebook",
+  "youtube",
+  "tiktok",
+  "twitter",
+  "x",
+  "travel",
+  "trip",
+  "vlog",
+  "推薦",
+  "分享",
+  "旅遊",
+  "景點",
+  "活動",
+  "美食",
+]);
 
 function detectPlatform(url) {
   try {
@@ -24,9 +108,15 @@ function normalizeUrl(raw) {
   try {
     const u = new URL(raw);
     const remove = [
-      "utm_source", "utm_medium", "utm_campaign",
-      "utm_content", "utm_term", "fbclid", "igshid",
-      "ref", "share",
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_content",
+      "utm_term",
+      "fbclid",
+      "igshid",
+      "ref",
+      "share",
     ];
     remove.forEach((p) => u.searchParams.delete(p));
     return u.toString();
@@ -64,180 +154,634 @@ async function setCachedAnalysis(env, analysisId, data) {
   } catch {}
 }
 
+function decodeHtmlEntities(value) {
+  return String(value || "")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
+      String.fromCodePoint(parseInt(hex, 16))
+    )
+    .replace(/&#([0-9]+);/g, (_, dec) =>
+      String.fromCodePoint(parseInt(dec, 10))
+    )
+    .trim()
+    .slice(0, 500);
+}
+
 async function scrapeUrl(url) {
-  const result = { title: null, description: null, ogTitle: null, ogDescription: null };
+  const result = {
+    title: null,
+    description: null,
+    ogTitle: null,
+    ogDescription: null,
+  };
+
   try {
     const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; TravelReelsBot/1.0)" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; TravelReelsBot/1.0)",
+      },
       signal: AbortSignal.timeout(7000),
       redirect: "follow",
     });
+
     if (!res.ok) return result;
+
     const html = await res.text();
 
     const get = (pattern) => {
-      const m = html.match(pattern);
-      if (!m) return null;
-      return m[1]
-        .replace(/&amp;/g, "&")
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
-        .replace(/&#([0-9]+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
-        .trim()
-        .slice(0, 500);
+      const match = html.match(pattern);
+      if (!match) return null;
+      return decodeHtmlEntities(match[1]);
     };
 
     result.ogTitle =
       get(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
       get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
+
     result.ogDescription =
-      get(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
-      get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
+      get(
+        /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i
+      ) ||
+      get(
+        /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i
+      );
+
     result.title = get(/<title[^>]*>([^<]+)<\/title>/i);
+
     result.description =
       get(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
       get(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
   } catch {}
+
   return result;
 }
 
-const CITY_MAP = {
-  東京: "tokyo", 京都: "kyoto", 大阪: "osaka", 奈良: "nara",
-  沖繩: "okinawa", 北海道: "hokkaido", 福岡: "fukuoka",
-  台北: "taipei", 台中: "taichung", 台南: "tainan", 高雄: "kaohsiung",
-  首爾: "seoul", 釜山: "busan",
-  tokyo: "tokyo", kyoto: "kyoto", osaka: "osaka", nara: "nara",
-  okinawa: "okinawa", hokkaido: "hokkaido", fukuoka: "fukuoka",
-  taipei: "taipei", taichung: "taichung", tainan: "tainan",
-  kaohsiung: "kaohsiung", seoul: "seoul", busan: "busan",
-};
+function normalizeCitySlug(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+}
 
-const EVENT_KEYWORDS = [
-  "活動", "展覽", "演唱會", "音樂節", "市集", "節慶", "開幕", "講座",
-  "祭", "花火", "煙火", "限定", "快閃",
-  "event", "festival", "concert", "exhibition", "market",
-  "fair", "workshop", "popup", "pop-up",
-];
-
-const SPOT_KEYWORDS = [
-  "餐廳", "咖啡", "景點", "美食", "小吃", "住宿", "飯店", "旅館",
-  "海灘", "公園", "博物館", "夜市", "老街", "神社", "寺", "瀑布", "溫泉",
-  "restaurant", "cafe", "coffee", "hotel", "beach",
-  "park", "museum", "street food", "shrine", "temple", "onsen",
-];
-
-function cheapHeuristicAnalysis({ sourceTitle, sourcePlatform, mergedText, cityHint, typeHint }) {
-  const text = mergedText.toLowerCase();
-  let contentKind = null;
-  if (typeHint === "event") contentKind = "event";
-  if (typeHint === "spot") contentKind = "spot";
-
-  let eventScore = 0;
-  let spotScore = 0;
-  EVENT_KEYWORDS.forEach((k) => { if (text.includes(k)) eventScore++; });
-  SPOT_KEYWORDS.forEach((k) => { if (text.includes(k)) spotScore++; });
-
-  if (!contentKind) {
-    if (eventScore >= 2 && eventScore > spotScore) contentKind = "event";
-    else if (spotScore >= 2 && spotScore > eventScore) contentKind = "spot";
-    else if (eventScore === 1 && spotScore === 0) contentKind = "event";
-    else if (spotScore === 1 && eventScore === 0) contentKind = "spot";
-    else contentKind = "source_only";
+function inferCitySlug(text, cityHint) {
+  const normalizedHint = normalizeCitySlug(cityHint);
+  if (normalizedHint) {
+    return CITY_ALIAS_MAP[normalizedHint] || normalizedHint;
   }
 
-  const maxScore = Math.max(eventScore, spotScore);
-  let confidence = 0.3;
-  if (maxScore >= 3) confidence = 0.85;
-  else if (maxScore === 2) confidence = 0.72;
-  else if (maxScore === 1) confidence = 0.55;
-  if (typeHint) confidence = Math.max(confidence, 0.8);
-
-  let citySlug = cityHint || null;
-  if (!citySlug) {
-    for (const [keyword, slug] of Object.entries(CITY_MAP)) {
-      if (text.includes(keyword.toLowerCase())) {
-        citySlug = slug;
-        break;
-      }
+  const normalizedText = String(text || "").toLowerCase();
+  for (const [keyword, slug] of Object.entries(CITY_ALIAS_MAP)) {
+    if (normalizedText.includes(keyword.toLowerCase())) {
+      return slug;
     }
   }
 
+  const cityTokenMatch = normalizedText.match(
+    /([\u4e00-\u9fff]{2,8})(?:市|縣|鄉|鎮|區)/
+  );
+  if (cityTokenMatch) {
+    return normalizeCitySlug(cityTokenMatch[1]);
+  }
+
+  return null;
+}
+
+function inferContentKind({ eventScore, spotScore, typeHint }) {
+  if (typeHint === "event") return "event";
+  if (typeHint === "spot") return "spot";
+
+  if (eventScore > 0 && spotScore > 0) {
+    return "mixed";
+  }
+  if (eventScore >= 2 && eventScore > spotScore) return "event";
+  if (spotScore >= 2 && spotScore > eventScore) return "spot";
+  if (eventScore === 1 && spotScore === 0) return "event";
+  if (spotScore === 1 && eventScore === 0) return "spot";
+  return "source_only";
+}
+
+function inferHeuristicConfidence({ eventScore, spotScore, contentKind, typeHint }) {
+  let confidence = 0.3;
+  const maxScore = Math.max(eventScore, spotScore);
+
+  if (contentKind === "mixed") {
+    confidence = 0.62;
+  } else if (maxScore >= 3) {
+    confidence = 0.85;
+  } else if (maxScore === 2) {
+    confidence = 0.72;
+  } else if (maxScore === 1) {
+    confidence = 0.55;
+  }
+
+  if (typeHint) confidence = Math.max(confidence, 0.8);
+  return confidence;
+}
+
+function buildHeuristicReviewReason({ confidence, contentKind, mergedText }) {
+  if (!mergedText) return "no textual evidence available";
+  if (contentKind === "mixed") return "mixed spot/event signals detected";
+  if (contentKind === "source_only") return "insufficient evidence for structured item extraction";
+  if (confidence < 0.7) return "heuristic confidence below threshold";
+  return null;
+}
+
+function detectItemKindFromText(text, fallback) {
+  const lower = String(text || "").toLowerCase();
+  const hasEvent = EVENT_KEYWORDS.some((k) => lower.includes(k));
+  const hasSpot = SPOT_KEYWORDS.some((k) => lower.includes(k));
+  if (hasEvent && hasSpot) return "source_only";
+  if (hasEvent) return "event";
+  if (hasSpot) return "spot";
+  return fallback === "mixed" ? "source_only" : fallback;
+}
+
+function inferSpotCategory(text) {
+  const v = String(text || "").toLowerCase();
+  if (/(咖啡|cafe|coffee)/i.test(v)) return "咖啡";
+  if (/(甜點|蛋糕|dessert)/i.test(v)) return "甜點";
+  if (/(夜市)/i.test(v)) return "夜市";
+  if (/(餐廳|restaurant|食堂|火鍋|燒肉|壽司|牛排)/i.test(v)) return "餐廳";
+  if (/(小吃|麵|肉圓|羊肉|滷肉飯|豆花|米糕|鹽酥雞|food)/i.test(v)) return "小吃";
+  return "景點";
+}
+
+function inferAreaFromText(text) {
+  const match = String(text || "").match(/([\u4e00-\u9fff]{2,8}(?:鄉|鎮|市|區))/);
+  return match ? match[1] : null;
+}
+
+function inferThumbnailByCategory(category, itemKind) {
+  const map = {
+    餐廳: "🍽️",
+    小吃: "🍢",
+    咖啡: "☕",
+    甜點: "🍰",
+    夜市: "🏮",
+    景點: "📍",
+    活動: "🎫",
+  };
+  return map[category] || (itemKind === "event" ? "🎫" : "📍");
+}
+
+function normalizeCandidateName(value) {
+  return String(value || "")
+    .replace(/https?:\/\/\S+/gi, " ")
+    .replace(/[#＠@][\w\u4e00-\u9fff_-]+/g, " ")
+    .replace(/[|｜]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
+function extractCandidatesFromText(mergedText) {
+  const text = String(mergedText || "");
+  if (!text) return [];
+
+  const candidates = [];
+  const lineLikeParts = text
+    .split(/[\n\r]+|(?<=[。！？!?.])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  candidates.push(...lineLikeParts);
+
+  const numberedRegex = /(?:^|[\n\r])\s*(?:\d{1,2}[.)、]|[•●▪\-])\s*([^\n\r]+)/g;
+  let match;
+  while ((match = numberedRegex.exec(text))) {
+    candidates.push(match[1]);
+  }
+
+  const inlineNumberedRegex = /(?:^|\s)\d{1,2}[.)、]\s*([^0-9]{2,80}?)(?=(?:\s+\d{1,2}[.)、])|$)/g;
+  while ((match = inlineNumberedRegex.exec(text))) {
+    candidates.push(match[1]);
+  }
+
+  return candidates;
+}
+
+function buildHeuristicItems({ mergedText, contentKind, citySlug, area, confidence }) {
+  const seen = new Set();
+  const candidates = extractCandidatesFromText(mergedText);
+  const items = [];
+
+  for (const raw of candidates) {
+    const name = normalizeCandidateName(raw);
+    const lower = name.toLowerCase();
+    if (!name || name.length < 2) continue;
+    if (name.length > 60) continue;
+    if (ITEM_STOPWORDS.has(lower)) continue;
+    if (seen.has(lower)) continue;
+    seen.add(lower);
+
+    const itemKind = detectItemKindFromText(name, contentKind);
+    const inferredCity = inferCitySlug(lower, citySlug);
+    const category = itemKind === "event" ? "活動" : inferSpotCategory(name);
+    const areaFromText = inferAreaFromText(name);
+    const tags = [category];
+    if (areaFromText) tags.push(areaFromText);
+    if (inferredCity) tags.push(inferredCity);
+    const mapQuery = encodeURIComponent(
+      [name, areaFromText || "", inferredCity || ""].filter(Boolean).join(" ")
+    );
+
+    items.push({
+      id: `heuristic-item-${items.length + 1}`,
+      name,
+      itemKind,
+      item_kind: itemKind,
+      category,
+      description: "",
+      tags,
+      citySlug: inferredCity || null,
+      city_slug: inferredCity || null,
+      area: areaFromText || area || null,
+      best_time: null,
+      stay_minutes: null,
+      starts_on: null,
+      ends_on: null,
+      start_time: "",
+      end_time: "",
+      lat: null,
+      lng: null,
+      map_url: mapQuery ? `https://www.google.com/maps/search/?api=1&query=${mapQuery}` : null,
+      official_url: null,
+      venue_name: null,
+      price_note: null,
+      ticket_type: null,
+      thumbnail: inferThumbnailByCategory(category, itemKind),
+      itemConfidence: Math.min(confidence, 0.58),
+      item_confidence: Math.min(confidence, 0.58),
+      sourceCredibility: "low",
+      source_credibility: "low",
+      needsReview: true,
+      needs_review: true,
+      reviewReason: "heuristic extraction from limited source text",
+      review_reason: "heuristic extraction from limited source text",
+      evidence: [{ type: "metadata", value: name }],
+      reason: "Derived from source text segment only.",
+    });
+
+    if (items.length >= 8) break;
+  }
+
+  return items;
+}
+
+function cheapHeuristicAnalysis({
+  sourceTitle,
+  sourcePlatform,
+  mergedText,
+  cityHint,
+  typeHint,
+}) {
+  const text = String(mergedText || "").toLowerCase();
+
+  let eventScore = 0;
+  let spotScore = 0;
+
+  EVENT_KEYWORDS.forEach((k) => {
+    if (text.includes(k)) eventScore += 1;
+  });
+
+  SPOT_KEYWORDS.forEach((k) => {
+    if (text.includes(k)) spotScore += 1;
+  });
+
+  const contentKind = inferContentKind({ eventScore, spotScore, typeHint });
+  const confidence = inferHeuristicConfidence({
+    eventScore,
+    spotScore,
+    contentKind,
+    typeHint,
+  });
+  const citySlug = inferCitySlug(text, cityHint || null);
+  const reviewReason = buildHeuristicReviewReason({
+    confidence,
+    contentKind,
+    mergedText,
+  });
+  const items = buildHeuristicItems({
+    mergedText,
+    contentKind,
+    citySlug: citySlug || null,
+    area: null,
+    confidence,
+  });
+
   return {
+    schemaVersion: "2.0",
     sourceTitle,
     sourcePlatform,
     contentKind,
     citySlug: citySlug || null,
     area: null,
     confidence,
-    needsReview: confidence < 0.7,
+    needsReview: Boolean(reviewReason),
     summary: "",
-    items: [],
+    reviewReason,
+    sourceCredibility: mergedText?.length > 120 ? "medium" : "low",
+    source_credibility: mergedText?.length > 120 ? "medium" : "low",
+    extractionMode: "metadata_plus_notes",
+    extraction_mode: "metadata_plus_notes",
+    sourceEvidence: mergedText
+      ? [{ type: "metadata", value: mergedText.slice(0, 220) }]
+      : [],
+    source_evidence: mergedText
+      ? [{ type: "metadata", value: mergedText.slice(0, 220) }]
+      : [],
+    items,
   };
 }
 
 function shouldUseOpenAI(heuristic, mergedText) {
-  if (heuristic.confidence >= 0.75) return false;
   if (!mergedText || mergedText.length < 20) return false;
+  if (heuristic.contentKind === "mixed") return true;
+  if (heuristic.confidence >= 0.8 && !heuristic.needsReview) return false;
   return true;
 }
 
-async function callOpenAI(apiKey, url, mergedText, contentKindHint) {
-  const isEvent = contentKindHint === "event";
+function normalizeStringArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .slice(0, 12);
+}
 
-  const spotItemSchema = `{
-      "name": "景點或店家名稱（必填）",
-      "area": "所在區域，不確定填城市名",
-      "category": "餐廳 | 咖啡 | 景點 | 小吃 | 甜點 | 逛街 | 寺社 | 住宿 | 博物館 | 夜市",
-      "description": "50字以內中文說明（必填）",
-      "tags": ["標籤1", "標籤2"],
-      "thumbnail": "最能代表此地點的單一 emoji",
-      "best_time": "早上 | 中午 | 下午 | 晚上",
-      "stay_minutes": 建議停留分鐘數（數字，如 30/60/90/120）,
-      "lat": 根據店名與城市推測的緯度（數字，不確定填城市中心座標）,
-      "lng": 根據店名與城市推測的經度（數字，不確定填城市中心座標）,
-      "map_url": "https://www.google.com/maps/search/?api=1&query=店名+城市名 格式"
-    }`;
+function normalizeEvidenceArray(value, fallbackText = "") {
+  if (Array.isArray(value)) {
+    const normalized = value
+      .map((entry) => {
+        if (typeof entry === "string") {
+          const text = entry.trim();
+          return text ? { type: "note", value: text } : null;
+        }
+        if (!entry || typeof entry !== "object") return null;
 
-  const eventItemSchema = `{
-      "name": "活動名稱（必填）",
-      "area": "所在區域，不確定填城市名",
-      "category": "展覽 | 音樂 | 市集 | 祭典 | 運動 | 講座 | 快閃 | 活動",
-      "description": "50字以內中文說明（必填）",
-      "tags": ["標籤1", "標籤2"],
-      "thumbnail": "最能代表此活動的單一 emoji",
-      "starts_on": "活動開始日期 YYYY-MM-DD，不確定填 null",
-      "ends_on": "活動結束日期 YYYY-MM-DD，不確定填 null",
-      "start_time": "開始時間 HH:MM，不確定填空字串",
-      "end_time": "結束時間 HH:MM，不確定填空字串",
-      "price_note": "票價說明，免費填「免費入場」，不確定填「請洽官網」",
-      "ticket_type": "現場購票 | 預售票 | 免費 | 請洽官網",
-      "venue_name": "場地名稱，不確定填活動名稱",
-      "lat": 根據場地與城市推測的緯度（數字，不確定填城市中心座標）,
-      "lng": 根據場地與城市推測的經度（數字，不確定填城市中心座標）,
-      "map_url": "https://www.google.com/maps/search/?api=1&query=場地名+城市名 格式"
-    }`;
+        const type = String(entry.type || entry.kind || "note").trim();
+        const text = String(entry.value || entry.text || "").trim();
 
-  const prompt = `你是旅遊資訊萃取助手。請分析以下內容，回傳 JSON（不要有任何其他文字）。
-所有欄位都必須有值，不可為空字串，不確定的填合理預設值。
+        if (!text) return null;
+        return { type, value: text.slice(0, 300) };
+      })
+      .filter(Boolean);
+
+    if (normalized.length) return normalized;
+  }
+
+  if (fallbackText) {
+    return [{ type: "metadata", value: String(fallbackText).slice(0, 220) }];
+  }
+
+  return [];
+}
+
+function normalizeNullableNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function normalizeConfidence(value, fallback = 0) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  if (num < 0) return 0;
+  if (num > 1) return 1;
+  return num;
+}
+
+function inferItemKind(item, fallbackContentKind) {
+  const explicit = String(item?.itemKind || item?.item_kind || "").trim();
+  if (explicit === "spot" || explicit === "event" || explicit === "source_only") {
+    return explicit;
+  }
+
+  if (
+    item?.starts_on ||
+    item?.ends_on ||
+    item?.start_time ||
+    item?.end_time ||
+    item?.price_note ||
+    item?.ticket_type ||
+    item?.venue_name
+  ) {
+    return "event";
+  }
+
+  if (fallbackContentKind === "spot" || fallbackContentKind === "event") {
+    return fallbackContentKind;
+  }
+
+  return "source_only";
+}
+
+function normalizeAIItem(item, index, fallbackContentKind, fallbackCitySlug, fallbackArea, fallbackText) {
+  const itemKind = inferItemKind(item, fallbackContentKind);
+  const citySlug = item?.citySlug || item?.city_slug || fallbackCitySlug || null;
+  const sourceCredibility =
+    item?.sourceCredibility ||
+    item?.source_credibility ||
+    "medium";
+  const itemConfidence = normalizeConfidence(
+    item?.itemConfidence ?? item?.item_confidence,
+    0.55
+  );
+  const needsReview =
+    item?.needsReview !== false && item?.needs_review !== false;
+  const reviewReason =
+    item?.reviewReason ||
+    item?.review_reason ||
+    (needsReview ? "item evidence requires review" : null);
+  const stayMinutesRaw = item?.stay_minutes;
+  const stayMinutes =
+    stayMinutesRaw === null || stayMinutesRaw === undefined || stayMinutesRaw === ""
+      ? null
+      : Number.isFinite(stayMinutesRaw)
+        ? stayMinutesRaw
+        : Number.isFinite(Number(stayMinutesRaw))
+          ? Number(stayMinutesRaw)
+          : null;
+  const normalizedName = String(item?.name || "").trim();
+
+  return {
+    id: item?.id || `analysis-item-${index + 1}`,
+    name: normalizedName || null,
+    itemKind,
+    item_kind: itemKind,
+    category: String(
+      item?.category || (itemKind === "event" ? "活動" : itemKind === "spot" ? "景點" : "")
+    ).trim(),
+    description: String(item?.description || "").trim(),
+    tags: normalizeStringArray(item?.tags),
+    citySlug,
+    city_slug: citySlug,
+    area: String(item?.area || fallbackArea || "").trim() || null,
+    best_time: item?.best_time || null,
+    stay_minutes: stayMinutes,
+    starts_on: item?.starts_on || null,
+    ends_on: item?.ends_on || null,
+    start_time: item?.start_time || "",
+    end_time: item?.end_time || "",
+    lat: normalizeNullableNumber(item?.lat),
+    lng: normalizeNullableNumber(item?.lng),
+    map_url: item?.map_url || null,
+    official_url: item?.official_url || null,
+    venue_name: item?.venue_name || null,
+    price_note: item?.price_note || null,
+    ticket_type: item?.ticket_type || null,
+    thumbnail: item?.thumbnail || null,
+    itemConfidence,
+    item_confidence: itemConfidence,
+    sourceCredibility,
+    source_credibility: sourceCredibility,
+    needsReview,
+    needs_review: needsReview,
+    reviewReason,
+    review_reason: reviewReason,
+    evidence: normalizeEvidenceArray(item?.evidence, fallbackText),
+    reason: String(item?.reason || "").trim(),
+  };
+}
+
+function normalizeAIResult(aiResult, heuristic, sourceTitle, sourcePlatform, mergedText) {
+  const contentKindRaw =
+    aiResult?.contentKind || aiResult?.content_kind || heuristic.contentKind;
+  const contentKind =
+    contentKindRaw === "spot" ||
+    contentKindRaw === "event" ||
+    contentKindRaw === "mixed" ||
+    contentKindRaw === "source_only"
+      ? contentKindRaw
+      : heuristic.contentKind;
+
+  const citySlug =
+    aiResult?.citySlug || aiResult?.city_slug || heuristic.citySlug || null;
+  const area = aiResult?.area || heuristic.area || null;
+  const confidence = normalizeConfidence(
+    aiResult?.confidence,
+    heuristic.confidence
+  );
+  const needsReview =
+    aiResult?.needsReview !== false && aiResult?.needs_review !== false;
+  const reviewReason =
+    aiResult?.reviewReason ||
+    aiResult?.review_reason ||
+    heuristic.reviewReason ||
+    null;
+  const sourceCredibility =
+    aiResult?.sourceCredibility ||
+    aiResult?.source_credibility ||
+    heuristic.sourceCredibility ||
+    "medium";
+  const extractionMode =
+    aiResult?.extractionMode ||
+    aiResult?.extraction_mode ||
+    heuristic.extractionMode ||
+    "mixed";
+  const sourceEvidence = normalizeEvidenceArray(
+    aiResult?.sourceEvidence || aiResult?.source_evidence,
+    mergedText
+  );
+
+  const itemsRaw = Array.isArray(aiResult?.items) ? aiResult.items : [];
+  const items = itemsRaw.map((item, index) =>
+    normalizeAIItem(item, index, contentKind, citySlug, area, mergedText)
+  );
+
+  return {
+    schemaVersion: "2.0",
+    sourceTitle,
+    sourcePlatform,
+    contentKind,
+    citySlug,
+    area,
+    confidence,
+    needsReview,
+    summary: String(aiResult?.summary || "").trim(),
+    reviewReason,
+    sourceCredibility,
+    source_credibility: sourceCredibility,
+    extractionMode,
+    extraction_mode: extractionMode,
+    sourceEvidence,
+    source_evidence: sourceEvidence,
+    items,
+  };
+}
+
+async function callOpenAI(apiKey, url, mergedText, contentKindHint, platformHint) {
+  const prompt = `
+你是旅遊資訊萃取助手。
+請根據提供的 URL 與文字內容，輸出單一 JSON 物件，不要有任何其他文字。
+
+規則：
+1. 只輸出內容可支持的資訊。
+2. 不確定時請填 null、空陣列，或 needsReview=true。
+3. 不要猜測日期、座標、地圖連結、官網連結。
+4. 若同一來源提到多個地點，請拆成多個 items。
+5. 若同時有景點與活動，contentKind 請填 "mixed"，且每個 item 都要有 itemKind。
+6. 每個 item 都要附 evidence 陣列，指出資訊來源。
+7. 若資料太弱，不要硬造 item，可回傳空 items，並將 contentKind 設為 "source_only"。
 
 URL: ${url}
-內容: ${mergedText.slice(0, 800)}
+平台提示: ${platformHint}
+初步判斷: ${contentKindHint}
+內容:
+${String(mergedText || "").slice(0, 1600)}
 
-回傳格式：
+輸出格式：
 {
-  "contentKind": "spot" | "event" | "source_only",
-  "citySlug": 小寫英文城市代稱如 "tokyo"/"seoul"/"taipei"，真的不確定才填 null,
-  "area": "主要區域名稱",
-  "confidence": 0.0~1.0,
-  "needsReview": true | false,
-  "summary": "一句話中文摘要（15字以內，必填）",
+  "contentKind": "spot" | "event" | "mixed" | "source_only",
+  "citySlug": "tokyo" | "kyoto" | "osaka" | "nara" | "okinawa" | "hokkaido" | "fukuoka" | "taipei" | "taichung" | "tainan" | "kaohsiung" | "seoul" | "busan" | null,
+  "area": "string | null",
+  "confidence": 0.0,
+  "needsReview": true,
+  "summary": "一句話中文摘要，可為空字串",
+  "reviewReason": "string | null",
+  "sourceCredibility": "high" | "medium" | "low",
+  "extractionMode": "metadata_only" | "metadata_plus_notes" | "mixed" | "audio_visual",
+  "sourceEvidence": [
+    { "type": "metadata | title | description | caption | audio | visual_text | notes", "value": "string" }
+  ],
   "items": [
-    ${isEvent ? eventItemSchema : spotItemSchema}
+    {
+      "name": "string",
+      "itemKind": "spot" | "event" | "source_only",
+      "category": "string",
+      "description": "string",
+      "tags": ["string"],
+      "citySlug": "string | null",
+      "area": "string | null",
+      "best_time": "string | null",
+      "stay_minutes": 0,
+      "starts_on": null,
+      "ends_on": null,
+      "start_time": "",
+      "end_time": "",
+      "lat": null,
+      "lng": null,
+      "map_url": null,
+      "official_url": null,
+      "venue_name": null,
+      "price_note": null,
+      "ticket_type": null,
+      "thumbnail": null,
+      "itemConfidence": 0.0,
+      "sourceCredibility": "high" | "medium" | "low",
+      "needsReview": true,
+      "reviewReason": "string | null",
+      "evidence": [
+        { "type": "metadata | title | description | caption | audio | visual_text | notes", "value": "string" }
+      ],
+      "reason": "string"
+    }
   ]
-}`;
+}
+  `.trim();
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -247,7 +791,7 @@ URL: ${url}
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      max_tokens: 1200,
+      max_tokens: 1400,
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [{ role: "user", content: prompt }],
@@ -255,8 +799,12 @@ URL: ${url}
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || "OpenAI error");
-  return JSON.parse(data.choices?.[0]?.message?.content || "{}");
+  if (!res.ok) {
+    throw new Error(data?.error?.message || "OpenAI error");
+  }
+
+  const content = data?.choices?.[0]?.message?.content || "{}";
+  return JSON.parse(content);
 }
 
 export async function onRequestPost(context) {
@@ -270,10 +818,10 @@ export async function onRequestPost(context) {
   try {
     body = await request.json();
   } catch {
-    return new Response(
-      JSON.stringify({ message: "Invalid JSON" }),
-      { status: 400, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify({ message: "Invalid JSON" }), {
+      status: 400,
+      headers: corsHeaders,
+    });
   }
 
   const rawUrl = String(body?.url || "").trim();
@@ -286,20 +834,17 @@ export async function onRequestPost(context) {
     );
   }
 
-  if (!env.OPENAI_API_KEY) {
-    return new Response(
-      JSON.stringify({ message: "OPENAI_API_KEY 尚未設定。" }),
-      { status: 500, headers: corsHeaders }
-    );
-  }
-
   const normalizedUrl = normalizeUrl(rawUrl);
   const analysisId = await sha256(normalizedUrl);
 
   const cached = await getCachedAnalysis(env, analysisId);
   if (cached) {
     return new Response(
-      JSON.stringify({ ...cached, cached: true, analysis_id: analysisId }),
+      JSON.stringify({
+        ...cached,
+        cached: true,
+        analysis_id: analysisId,
+      }),
       { status: 200, headers: corsHeaders }
     );
   }
@@ -308,15 +853,26 @@ export async function onRequestPost(context) {
   const sourcePlatform = detectPlatform(normalizedUrl);
   const sourceTitle =
     String(hints.title || "").trim() ||
-    scraped.ogTitle || scraped.title || "未命名來源";
+    scraped.ogTitle ||
+    scraped.title ||
+    "未命名來源";
 
   const mergedText = [
-    sourceTitle, scraped.ogTitle, scraped.ogDescription,
-    scraped.title, scraped.description, hints.notes || "",
-  ].filter(Boolean).join(" ").trim();
+    sourceTitle,
+    scraped.ogTitle,
+    scraped.ogDescription,
+    scraped.title,
+    scraped.description,
+    hints.notes || "",
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
   const heuristic = cheapHeuristicAnalysis({
-    sourceTitle, sourcePlatform, mergedText,
+    sourceTitle,
+    sourcePlatform,
+    mergedText,
     cityHint: hints.citySlug || "",
     typeHint: hints.type || "",
   });
@@ -324,35 +880,49 @@ export async function onRequestPost(context) {
   let result = { ...heuristic };
   let usedAI = false;
 
-  if (shouldUseOpenAI(heuristic, mergedText)) {
+  if (shouldUseOpenAI(heuristic, mergedText) && env.OPENAI_API_KEY) {
     try {
       const aiResult = await callOpenAI(
         env.OPENAI_API_KEY,
         normalizedUrl,
         mergedText,
-        heuristic.contentKind
+        heuristic.contentKind,
+        sourcePlatform
       );
-      result = {
+
+      result = normalizeAIResult(
+        aiResult,
+        heuristic,
         sourceTitle,
         sourcePlatform,
-        contentKind: aiResult.contentKind || heuristic.contentKind,
-        citySlug: aiResult.citySlug || heuristic.citySlug || null,
-        area: aiResult.area || null,
-        confidence: aiResult.confidence ?? heuristic.confidence,
-        needsReview: aiResult.needsReview ?? true,
-        summary: aiResult.summary || "",
-        items: Array.isArray(aiResult.items) ? aiResult.items : [],
-      };
+        mergedText
+      );
       usedAI = true;
     } catch {
-      result.needsReview = true;
+      result = {
+        ...heuristic,
+        needsReview: true,
+        reviewReason: heuristic.reviewReason || "ai parsing failed; fallback to heuristic result",
+      };
     }
+  } else if (shouldUseOpenAI(heuristic, mergedText) && !env.OPENAI_API_KEY) {
+    result = {
+      ...heuristic,
+      needsReview: true,
+      reviewReason:
+        heuristic.reviewReason || "OPENAI_API_KEY not set; fallback to heuristic result",
+    };
   }
 
   await setCachedAnalysis(env, analysisId, result);
 
   return new Response(
-    JSON.stringify({ ...result, cached: false, analysis_id: analysisId, _usedAI: usedAI }),
+    JSON.stringify({
+      ...result,
+      cached: false,
+      analysis_id: analysisId,
+      _usedAI: usedAI,
+    }),
     { status: 200, headers: corsHeaders }
   );
 }
