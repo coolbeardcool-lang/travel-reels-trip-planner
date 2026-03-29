@@ -69,6 +69,34 @@
       "notes": ""
     },
     {
+      "id": "33224c5d-f0b3-81cd-9a0f-de8a2c261476",
+      "city": "京都",
+      "citySlug": "kyoto",
+      "area": "京都",
+      "name": "京都隱藏亮點計畫",
+      "category": "活動",
+      "description": "邀請所有遊客更深入體驗京都，發現前人未至之地的魅力。",
+      "sourceId": "33224c5d-f0b3-81e3-b6fe-f330dfcb9e2d",
+      "sourceTitle": "京都・京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "sourceUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "京都",
+        "活動",
+        "旅遊"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🎫",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BA%AC%E9%83%BD%E9%9A%B1%E8%97%8F%E4%BA%AE%E9%BB%9E%E8%A8%88%E7%95%AB%20%E4%BA%AC%E9%83%BD",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 活動旨在讓遊客探索京都的隱藏魅力。"
+    },
+    {
       "id": "33124c5d-f0b3-8172-88d1-d7178f17aea9",
       "city": "京都",
       "citySlug": "kyoto",
@@ -575,6 +603,38 @@
   ],
   "events": [
     {
+      "id": "33224c5d-f0b3-813c-8828-e8dd01316f08",
+      "city": "京都",
+      "citySlug": "kyoto",
+      "area": "京都",
+      "name": "京都隱藏亮點計畫",
+      "category": "活動",
+      "description": "邀請所有遊客更深入體驗京都，發現前人未至之地的魅力。",
+      "sourceId": "33224c5d-f0b3-81e3-b6fe-f330dfcb9e2d",
+      "sourceTitle": "京都・京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "sourceUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "tags": [
+        "京都",
+        "活動",
+        "旅遊"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "thumbnail": "🎫",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BA%AC%E9%83%BD%E9%9A%B1%E8%97%8F%E4%BA%AE%E9%BB%9E%E8%A8%88%E7%95%AB%20%E4%BA%AC%E9%83%BD",
+      "startsOn": null,
+      "endsOn": null,
+      "startTime": "",
+      "endTime": "",
+      "ticketType": "",
+      "priceNote": "",
+      "officialUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "status": "待整理",
+      "recurringType": "一次性",
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33124c5d-f0b3-8154-89af-e12917b19cc4",
       "city": "京都",
       "citySlug": "kyoto",
@@ -640,6 +700,33 @@
     }
   ],
   "sources": [
+    {
+      "id": "33224c5d-f0b3-81e3-b6fe-f330dfcb9e2d",
+      "title": "京都・京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "url": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "platform": "Website",
+      "sourceType": "活動資訊",
+      "status": "已匯入",
+      "note": "京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "kyoto"
+      ],
+      "relatedCityIds": [
+        [
+          "kyoto"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-81cd-9a0f-de8a2c261476"
+      ],
+      "relatedEventIds": [
+        "33224c5d-f0b3-813c-8828-e8dd01316f08"
+      ],
+      "published": true,
+      "lastReviewedAt": null
+    },
     {
       "id": "33224c5d-f0b3-817c-9d05-c7422bda5a25",
       "title": "首爾・推薦的獨旅餐廳保承會館，專門提供血腸和水煮豬肉湯飯。",
@@ -947,10 +1034,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T10:11:52.983Z",
+    "lastSyncedAt": "2026-03-29T10:31:41.421Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 22
+    "count": 24
   }
 }
