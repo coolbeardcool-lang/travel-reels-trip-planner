@@ -719,19 +719,20 @@ async function callOpenAI(apiKey, url, mergedText, contentKindHint, platformHint
 請根據提供的 URL 與文字內容，輸出單一 JSON 物件，不要有任何其他文字。
 
 規則：
-1. 只輸出內容可支持的資訊。
-2. 不確定時請填 null、空陣列，或 needsReview=true。
-3. 不要猜測日期、座標、地圖連結、官網連結。
-4. 若同一來源提到多個地點，請拆成多個 items。
-5. 若同時有景點與活動，contentKind 請填 "mixed"，且每個 item 都要有 itemKind。
-6. 每個 item 都要附 evidence 陣列，指出資訊來源。
-7. 若資料太弱，不要硬造 item，可回傳空 items，並將 contentKind 設為 "source_only"。
+1. 盡量列出內容中所有提到的景點、餐廳、活動、地點，即使只有簡短提及也要列出。
+2. 每個 item 必須給 priority 欄位（1=最值得關注，數字越大越次要），由最可能讓旅客感興趣的排在最前面。
+3. 不確定時請填 null、空陣列，或 needsReview=true。
+4. 不要猜測日期、座標、地圖連結、官網連結。
+5. 若同一來源提到多個地點，請全部拆成獨立 item。
+6. 若同時有景點與活動，contentKind 請填 "mixed"，且每個 item 都要有 itemKind。
+7. 每個 item 都要附 evidence 陣列，指出資訊來源。
+8. 若資料太弱，不要硬造 item，可回傳空 items，並將 contentKind 設為 "source_only"。
 
 URL: ${url}
 平台提示: ${platformHint}
 初步判斷: ${contentKindHint}
 內容:
-${String(mergedText || "").slice(0, 1600)}
+${String(mergedText || "").slice(0, 2000)}
 
 輸出格式：
 {
@@ -770,6 +771,7 @@ ${String(mergedText || "").slice(0, 1600)}
       "price_note": null,
       "ticket_type": null,
       "thumbnail": null,
+      "priority": 1,
       "itemConfidence": 0.0,
       "sourceCredibility": "high" | "medium" | "low",
       "needsReview": true,
@@ -791,7 +793,7 @@ ${String(mergedText || "").slice(0, 1600)}
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      max_tokens: 1400,
+      max_tokens: 2400,
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [{ role: "user", content: prompt }],

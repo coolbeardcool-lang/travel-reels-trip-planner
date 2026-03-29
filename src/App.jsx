@@ -4,7 +4,7 @@ const BASE_URL = import.meta.env.BASE_URL;
 
 const ANALYZE_API_PATH = `${BASE_URL}api/analyze-url`;
 const CONFIRM_ANALYSIS_API_PATH = `${BASE_URL}api/confirm-analysis`;
-const CONTENT_MODES = ["spots", "events"];
+const CONTENT_MODES = ["all", "spots", "events"];
 const ANALYZE_TYPE_OPTIONS = ["auto", "spot", "event"];
 
 const COLORS = {
@@ -196,19 +196,33 @@ function normalizeAnalysisPayload(payload, fallback = {}) {
     summary: payload?.summary || fallback.summary || "",
     analysis_id: payload?.analysis_id || payload?.analysisId || "",
     cached: Boolean(payload?.cached),
-    items: items.map((item, index) => ({
-      id: item.id || `analysis-item-${index}`,
-      name: item.name || `候選項目 ${index + 1}`,
-      category: item.category || (contentKind === "event" ? "活動" : "景點"),
-      description: item.description || "",
-      tags: Array.isArray(item.tags) ? item.tags : [],
-      area: item.area || payload?.area || fallback.area || "",
-      best_time: item.best_time || "",
-      stay_minutes: Number.isFinite(item.stay_minutes) ? item.stay_minutes : Number(item.stay_minutes) || 0,
-      starts_on: item.starts_on || null,
-      ends_on: item.ends_on || null,
-      reason: item.reason || "",
-    })),
+    items: items.map((item, index) => {
+      const desc = item.description || "";
+      const area = item.area || payload?.area || fallback.area || "";
+      const tags = Array.isArray(item.tags) ? item.tags : [];
+      const relevance =
+        (item.priority != null ? Math.max(0, 10 - Number(item.priority)) : 5) +
+        (desc.length > 20 ? 3 : desc.length > 5 ? 1 : 0) +
+        (area ? 1 : 0) +
+        (tags.length > 0 ? 1 : 0) +
+        ((item.itemConfidence || item.item_confidence || 0) * 3);
+      return {
+        id: item.id || `analysis-item-${index}`,
+        name: item.name || `候選項目 ${index + 1}`,
+        category: item.category || (contentKind === "event" ? "活動" : "景點"),
+        description: desc,
+        tags,
+        area,
+        best_time: item.best_time || "",
+        stay_minutes: Number.isFinite(item.stay_minutes) ? item.stay_minutes : Number(item.stay_minutes) || 0,
+        starts_on: item.starts_on || null,
+        ends_on: item.ends_on || null,
+        reason: item.reason || "",
+        itemKind: item.itemKind || item.item_kind || null,
+        needsReview: item.needsReview !== false,
+        relevance,
+      };
+    }).sort((a, b) => b.relevance - a.relevance),
   };
 }
 
@@ -392,72 +406,96 @@ function LeafletMap({ items, visibleIds, activeItemId, onSelectItem }) {
 }
 
 // ── SuccessView ────────────────────────────────────────────
-function SuccessView({ result, onReset }) {
+// ── 寫入進度浮動層 ────────────────────────────────────────────
+function WriteOverlay({ status, dispatched, submittedItems, result, onClose, onReload }) {
   const [countdown, setCountdown] = useState(90);
   const [synced, setSynced] = useState(false);
 
   useEffect(() => {
-    if (!result.dispatched) return;
+    if (status !== "syncing" || !dispatched) return;
+    setCountdown(90); setSynced(false);
     const timer = setInterval(() => {
       setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setSynced(true);
-          return 0;
-        }
+        if (prev <= 1) { clearInterval(timer); setSynced(true); return 0; }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [result.dispatched]);
+  }, [status, dispatched]);
+
+  if (status === "idle") return null;
+
+  const spotCount = result?.created?.spotPageIds?.length ?? 0;
+  const eventCount = result?.created?.eventPageIds?.length ?? 0;
+  const totalCreated = spotCount + eventCount;
 
   return (
-    <div style={{ maxWidth: 560, margin: "0 auto", marginTop: 40, padding: "0 16px" }}>
-      <div style={{ background: COLORS.successBg, border: `1px solid #bbf7d0`, borderRadius: 24, padding: 28, textAlign: "center" }}>
-        <div style={{ fontSize: 48 }}>✅</div>
-        <div style={{ marginTop: 12, fontSize: 20, fontWeight: 800, color: COLORS.successText }}>已寫入 Notion！</div>
-
-        {result.dispatched ? (
-          <div style={{ marginTop: 16 }}>
-            {!synced ? (
-              <div style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: 16, padding: 16 }}>
-                <div style={{ fontSize: 13, color: COLORS.successText, fontWeight: 600 }}>⚙️ GitHub Actions 同步中...</div>
-                <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#15803d" }}>{countdown}s</div>
-                <div style={{ marginTop: 6, fontSize: 12, color: "#4ade80" }}>約 {countdown} 秒後頁面資料將更新</div>
-                <div style={{ marginTop: 10, background: "#dcfce7", borderRadius: 999, height: 6, overflow: "hidden" }}>
-                  <div style={{ height: "100%", background: "#16a34a", width: `${((90 - countdown) / 90) * 100}%`, transition: "width 1s linear" }} />
-                </div>
-              </div>
-            ) : (
-              <div style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: 16, padding: 16 }}>
-                <div style={{ fontSize: 13, color: COLORS.successText, fontWeight: 600 }}>✨ 同步完成！點下方按鈕查看最新資料</div>
-              </div>
-            )}
+    <div style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ background: "#fff", borderRadius: 28, padding: 28, maxWidth: 480, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.3)" }}>
+        {status === "writing" && (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 40 }}>📝</div>
+            <div style={{ marginTop: 12, fontSize: 18, fontWeight: 800, color: COLORS.text }}>寫入中…</div>
+            <div style={{ marginTop: 8, fontSize: 13, color: COLORS.subtext }}>正在將資料寫入 Notion 資料庫</div>
+            <div style={{ marginTop: 16, height: 6, background: COLORS.border, borderRadius: 999, overflow: "hidden" }}>
+              <div style={{ height: "100%", background: COLORS.primary, width: "60%", animation: "pulse 1.2s ease-in-out infinite" }} />
+            </div>
           </div>
-        ) : (
-          <div style={{ marginTop: 12, fontSize: 13, color: COLORS.subtext }}>資料已寫入，請稍後手動重新整理頁面查看。</div>
         )}
 
-        <div style={{ marginTop: 20, display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-          {synced && (
-            <button
-              onClick={() => window.location.reload()}
-              style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 14, padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-            >
-              🔄 重新載入查看新資料
-            </button>
-          )}
-          <button
-            onClick={onReset}
-            style={{ background: "#fff", color: COLORS.text, border: `1px solid ${COLORS.border}`, borderRadius: 14, padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-          >
-            再貼一個網址
-          </button>
-        </div>
+        {status === "syncing" && (
+          <div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 40 }}>{synced ? "✅" : "⚙️"}</div>
+              <div style={{ marginTop: 12, fontSize: 18, fontWeight: 800, color: synced ? COLORS.successText : COLORS.text }}>
+                {synced ? "同步完成！" : "GitHub Actions 同步中…"}
+              </div>
+              {!synced && (
+                <>
+                  <div style={{ marginTop: 6, fontSize: 28, fontWeight: 900, color: "#15803d" }}>{countdown}s</div>
+                  <div style={{ marginTop: 8, height: 6, background: "#dcfce7", borderRadius: 999, overflow: "hidden" }}>
+                    <div style={{ height: "100%", background: "#16a34a", width: `${((90 - countdown) / 90) * 100}%`, transition: "width 1s linear" }} />
+                  </div>
+                </>
+              )}
+            </div>
 
-        {result.created?.sourcePageId && (
-          <div style={{ marginTop: 16, fontSize: 12, color: "#9ca3af" }}>
-            Source ID: <code>{result.created.sourcePageId}</code>
+            {/* 已建立項目清單 */}
+            {totalCreated > 0 && (
+              <div style={{ marginTop: 20, borderTop: `1px solid ${COLORS.border}`, paddingTop: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.subtext, marginBottom: 10 }}>
+                  ✨ 已建立 {totalCreated} 筆資料
+                </div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {submittedItems.filter((_, i) => i < spotCount + eventCount).map((item, i) => (
+                    <div key={item.id || i} style={{ display: "flex", gap: 10, alignItems: "center", borderRadius: 12, background: COLORS.successBg, border: "1px solid #bbf7d0", padding: "10px 14px" }}>
+                      <span style={{ fontSize: 18 }}>{CATEGORY_THEME[item.category] ? "✅" : "✅"}</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.successText }}>{item.name}</div>
+                        <div style={{ fontSize: 11, color: COLORS.subtext }}>{item.category}{item.area ? `・${item.area}` : ""}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {result?.created?.sourcePageId && (
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", borderRadius: 12, background: COLORS.infoBg, border: `1px solid #bfdbfe`, padding: "10px 14px" }}>
+                      <span>📋</span>
+                      <div style={{ fontSize: 12, color: COLORS.infoText }}>來源頁面已建立</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {synced && (
+                <button onClick={onReload} style={{ flex: 1, background: "#16a34a", color: "#fff", border: "none", borderRadius: 14, padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                  🔄 重新載入查看新資料
+                </button>
+              )}
+              <button onClick={onClose} style={{ flex: 1, background: "#fff", color: COLORS.text, border: `1px solid ${COLORS.border}`, borderRadius: 14, padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                繼續使用
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -500,8 +538,8 @@ export default function App() {
   const [submitStatus, setSubmitStatus] = useState({ kind: "idle", message: "" });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [confirmResult, setConfirmResult] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [writeOverlay, setWriteOverlay] = useState({ status: "idle", dispatched: false, submittedItems: [], result: null });
+  const [selectedAnalysisItemIds, setSelectedAnalysisItemIds] = useState(new Set());
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showCitySources, setShowCitySources] = useState(false);
   const [visibleItemIds, setVisibleItemIds] = useState(null); // null = all visible
@@ -595,6 +633,15 @@ export default function App() {
     return () => { cancelled = true; };
   }, [selectedCitySlug, selectedContentMode, hasCitySelected, cityIndex, reloadKey]);
 
+  // 分析預覽變更時初始化全選
+  useEffect(() => {
+    if (analysisPreview?.items?.length) {
+      setSelectedAnalysisItemIds(new Set(analysisPreview.items.map((i) => i.id)));
+    } else {
+      setSelectedAnalysisItemIds(new Set());
+    }
+  }, [analysisPreview]);
+
   // 套用分享行程的待處理 IDs
   useEffect(() => {
     if (!pendingRouteIds || !loadedSpots.length) return;
@@ -621,9 +668,14 @@ export default function App() {
     return cat && srch;
   }), [loadedEvents, selectedCategories, search]);
 
-  const activeCollection = selectedContentMode === "events"
-    ? (filteredEvents.length ? filteredEvents : loadedEvents)
-    : (filteredSpots.length ? filteredSpots : loadedSpots);
+  const activeCollection = selectedContentMode === "all"
+    ? [
+        ...(filteredSpots.length ? filteredSpots : loadedSpots),
+        ...(filteredEvents.length ? filteredEvents : loadedEvents),
+      ]
+    : selectedContentMode === "events"
+      ? (filteredEvents.length ? filteredEvents : loadedEvents)
+      : (filteredSpots.length ? filteredSpots : loadedSpots);
 
 
   const effectiveVisibleIds = useMemo(() => {
@@ -799,7 +851,10 @@ export default function App() {
 
   async function handleConfirmAnalysis() {
     if (!analysisPreview) { setSubmitStatus({ kind: "error", message: "目前沒有可確認寫入的分析結果。" }); return; }
+    const selectedItems = analysisPreview.items.filter((i) => selectedAnalysisItemIds.has(i.id));
+    const previewToSubmit = { ...analysisPreview, items: selectedItems };
     setIsConfirming(true);
+    setWriteOverlay({ status: "writing", dispatched: false, submittedItems: selectedItems, result: null });
     setSubmitStatus({ kind: "loading", message: "正在確認並寫入資料庫…" });
     try {
       const response = await fetch(CONFIRM_ANALYSIS_API_PATH, {
@@ -809,15 +864,16 @@ export default function App() {
           url: submitUrl.trim(),
           sourceTitle: submitTitle.trim() || analysisPreview.sourceTitle,
           notes: submitNotes.trim(),
-          analysis: analysisPreview,
+          analysis: previewToSubmit,
         }),
       });
       const text = await response.text();
       let payload = {};
       try { payload = JSON.parse(text); } catch { payload = { raw: text }; }
-      if (!response.ok) throw new Error(payload?.message || `寫入失敗，HTTP ${response.status}`);
-      setConfirmResult(payload);
-      setShowSuccess(true);
+      if (!response.ok) {
+        setWriteOverlay({ status: "idle", dispatched: false, submittedItems: [], result: null });
+        throw new Error(payload?.message || `寫入失敗，HTTP ${response.status}`);
+      }
       const confirmedUrl = submitUrl.trim();
       if (confirmedUrl) {
         setSubmittedUrls((prev) => {
@@ -827,6 +883,8 @@ export default function App() {
           return next;
         });
       }
+      setWriteOverlay({ status: "syncing", dispatched: Boolean(payload.dispatched), submittedItems: selectedItems, result: payload });
+      setInputExpanded(false);
       setSubmitUrl(""); setSubmitTitle(""); setSubmitType("auto"); setSubmitCitySlug(""); setSubmitNotes("");
       setAnalysisPreview(null);
       setSubmitStatus({ kind: "idle", message: "" });
@@ -846,19 +904,17 @@ export default function App() {
   const isDuplicateUrl = Boolean(submitUrl.trim() && submittedUrls.has(submitUrl.trim()));
   const shouldShowInput = inputExpanded || Boolean(submitUrl || analysisPreview);
 
-  if (showSuccess && confirmResult) {
-    return (
-      <div style={{ minHeight: "100vh", background: COLORS.pageBg, paddingTop: 60 }}>
-        <SuccessView
-          result={confirmResult}
-          onReset={() => { setShowSuccess(false); setConfirmResult(null); setReloadKey((v) => v + 1); }}
-        />
-      </div>
-    );
-  }
-
   return (
     <div style={{ minHeight: "100vh", background: COLORS.pageBg, color: COLORS.text, fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+
+      <WriteOverlay
+        status={writeOverlay.status}
+        dispatched={writeOverlay.dispatched}
+        submittedItems={writeOverlay.submittedItems}
+        result={writeOverlay.result}
+        onClose={() => { setWriteOverlay({ status: "idle", dispatched: false, submittedItems: [], result: null }); setReloadKey((v) => v + 1); }}
+        onReload={() => window.location.reload()}
+      />
 
       {/* 右上角資料版本列 */}
       <div style={{
@@ -981,17 +1037,40 @@ export default function App() {
                   </div>
                 </div>
                 {analysisPreview.summary && <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.8, color: "#f5f5f4" }}>{analysisPreview.summary}</div>}
-                <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                  {analysisPreview.items.length ? analysisPreview.items.map((item) => (
-                    <div key={item.id} style={{ borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 800 }}>{item.name}</div>
-                        <span style={{ borderRadius: 999, padding: "4px 10px", fontSize: 12, background: "rgba(255,255,255,0.12)", color: "#fff" }}>{item.category}</span>
+                {analysisPreview.items.length > 0 && (
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, color: "#d6d3d1" }}>已選 {selectedAnalysisItemIds.size} / {analysisPreview.items.length}</span>
+                    <button type="button" onClick={() => setSelectedAnalysisItemIds(new Set(analysisPreview.items.map((i) => i.id)))}
+                      style={{ fontSize: 11, padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>全選</button>
+                    <button type="button" onClick={() => setSelectedAnalysisItemIds(new Set())}
+                      style={{ fontSize: 11, padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>全取消</button>
+                  </div>
+                )}
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  {analysisPreview.items.length ? analysisPreview.items.map((item) => {
+                    const checked = selectedAnalysisItemIds.has(item.id);
+                    return (
+                      <div key={item.id}
+                        onClick={() => setSelectedAnalysisItemIds((prev) => { const next = new Set(prev); if (next.has(item.id)) next.delete(item.id); else next.add(item.id); return next; })}
+                        style={{ borderRadius: 18, background: checked ? "rgba(255,255,255,0.13)" : "rgba(255,255,255,0.04)", padding: 14, cursor: "pointer", border: `1px solid ${checked ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.08)"}`, opacity: checked ? 1 : 0.55 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <div style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${checked ? "#fff" : "rgba(255,255,255,0.4)"}`, background: checked ? "#fff" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              {checked && <span style={{ color: COLORS.primary, fontSize: 11, fontWeight: 900 }}>✓</span>}
+                            </div>
+                            <div style={{ fontWeight: 800 }}>{item.name}</div>
+                          </div>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <span style={{ borderRadius: 999, padding: "3px 8px", fontSize: 11, background: "rgba(255,255,255,0.12)", color: "#fff" }}>{item.category}</span>
+                            {item.needsReview && <span style={{ borderRadius: 999, padding: "3px 8px", fontSize: 11, background: COLORS.warningBg, color: COLORS.warningText }}>需確認</span>}
+                          </div>
+                        </div>
+                        {item.area && <div style={{ marginTop: 5, fontSize: 12, color: "#d6d3d1" }}>📍 {item.area}</div>}
+                        {item.description && <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.7, color: "#f5f5f4" }}>{item.description}</div>}
+                        {item.reason && <div style={{ marginTop: 5, fontSize: 11, color: "#a8a29e", fontStyle: "italic" }}>💡 {item.reason}</div>}
                       </div>
-                      {item.area && <div style={{ marginTop: 6, fontSize: 12, color: "#d6d3d1" }}>區域：{item.area}</div>}
-                      {item.description && <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>{item.description}</div>}
-                    </div>
-                  )) : (
+                    );
+                  }) : (
                     <div style={{ borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14, fontSize: 13, color: "#f5f5f4", lineHeight: 1.8 }}>
                       目前沒有拆出明確的景點或活動項目，確認後會先以來源資料寫入待整理清單。
                     </div>
@@ -1114,10 +1193,13 @@ export default function App() {
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {CONTENT_MODES.map((mode) => {
                     const active = selectedContentMode === mode;
+                    const label = mode === "all"
+                      ? `全部 (${loadedSpots.length + loadedEvents.length})`
+                      : mode === "spots" ? `景點 (${loadedSpots.length})` : `活動 (${loadedEvents.length})`;
                     return (
                       <button key={mode} type="button" onClick={() => setSelectedContentMode(mode)}
                         style={{ borderRadius: 999, padding: "10px 14px", border: `1px solid ${active ? COLORS.primary : COLORS.border}`, background: active ? COLORS.primary : "#ffffff", color: active ? "#ffffff" : COLORS.text, cursor: "pointer", fontWeight: 700 }}>
-                        {mode === "spots" ? `景點 (${loadedSpots.length})` : `活動 (${loadedEvents.length})`}
+                        {label}
                       </button>
                     );
                   })}
@@ -1210,7 +1292,7 @@ export default function App() {
                           </div>
                         </div>
                         {item.description && <div style={{ marginTop: 10, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{item.description}</div>}
-                        {selectedContentMode === "events" && (
+                        {(item.startsOn || item.endsOn) && (
                           <div style={{ marginTop: 10, borderRadius: 12, background: COLORS.warningBg, color: COLORS.warningText, padding: 10, fontSize: 12 }}>
                             {formatEventWindow(item)} ｜ {item.ticketType || "未設定票務"}{item.priceNote ? ` ／ ${item.priceNote}` : ""}
                           </div>
