@@ -19,9 +19,10 @@ export function WriteOverlay({ status, dispatched, submittedItems, result, onClo
 
   if (status === "idle") return null;
 
-  const spotCount = result?.created?.spotPageIds?.length ?? 0;
-  const eventCount = result?.created?.eventPageIds?.length ?? 0;
-  const totalCreated = spotCount + eventCount;
+  const resultSpots = result?.created?.spots ?? [];
+  const createdSpots = resultSpots.filter((s) => s.action !== "merged");
+  const mergedSpots = resultSpots.filter((s) => s.action === "merged");
+  const totalWritten = resultSpots.length;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -55,21 +56,31 @@ export function WriteOverlay({ status, dispatched, submittedItems, result, onClo
               )}
             </div>
 
-            {totalCreated > 0 && (
+            {totalWritten > 0 && (
               <div style={{ marginTop: 20, borderTop: `1px solid ${COLORS.border}`, paddingTop: 16 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.subtext, marginBottom: 10 }}>
-                  ✨ 已建立 {totalCreated} 筆資料
+                  {createdSpots.length > 0 && mergedSpots.length > 0
+                    ? `✨ 新增 ${createdSpots.length} 筆，合併 ${mergedSpots.length} 筆`
+                    : mergedSpots.length > 0
+                      ? `🔀 已合併 ${mergedSpots.length} 筆至現有景點`
+                      : `✨ 已建立 ${createdSpots.length} 筆資料`}
                 </div>
                 <div style={{ display: "grid", gap: 8 }}>
-                  {submittedItems.slice(0, totalCreated).map((item, i) => (
-                    <div key={item.id || i} style={{ display: "flex", gap: 10, alignItems: "center", borderRadius: 12, background: COLORS.successBg, border: "1px solid #bbf7d0", padding: "10px 14px" }}>
-                      <span style={{ fontSize: 18 }}>✅</span>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.successText }}>{item.name}</div>
-                        <div style={{ fontSize: 11, color: COLORS.subtext }}>{item.category}{item.area ? `・${item.area}` : ""}</div>
+                  {resultSpots.map((spot, i) => {
+                    const display = submittedItems.find((s) => s.name === spot.name) || submittedItems[i] || {};
+                    const isMerged = spot.action === "merged";
+                    return (
+                      <div key={spot.id || i} style={{ display: "flex", gap: 10, alignItems: "center", borderRadius: 12, background: isMerged ? "#fefce8" : COLORS.successBg, border: `1px solid ${isMerged ? "#fde68a" : "#bbf7d0"}`, padding: "10px 14px" }}>
+                        <span style={{ fontSize: 18 }}>{isMerged ? "🔀" : "✅"}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: isMerged ? "#92400e" : COLORS.successText }}>{spot.name}</div>
+                          <div style={{ fontSize: 11, color: COLORS.subtext }}>
+                            {isMerged ? "已合併至現有景點" : `${display.category || ""}${display.area ? `・${display.area}` : ""}`}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {result?.created?.sourcePageId && (
                     <div style={{ display: "flex", gap: 10, alignItems: "center", borderRadius: 12, background: COLORS.infoBg, border: "1px solid #bfdbfe", padding: "10px 14px" }}>
                       <span>📋</span>
