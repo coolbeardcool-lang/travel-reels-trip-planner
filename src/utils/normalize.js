@@ -56,6 +56,7 @@ export function normalizeSpot(spot, index, cityIndex) {
     category: spot.category || "景點",
     description: spot.description || "",
     sourceId: spot.sourceId || "",
+    sourceTitle: spot.sourceTitle || "",
     sourceUrl: spot.sourceUrl || "",
     bestTime: spot.bestTime || "下午",
     stayMinutes: Number.isFinite(spot.stayMinutes) ? spot.stayMinutes : Number(spot.stayMinutes) || 30,

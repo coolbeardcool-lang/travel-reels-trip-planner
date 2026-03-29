@@ -45,11 +45,14 @@ function delay(ms) {
 // ── Nominatim 免費 Geocoding ───────────────────────────────
 async function geocodeSpot(name, area, cityLabel, cityDefaults) {
   const query = [name, area, cityLabel].filter(Boolean).join(", ");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
-      { headers: { "User-Agent": "TravelReelsTripPlanner/1.0", "Accept-Language": "zh,ja,ko,en" } }
+      { headers: { "User-Agent": "TravelReelsTripPlanner/1.0", "Accept-Language": "zh,ja,ko,en" }, signal: controller.signal }
     );
+    clearTimeout(timer);
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
@@ -60,7 +63,7 @@ async function geocodeSpot(name, area, cityLabel, cityDefaults) {
         }
       }
     }
-  } catch { /* geocoding 失敗不中斷主流程 */ }
+  } catch { clearTimeout(timer); /* timeout 或網路錯誤不中斷主流程 */ }
   return {
     lat: cityDefaults?.lat || 0,
     lng: cityDefaults?.lng || 0,
@@ -221,13 +224,13 @@ export async function onRequestPost(context) {
 
     if (contentKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
       for (const item of items) {
-        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "");
-        const eventPage = await createEventPage({
+        const itemCitySlug = normalizeCitySlug(String(item?.citySlug || item?.city_slug || citySlug || "")) || "";
+        const eventPage = await upsertEventPage({
           env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
         });
         const eventId = eventPage?.id || null;
         if (eventId) eventPageIds.push(eventId);
-        created.events.push({ id: eventId, name: item.name || "未命名活動" });
+        created.events.push({ id: eventId, name: item.name || "未命名活動", action: eventPage?.action || "created" });
       }
     }
 
@@ -450,7 +453,7 @@ async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
     Category:         { rich_text: [{ text: { content: cleanText(item.category || "待分類") } }] },
     City:             { select: { name: cityLabel || "未分類" } },
     CitySlug:         { select: { name: String(citySlug || "未分類") } },
-    Confidence:       { select: { name: confidence } },
+    Confidence:       { rich_text: [{ text: { content: confidence } }] },
     Description:      { rich_text: [{ text: { content: cleanText(item.description).slice(0, 2000) } }] },
     MapUrl:           { url: mapUrl || null },
     Notes:            { rich_text: [{ text: { content: notesWithWarnings.slice(0, 2000) } }] },
@@ -473,7 +476,7 @@ async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
     // 若 geocoding 取得真實座標，且現有記錄仍是推定，則更新座標
     const existConf = existing.properties?.Confidence?.select?.name;
     if (confidence === "已確認" && existConf !== "已確認") {
-      patch.Confidence = { select: { name: "已確認" } };
+      patch.Confidence = { rich_text: [{ text: { content: "已確認" } }] };
       patch.MapUrl = { url: mapUrl };
       if (lat !== null) patch.Lat = { number: lat };
       if (lng !== null) patch.Lng = { number: lng };
@@ -491,8 +494,8 @@ async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
   return { ...created, action: "created" };
 }
 
-// ── Events ─────────────────────────────────────────────────
-async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
+// ── Events（upsert = find existing → merge or create）────────
+async function upsertEventPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
   const normalizedTags = normalizeTags(item.tags);
@@ -529,15 +532,56 @@ async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, s
   };
   if (lat !== null) properties.Lat = { number: lat };
   if (lng !== null) properties.Lng = { number: lng };
-
   if (sourcePageId) {
     properties.SourceLinks = { rich_text: [{ text: { content: String(sourcePageId) } }] };
   }
 
-  return await notionCreatePage(env, {
+  // 重複偵測：同 Name + CitySlug
+  const existing = await findExistingEvent(env, item.name, citySlug);
+  if (existing) {
+    const patch = buildMergedPatch(properties, existing);
+    if (Object.keys(patch).length > 0) {
+      await notionPatchPage(env, existing.id, patch);
+    }
+    return { id: existing.id, action: "merged" };
+  }
+
+  const created = await notionCreatePage(env, {
     parent: { data_source_id: env.NOTION_EVENTS_DATA_SOURCE_ID },
     properties,
   });
+  return { ...created, action: "created" };
+}
+
+async function findExistingEvent(env, name, citySlug) {
+  if (!env.NOTION_EVENTS_DATA_SOURCE_ID || !name) return null;
+  try {
+    const res = await fetch(
+      `https://api.notion.com/v1/data_sources/${env.NOTION_EVENTS_DATA_SOURCE_ID}/query`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.NOTION_TOKEN}`,
+          "Content-Type": "application/json",
+          "Notion-Version": NOTION_VERSION,
+        },
+        body: JSON.stringify({
+          page_size: 100,
+          filter: { property: "CitySlug", rich_text: { equals: citySlug } },
+        }),
+      }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const target = normalizeName(name);
+    return (data.results || []).find((page) => {
+      if (page.archived) return false;
+      const pageName = (page.properties?.Name?.title || []).map((t) => t.plain_text || "").join("").trim();
+      return normalizeName(pageName) === target;
+    }) || null;
+  } catch {
+    return null;
+  }
 }
 
 function guessThumbnail(category) {
