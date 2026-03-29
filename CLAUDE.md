@@ -27,8 +27,13 @@ For any non-trivial task, follow this order:
    - maintainability
    - reversibility
 5. choose the best option
-6. execute in the smallest safe scope
-7. update PR summary and handoff artifacts if applicable
+6. **before executing**: state the affected files/modules explicitly (blast radius declaration)
+7. execute in the smallest safe scope
+8. at completion, report in this format:
+   - ✅ completed work
+   - ⚠️ problems discovered during execution
+   - 💡 optional follow-ups (non-blocking)
+9. update PR summary and handoff artifacts if applicable
 
 If one option is clearly superior, execute directly.
 If there is no clear winner and the choice depends on product, business, or human preference, stop and ask the user to choose.
@@ -212,6 +217,8 @@ Stop and ask the user when:
 - the change is high-risk without confirmation
 - credentials, environment, or external access are missing
 - required information is not recoverable from available context
+- a merge conflict requires choosing between data versions (always state which version you intend to take and why before resolving)
+- a Notion/database schema change affects existing data (always state data impact before executing)
 
 Otherwise proceed with the best engineering option.
 
