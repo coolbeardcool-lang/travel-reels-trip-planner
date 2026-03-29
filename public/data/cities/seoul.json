@@ -4,45 +4,16 @@
     "label": "首爾",
     "emoji": "🇰🇷",
     "region": "韓國",
-    "description": "市場小吃、韓牛燒烤與弘大街頭文化密集，適合美食導向安排。",
+    "description": "在地傳統市場與街邊小吃密集，望遠洞一帶保留濃厚的首爾日常生活感。",
     "status": "active",
     "spotlight": [
-      "美食",
-      "市場",
-      "燒肉"
+      "市場小吃",
+      "街邊美食",
+      "在地生活"
     ],
-    "heroArea": "望遠洞／弘大"
+    "heroArea": "望遠洞一帶"
   },
   "spots": [
-    {
-      "id": "33224c5d-f0b3-811e-a003-d76dc26a3b48",
-      "city": "首爾",
-      "citySlug": "seoul",
-      "area": "望遠洞",
-      "name": "望遠市場",
-      "category": "景點",
-      "description": "首爾人氣傳統市場，以手工可樂餅、年糕排骨、刀削麵等街頭小吃著稱，適合午後慢逛。",
-      "sourceId": "33224c5d-f0b3-8152-b354-f3778742d994",
-      "sourceTitle": "Instagram 景點・首爾",
-      "sourceUrl": "https://www.instagram.com/reel/DGNUCr8TLbY/?igsh=MTdnOGo2dWNmamFiZg==",
-      "bestTime": "下午",
-      "stayMinutes": 60,
-      "tags": [
-        "市場",
-        "街頭小吃",
-        "望遠洞",
-        "seoul"
-      ],
-      "lat": 0,
-      "lng": 0,
-      "confidence": "推定",
-      "thumbnail": "🏪",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E6%9C%9B%E9%81%A0%E5%B8%82%E5%A0%B4%20%EC%84%9C%EC%9A%B8",
-      "published": true,
-      "priorityScore": 0,
-      "lastReviewedAt": null,
-      "notes": ""
-    },
     {
       "id": "33224c5d-f0b3-81a8-8599-d83ad6163288",
       "city": "首爾",
@@ -54,8 +25,8 @@
       "sourceId": "33224c5d-f0b3-81b1-a58e-c75c7f2fded6",
       "sourceTitle": "首爾・弘大區的韓牛餐廳介紹",
       "sourceUrl": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
-      "bestTime": "晚上",
-      "stayMinutes": 90,
+      "bestTime": "下午",
+      "stayMinutes": 30,
       "tags": [
         "韓國美食",
         "弘大美食",
@@ -66,15 +37,152 @@
       "lng": 0,
       "confidence": "推定",
       "thumbnail": "🥩",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E7%89%9B%E7%81%AB+%ED%99%8D%EB%8C%80+%EC%84%9C%EC%9A%B8",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9A%B0%ED%99%94%20%ED%99%8D%EB%8C%80%20%ED%95%9C%EC%9A%B0%20%EB%A7%9B%EC%A7%91%20%7C%20%E7%89%9B%E7%81%AB%20%E9%A6%96%E7%88%BE",
       "published": true,
       "priorityScore": 0,
       "lastReviewedAt": null,
       "notes": "reason: 介紹了一間值得體驗的韓牛餐廳"
+    },
+    {
+      "id": "33224c5d-f0b3-81fb-8656-dc0bcdd00807",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "弘大入口",
+      "name": "保承會館",
+      "category": "餐廳",
+      "description": "專門提供血腸和水煮豬肉湯飯的餐廳，適合獨旅者用餐。",
+      "sourceId": "33224c5d-f0b3-817c-9d05-c7422bda5a25",
+      "sourceTitle": "首爾・推薦的獨旅餐廳保承會館，專門提供血腸和水煮豬肉湯飯。",
+      "sourceUrl": "https://hikorealife.com/%E9%A6%96%E7%88%BE%E5%BC%98%E5%A4%A7%E5%85%A5%E5%8F%A3%E5%9C%A8%E5%9C%B0%E9%9F%93%E5%9C%8B%E5%A5%BD%E5%91%B3-%E4%BF%9D%E6%89%BF%E6%9C%83%E9%A4%A8%EB%B3%B4%EC%8A%B9%ED%9A%8C%EA%B4%80-%E8%A1%80/",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "韓國料理",
+        "獨旅",
+        "湯飯"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BF%9D%E6%89%BF%E6%9C%83%E9%A4%A8%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 推薦的獨旅餐廳"
+    },
+    {
+      "id": "33224c5d-f0b3-811e-a003-d76dc26a3b48",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "望遠洞",
+      "name": "望遠市場",
+      "category": "小吃",
+      "description": "首爾人氣傳統市場，以手工可樂餅、年糕排骨、刀削麵等街頭小吃著稱，適合午後慢逛。",
+      "sourceId": "33224c5d-f0b3-8152-b354-f3778742d994",
+      "sourceTitle": "Instagram 景點・首爾",
+      "sourceUrl": "https://www.instagram.com/reel/DGNUCr8TLbY/?igsh=MTdnOGo2dWNmamFiZg==",
+      "bestTime": "下午",
+      "stayMinutes": 60,
+      "tags": [
+        "傳統市場",
+        "可樂餅",
+        "年糕排骨",
+        "刀削麵",
+        "在地美食"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🏪",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E6%9C%9B%E9%81%A0%E5%B8%82%E5%A0%B4%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": "2026-03-29",
+      "notes": "reason: Derived from source text segment only."
+    },
+    {
+      "id": "33224c5d-f0b3-81f1-8001-ea4ffc161927",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "Mapo-gu",
+      "name": "우화 홍대 한우 맛집 | 牛火",
+      "category": "餐廳",
+      "description": "主打1++等級的韓牛，油花漂亮，肉質軟嫩多汁，提供代烤服務。",
+      "sourceId": "33224c5d-f0b3-81cb-baf9-cb418dc410b1",
+      "sourceTitle": "首爾・弘大區的韓牛餐廳介紹",
+      "sourceUrl": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "韓國美食",
+        "弘大美食",
+        "首爾燒肉",
+        "韓牛"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9A%B0%ED%99%94%20%ED%99%8D%EB%8C%80%20%ED%95%9C%EC%9A%B0%20%EB%A7%9B%EC%A7%91%20%7C%20%E7%89%9B%E7%81%AB%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 介紹了一家值得一試的韓牛餐廳"
     }
   ],
   "events": [],
   "sources": [
+    {
+      "id": "33224c5d-f0b3-817c-9d05-c7422bda5a25",
+      "title": "首爾・推薦的獨旅餐廳保承會館，專門提供血腸和水煮豬肉湯飯。",
+      "url": "https://hikorealife.com/%E9%A6%96%E7%88%BE%E5%BC%98%E5%A4%A7%E5%85%A5%E5%8F%A3%E5%9C%A8%E5%9C%B0%E9%9F%93%E5%9C%8B%E5%A5%BD%E5%91%B3-%E4%BF%9D%E6%89%BF%E6%9C%83%E9%A4%A8%EB%B3%B4%EC%8A%B9%ED%9A%8C%EA%B4%80-%E8%A1%80/",
+      "platform": "Website",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "推薦的獨旅餐廳保承會館，專門提供血腸和水煮豬肉湯飯。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        [
+          "seoul"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-81fb-8656-dc0bcdd00807"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-81cb-baf9-cb418dc410b1",
+      "title": "首爾・弘大區的韓牛餐廳介紹",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "弘大區的韓牛餐廳介紹",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        [
+          "seoul"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-81f1-8001-ea4ffc161927"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
     {
       "id": "33224c5d-f0b3-8152-b354-f3778742d994",
       "title": "Instagram 景點・首爾",
@@ -94,7 +202,10 @@
         ]
       ],
       "relatedSpotIds": [
-        "33224c5d-f0b3-811e-a003-d76dc26a3b48"
+        "33224c5d-f0b3-811e-a003-d76dc26a3b48",
+        "33224c5d-f0b3-81ca-a668-e70b8a3f1029",
+        "33224c5d-f0b3-8157-896b-db66447d4408",
+        "33224c5d-f0b3-8185-9586-da2435af1eb8"
       ],
       "relatedEventIds": [],
       "published": true,
@@ -127,10 +238,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T10:30:00.000Z",
+    "lastSyncedAt": "2026-03-29T14:06:57.608Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
-    "generatedBy": "manual-cleanup",
+    "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 2
+    "count": 4
   }
 }
