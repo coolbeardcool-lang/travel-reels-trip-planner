@@ -126,6 +126,8 @@ function normalizeEvent(event, index, cityIndex) {
     tags: Array.isArray(event.tags) ? event.tags : [],
     lat: Number.isFinite(event.lat) ? event.lat : Number(event.lat) || 0,
     lng: Number.isFinite(event.lng) ? event.lng : Number(event.lng) || 0,
+    bestTime: event.bestTime || "下午",
+    stayMinutes: Number.isFinite(event.stayMinutes) ? event.stayMinutes : Number(event.stayMinutes) || 60,
     thumbnail: event.thumbnail || "🎫",
     mapUrl: event.mapUrl || "",
     startsOn: event.startsOn || null,
@@ -210,20 +212,6 @@ function normalizeAnalysisPayload(payload, fallback = {}) {
   };
 }
 
-function normalizeItemsForMap(items) {
-  if (!items.length) return [];
-  const lats = items.map((i) => i.lat);
-  const lngs = items.map((i) => i.lng);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-  const latRange = Math.max(maxLat - minLat, 0.001);
-  const lngRange = Math.max(maxLng - minLng, 0.001);
-  return items.map((item) => ({
-    id: item.id,
-    left: 10 + ((item.lng - minLng) / lngRange) * 80,
-    top: 10 + (1 - (item.lat - minLat) / latRange) * 80,
-  }));
-}
 
 function distanceScore(spot, baseArea, currentTime) {
   let score = 0;
@@ -323,30 +311,6 @@ function PrimaryButton({ children, href, secondary = false, block = false, onCli
   return <button type={type} onClick={onClick} disabled={disabled} style={style}>{children}</button>;
 }
 
-function VisualMap({ items, activeItemId, onSelect }) {
-  const points = useMemo(() => normalizeItemsForMap(items), [items]);
-  const pointMap = useMemo(() => new Map(points.map((p) => [p.id, p])), [points]);
-  return (
-    <div style={{ position: "relative", minHeight: 520, overflow: "hidden", borderRadius: 28, border: `1px solid ${COLORS.border}`, background: "linear-gradient(135deg,#fff7ed 0%,#ffffff 48%,#f5f5f4 100%)" }}>
-      <div style={{ position: "absolute", inset: 0, opacity: 0.5, backgroundImage: "linear-gradient(to right, rgba(120,113,108,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(120,113,108,0.12) 1px, transparent 1px)", backgroundSize: "36px 36px" }} />
-      <div style={{ position: "absolute", left: 20, top: 20, zIndex: 1, background: "rgba(255,255,255,0.88)", border: `1px solid ${COLORS.border}`, borderRadius: 20, padding: 16, maxWidth: 340 }}>
-        <div style={{ fontWeight: 800, fontSize: 15, color: COLORS.text }}>旅遊大地圖</div>
-        <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.6, color: COLORS.subtext }}>點選地圖上的位置，即可查看景點或活動資訊。</div>
-      </div>
-      {items.map((item) => {
-        const point = pointMap.get(item.id);
-        if (!point) return null;
-        const active = activeItemId === item.id;
-        return (
-          <button key={item.id} type="button" onClick={() => onSelect(item.id)} style={{ position: "absolute", left: `${point.left}%`, top: `${point.top}%`, transform: "translate(-50%, -50%)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 999, background: "#ffffff", border: active ? `2px solid ${COLORS.primary}` : "2px solid #ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 18px rgba(0,0,0,0.15)", fontSize: 22 }}>{item.thumbnail}</div>
-            <div style={{ marginTop: 8, whiteSpace: "nowrap", borderRadius: 999, padding: "6px 12px", background: active ? COLORS.primary : "rgba(255,255,255,0.92)", color: active ? "#ffffff" : COLORS.text, fontSize: 12, fontWeight: 700, boxShadow: "0 6px 18px rgba(0,0,0,0.10)" }}>{item.name}</div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 function useResponsiveColumns() {
   const [isMobile, setIsMobile] = useState(false);
@@ -550,6 +514,9 @@ export default function App() {
   const [newRouteName, setNewRouteName] = useState("");
   const [showSavedRoutes, setShowSavedRoutes] = useState(false);
   const [pendingRouteIds, setPendingRouteIds] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [mapViewTab, setMapViewTab] = useState("list");
 
   const hasCitySelected = selectedCitySlug !== "unselected";
 
@@ -658,14 +625,6 @@ export default function App() {
     ? (filteredEvents.length ? filteredEvents : loadedEvents)
     : (filteredSpots.length ? filteredSpots : loadedSpots);
 
-  const activeItem = useMemo(() => {
-    if (!activeItemId) return activeCollection[0] || null;
-    return activeCollection.find((i) => i.id === activeItemId) || activeCollection[0] || null;
-  }, [activeCollection, activeItemId]);
-
-  const recommendations = useMemo(() => buildRecommendation(
-    filteredSpots.length ? filteredSpots : loadedSpots, baseArea, timeOfDay
-  ), [filteredSpots, loadedSpots, baseArea, timeOfDay]);
 
   const effectiveVisibleIds = useMemo(() => {
     if (visibleItemIds === null) return new Set(activeCollection.map((i) => i.id));
@@ -690,7 +649,13 @@ export default function App() {
       const remaining = base.filter((i) => !new Set(routeOrder).has(i.id));
       ordered = [...inOrder, ...remaining];
     }
-    return ordered.map((item, i) => ({ ...item, order: i + 1 }));
+    const reasonMap = new Map();
+    if (selectedContentMode === "spots") {
+      buildRecommendation(visibleItems, baseArea, timeOfDay).forEach((item) => {
+        reasonMap.set(item.id, item.reason);
+      });
+    }
+    return ordered.map((item, i) => ({ ...item, order: i + 1, reason: reasonMap.get(item.id) || "" }));
   }, [routeOrder, visibleItems, selectedContentMode, baseArea, timeOfDay]);
 
   function toggleCategory(cat) {
@@ -766,6 +731,15 @@ export default function App() {
     const shareUrl = url.toString();
     try { await navigator.clipboard.writeText(shareUrl); alert("🔗 連結已複製到剪貼簿！"); }
     catch { window.prompt("複製以下連結：", shareUrl); }
+  }
+
+  function handleGetLocation() {
+    if (!navigator.geolocation) { alert("您的瀏覽器不支援定位功能。"); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocating(false); },
+      () => { alert("無法取得定位，請確認已允許位置權限。"); setLocating(false); }
+    );
   }
 
   // 手動更新資料
@@ -871,13 +845,6 @@ export default function App() {
 
   const isDuplicateUrl = Boolean(submitUrl.trim() && submittedUrls.has(submitUrl.trim()));
   const shouldShowInput = inputExpanded || Boolean(submitUrl || analysisPreview);
-
-  const cityStats = {
-    cities: cityIndex.length,
-    spots: hasCitySelected ? loadedSpots.length : globalStats.spots,
-    events: hasCitySelected ? loadedEvents.length : globalStats.events,
-    picks: recommendations.length,
-  };
 
   if (showSuccess && confirmResult) {
     return (
@@ -1128,10 +1095,9 @@ export default function App() {
           </SectionCard>
         </div>
 
-        {/* 地圖 + 推薦 */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.2fr 1.2fr 0.9fr", gap: 16, marginTop: 20 }}>
-          <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
-            <SectionCard title={selectedCity ? `${selectedCity.label} 旅遊地圖` : "城市地圖"}
+        {/* 地圖 */}
+        <div style={{ marginTop: 20 }}>
+          <SectionCard title={selectedCity ? `${selectedCity.label} 旅遊地圖` : "城市地圖"}
               right={
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜尋景點、活動、地區"
@@ -1172,13 +1138,23 @@ export default function App() {
               {hasCitySelected ? (
                 <div>
                   <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    {isMobile && (
+                      <div style={{ display: "flex", borderRadius: 12, overflow: "hidden", border: `1px solid ${COLORS.border}` }}>
+                        {["list", "map"].map((tab) => (
+                          <button key={tab} type="button" onClick={() => setMapViewTab(tab)}
+                            style={{ padding: "6px 16px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", background: mapViewTab === tab ? COLORS.primary : "#fff", color: mapViewTab === tab ? "#fff" : COLORS.text }}>
+                            {tab === "list" ? "清單" : "地圖"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <span style={{ fontSize: 13, color: COLORS.subtext }}>在地圖上標示：</span>
                     <button type="button" onClick={() => setAllVisible(true)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer", fontWeight: 600 }}>全選</button>
                     <button type="button" onClick={() => setAllVisible(false)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer", fontWeight: 600 }}>全取消</button>
                     <span style={{ fontSize: 12, color: COLORS.subtext }}>已選 {effectiveVisibleIds.size} / {activeCollection.length}</span>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "220px 1fr", borderRadius: 20, overflow: "hidden", border: `1px solid ${COLORS.border}`, height: 460 }}>
-                    <div style={{ overflowY: "auto", height: 460, borderRight: isMobile ? "none" : `1px solid ${COLORS.border}` }}>
+                    <div style={{ overflowY: "auto", height: 460, borderRight: isMobile ? "none" : `1px solid ${COLORS.border}`, display: isMobile && mapViewTab === "map" ? "none" : "block" }}>
                       {activeCollection.length ? activeCollection.map((item) => {
                         const active = activeItemId === item.id;
                         const checked = effectiveVisibleIds.has(item.id);
@@ -1198,7 +1174,7 @@ export default function App() {
                         );
                       }) : <div style={{ padding: 16, fontSize: 13, color: COLORS.subtext }}>目前無資料</div>}
                     </div>
-                    <div style={{ height: 460, position: "relative" }}>
+                    <div style={{ height: 460, position: "relative", display: isMobile && mapViewTab === "list" ? "none" : "block" }}>
                       <LeafletMap
                         items={activeCollection}
                         visibleIds={effectiveVisibleIds}
@@ -1261,8 +1237,7 @@ export default function App() {
                   </div>
                 </div>
               )}
-            </SectionCard>
-          </div>
+          </SectionCard>
         </div>
 
         {/* 行程規劃（全寬，底部） */}
@@ -1282,14 +1257,28 @@ export default function App() {
             }>
             {hasCitySelected && routeItems.length > 0 ? (
               <>
-                <div style={{ fontSize: 12, color: COLORS.subtext, marginBottom: 14 }}>拖曳 ☰ 調整順序。點擊 📍 開啟 Google Maps 導航。</div>
+                <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, color: COLORS.subtext }}>拖曳 ☰ 調整順序。點擊 📍 開啟 Google Maps 導航。</span>
+                  <button type="button" onClick={handleGetLocation} disabled={locating}
+                    style={{ borderRadius: 10, padding: "6px 14px", background: userLocation ? COLORS.successBg : "#fff", color: userLocation ? COLORS.successText : COLORS.text, border: `1px solid ${userLocation ? "#bbf7d0" : COLORS.border}`, fontSize: 12, fontWeight: 700, cursor: locating ? "not-allowed" : "pointer" }}>
+                    {locating ? "定位中…" : userLocation ? "✅ 已取得位置" : "📍 從我的位置出發"}
+                  </button>
+                  {userLocation && (
+                    <button type="button" onClick={() => setUserLocation(null)}
+                      style={{ fontSize: 11, color: COLORS.subtext, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>清除</button>
+                  )}
+                </div>
                 <div style={{ display: "grid", gap: 0 }}>
                   {routeItems.map((item, i) => {
-                    const prev = i > 0 ? routeItems[i - 1] : null;
-                    const transport = prev ? estimateTransport(prev, item) : null;
+                    const prevItem = i > 0 ? routeItems[i - 1] : null;
+                    const prevPoint = i === 0 && userLocation ? userLocation : prevItem;
+                    const transport = prevPoint ? estimateTransport(prevPoint, item) : null;
                     const isTransit = transport?.icon === "🚌" || transport?.icon === "🚇";
-                    const dirUrl = prev?.lat && prev?.lng && item.lat && item.lng
-                      ? `https://www.google.com/maps/dir/?api=1&origin=${prev.lat},${prev.lng}&destination=${item.lat},${item.lng}&travelmode=transit`
+                    const originCoords = i === 0 && userLocation
+                      ? `${userLocation.lat},${userLocation.lng}`
+                      : prevItem?.lat && prevItem?.lng ? `${prevItem.lat},${prevItem.lng}` : null;
+                    const dirUrl = originCoords && item.lat && item.lng
+                      ? `https://www.google.com/maps/dir/?api=1&origin=${originCoords}&destination=${item.lat},${item.lng}&travelmode=transit`
                       : null;
                     const isDraggingOver = dragOverId === item.id;
                     return (
@@ -1299,7 +1288,7 @@ export default function App() {
                             <div style={{ width: 2, height: 22, background: COLORS.border, flexShrink: 0 }} />
                             <span style={{ fontSize: 16 }}>{transport.icon}</span>
                             <span style={{ fontSize: 12, color: COLORS.subtext }}>{transport.label}・約 {transport.minutes} 分・{transport.km.toFixed(1)} km</span>
-                            {isTransit && dirUrl && (
+                            {(isTransit || (i === 0 && userLocation)) && dirUrl && (
                               <a href={dirUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#1a73e8", fontWeight: 700, textDecoration: "none", marginLeft: 4 }}>查路線 →</a>
                             )}
                           </div>
@@ -1321,6 +1310,9 @@ export default function App() {
                                 <span style={chipStyle(item.category)}>{item.category}</span>
                                 <span style={{ fontSize: 12, color: COLORS.subtext }}>{item.bestTime}・⏱ {item.stayMinutes} 分</span>
                               </div>
+                              {item.reason && (
+                                <div style={{ marginTop: 4, fontSize: 11, color: COLORS.subtext, lineHeight: 1.5, fontStyle: "italic" }}>💡 {item.reason}</div>
+                              )}
                             </div>
                             {item.mapUrl && (
                               <a href={item.mapUrl} target="_blank" rel="noreferrer"
@@ -1334,6 +1326,25 @@ export default function App() {
                     );
                   })}
                 </div>
+                {routeItems.length > 1 && (() => {
+                  const stayTotal = routeItems.reduce((s, item) => s + (item.stayMinutes || 0), 0);
+                  const travelTotal = routeItems.slice(1).reduce((s, item, i) => {
+                    const t = estimateTransport(routeItems[i], item);
+                    return s + (t?.minutes || 0);
+                  }, 0);
+                  const kmTotal = routeItems.slice(1).reduce((s, item, i) => {
+                    const t = estimateTransport(routeItems[i], item);
+                    return s + (t?.km || 0);
+                  }, 0);
+                  const totalHours = Math.round((stayTotal + travelTotal) / 6) / 10;
+                  return (
+                    <div style={{ marginTop: 14, borderRadius: 16, background: COLORS.cardMuted, border: `1px solid ${COLORS.border}`, padding: "12px 16px", display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, color: COLORS.subtext }}>
+                      <span>🗓 共 <strong style={{ color: COLORS.text }}>{routeItems.length}</strong> 個景點</span>
+                      <span>⏱ 預計 <strong style={{ color: COLORS.text }}>{totalHours}</strong> 小時</span>
+                      <span>🚶 總移動 <strong style={{ color: COLORS.text }}>{kmTotal.toFixed(1)}</strong> km</span>
+                    </div>
+                  );
+                })()}
 
                 {/* 儲存 & 分享 */}
                 <div style={{ marginTop: 20, borderTop: `1px solid ${COLORS.border}`, paddingTop: 16, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
