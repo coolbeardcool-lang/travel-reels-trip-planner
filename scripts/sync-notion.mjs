@@ -112,6 +112,19 @@ function slugify(value) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, "-");
 }
 
+// 中英文城市別名對照，確保 Notion 輸入中文時也能正規化為英文 slug
+const CITY_SLUG_ALIAS = {
+  東京: "tokyo", 京都: "kyoto", 大阪: "osaka", 奈良: "nara",
+  沖繩: "okinawa", 北海道: "hokkaido", 福岡: "fukuoka",
+  台北: "taipei", 台中: "taichung", 台南: "tainan", 高雄: "kaohsiung",
+  首爾: "seoul", 釜山: "busan", 彰化: "changhua",
+};
+
+function normalizeCitySlug(raw) {
+  const v = String(raw || "").trim();
+  return CITY_SLUG_ALIAS[v] || v.toLowerCase().replace(/\s+/g, "-") || null;
+}
+
 function ensureArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -126,7 +139,8 @@ function richTextToArray(value) {
 
 function normalizeCity(page) {
   const name = getProp(page, "Name", "");
-  const slug = getProp(page, "Slug", "") || slugify(name);
+  const rawSlug = getProp(page, "Slug", "") || slugify(name);
+  const slug = normalizeCitySlug(rawSlug) || slugify(name);
   return {
     id: page.id,
     slug,
@@ -174,7 +188,8 @@ function normalizeSource(page) {
 
 function normalizeSpot(page, sourcesById) {
   const cityLabel = getProp(page, "City", "") || "";
-  const citySlug = getProp(page, "CitySlug", "") || slugify(cityLabel);
+  const rawCitySlug = getProp(page, "CitySlug", "") || slugify(cityLabel);
+  const citySlug = normalizeCitySlug(rawCitySlug) || slugify(cityLabel);
   const sourceId = getProp(page, "SourceLinks", "") || "";
   const source = sourceId ? sourcesById.get(sourceId.trim()) : null;
   const tagsRaw = getProp(page, "Tags", "") || "";
@@ -207,8 +222,9 @@ function normalizeSpot(page, sourcesById) {
 }
 
 function normalizeEvent(page, sourcesById) {
-  const citySlug = getProp(page, "CitySlug", "") || "";
+  const rawCitySlug = getProp(page, "CitySlug", "") || "";
   const cityLabel = getProp(page, "City", "") || "";
+  const citySlug = normalizeCitySlug(rawCitySlug) || normalizeCitySlug(cityLabel) || "";
   const sourceId = getProp(page, "SourceLinks", "") || "";
   const source = sourceId ? sourcesById.get(sourceId.trim()) : null;
   const tagsRaw = getProp(page, "Tags", "") || "";
@@ -284,8 +300,19 @@ async function main() {
   const publicDataDir = path.join(process.cwd(), "public", "data");
   const citiesDir = path.join(publicDataDir, "cities");
 
+  // 清理 stale 城市檔案：保留 index.json，刪除其他不在本次 cities 清單內的 .json
+  const activeSlugs = new Set(cities.map((c) => c.slug));
+  try {
+    const existing = await fs.readdir(citiesDir);
+    await Promise.all(
+      existing
+        .filter((f) => f.endsWith(".json") && f !== "index.json" && !activeSlugs.has(f.replace(".json", "")))
+        .map((f) => fs.unlink(path.join(citiesDir, f)).catch(() => {}))
+    );
+  } catch {}
+
   const cityIndexPayload = {
-    cities: cities.map(({ id, sortOrder, published, ...rest }) => rest),
+    cities: cities.map(({ id, sortOrder, published, lastReviewedAt, ...rest }) => rest),
     meta: buildMeta(NOTION_CITIES_DATA_SOURCE_ID, cities.length),
   };
 
@@ -316,6 +343,10 @@ async function main() {
         status: city.status,
         spotlight: city.spotlight,
         heroArea: city.heroArea,
+        defaultMapLat: city.defaultMapLat,
+        defaultMapLng: city.defaultMapLng,
+        coverImageUrl: city.coverImageUrl,
+        timezone: city.timezone,
       },
       spots: citySpots,
       events: cityEvents,
