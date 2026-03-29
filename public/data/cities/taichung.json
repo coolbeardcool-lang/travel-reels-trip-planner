@@ -1,0 +1,30 @@
+{
+  "city": {
+    "slug": "taichung",
+    "label": "台中",
+    "emoji": "🌳",
+    "region": "台灣",
+    "description": "文創咖啡廳密集，氣候宜人適合悠閒散步。",
+    "status": "active",
+    "spotlight": [
+      "文創",
+      "咖啡",
+      "美食"
+    ],
+    "heroArea": "審計新村",
+    "defaultMapLat": 24.1477,
+    "defaultMapLng": 120.6736,
+    "coverImageUrl": "",
+    "timezone": "Asia/Taipei"
+  },
+  "spots": [],
+  "events": [],
+  "sources": [],
+  "meta": {
+    "lastSyncedAt": "2026-03-29T19:52:04.130Z",
+    "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
+    "generatedBy": "github-actions",
+    "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
+    "count": 0
+  }
+}

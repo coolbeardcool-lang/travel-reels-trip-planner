@@ -558,6 +558,48 @@
   ],
   "sources": [
     {
+      "id": "33224c5d-f0b3-81da-9a18-e455d5d1c6a0",
+      "title": "首爾・推薦的厚切牛舌店及其美食",
+      "url": "https://www.instagram.com/reel/DQWT4Jhkr3f/?igsh=ZHAybHBka25sM3lu",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "推薦的厚切牛舌店及其美食",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-81dc-b68d-cc20734f4821",
+      "title": "台中・花壇的美食推薦",
+      "url": "https://www.instagram.com/reel/DWMB274EjKQ",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "花壇的美食推薦",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "taichung"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33224c5d-f0b3-81bb-afa8-dce2bbb71bf0",
       "title": "Instagram 來源・大阪",
       "url": "https://www.instagram.com/reel/DWbB04-hJd9",
@@ -956,7 +998,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T18:56:07.493Z",
+    "lastSyncedAt": "2026-03-29T19:52:04.161Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
