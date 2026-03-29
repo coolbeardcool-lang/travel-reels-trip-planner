@@ -18,6 +18,136 @@ const CITY_DATA_MAP = {
   busan:     { label: "釜山",   emoji: "🌊",  region: "韓國", timezone: "Asia/Seoul",  lat: 35.1796, lng: 129.0756, sort: 130, heroArea: "海雲台",        spotlight: "海灘,美食,文化",   description: "韓國第二大城市，海灘、海鮮與山城景觀著稱。" },
 };
 
+// ── CitySlug 正規化 ────────────────────────────────────────
+const CITY_SLUG_ALIAS = {
+  東京: "tokyo", 京都: "kyoto", 大阪: "osaka", 奈良: "nara",
+  沖繩: "okinawa", 北海道: "hokkaido", 福岡: "fukuoka",
+  台北: "taipei", 台中: "taichung", 台南: "tainan", 高雄: "kaohsiung",
+  首爾: "seoul", 釜山: "busan", 彰化: "changhua",
+};
+
+function normalizeCitySlug(raw) {
+  const v = String(raw || "").trim();
+  return CITY_SLUG_ALIAS[v] || v.toLowerCase().replace(/\s+/g, "-") || null;
+}
+
+// 名稱正規化（用於重複比對）
+function normalizeName(name) {
+  return String(name || "").toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[^\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\w]/g, "");
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ── Nominatim 免費 Geocoding ───────────────────────────────
+async function geocodeSpot(name, area, cityLabel, cityDefaults) {
+  const query = [name, area, cityLabel].filter(Boolean).join(", ");
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
+      { headers: { "User-Agent": "TravelReelsTripPlanner/1.0", "Accept-Language": "zh,ja,ko,en" } }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          return { lat, lng, confidence: "已確認", mapUrl: `https://www.google.com/maps?q=${lat},${lng}` };
+        }
+      }
+    }
+  } catch { /* geocoding 失敗不中斷主流程 */ }
+  return {
+    lat: cityDefaults?.lat || 0,
+    lng: cityDefaults?.lng || 0,
+    confidence: "推定",
+    mapUrl: null,
+  };
+}
+
+// ── 重複景點查詢 ───────────────────────────────────────────
+async function findExistingSpot(env, name, citySlug) {
+  if (!env.NOTION_SPOTS_DATA_SOURCE_ID || !name) return null;
+  try {
+    const res = await fetch(
+      `https://api.notion.com/v1/data_sources/${env.NOTION_SPOTS_DATA_SOURCE_ID}/query`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.NOTION_TOKEN}`,
+          "Content-Type": "application/json",
+          "Notion-Version": NOTION_VERSION,
+        },
+        body: JSON.stringify({
+          page_size: 100,
+          filter: { property: "CitySlug", select: { equals: citySlug } },
+        }),
+      }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const target = normalizeName(name);
+    return (data.results || []).find((page) => {
+      if (page.archived) return false;
+      const pageName = (page.properties?.Name?.title || []).map((t) => t.plain_text || "").join("").trim();
+      return normalizeName(pageName) === target;
+    }) || null;
+  } catch {
+    return null;
+  }
+}
+
+// ── 智慧合併：回傳需更新的欄位 ────────────────────────────
+function buildMergedPatch(newProps, existingPage) {
+  const ep = existingPage.properties || {};
+  const patch = {};
+
+  // Description：取較長的
+  const existDesc = (ep.Description?.rich_text || []).map((t) => t.plain_text || "").join("");
+  const newDesc = (newProps.Description?.rich_text || []).map((t) => t.plain_text || "").join("");
+  if (newDesc.length > existDesc.length) patch.Description = newProps.Description;
+
+  // Tags：union
+  const existTagStr = (ep.Tags?.rich_text || []).map((t) => t.plain_text || "").join("");
+  const existTags = existTagStr.split(",").map((t) => t.trim()).filter(Boolean);
+  const newTagStr = (newProps.Tags?.rich_text || []).map((t) => t.plain_text || "").join("");
+  const newTags = newTagStr.split(",").map((t) => t.trim()).filter(Boolean);
+  const mergedTags = [...new Set([...existTags, ...newTags])].join(", ");
+  if (mergedTags !== existTagStr) patch.Tags = { rich_text: [{ text: { content: mergedTags.slice(0, 2000) } }] };
+
+  // Thumbnail：非 📍 優先
+  const existThumb = (ep.Thumbnail?.rich_text || []).map((t) => t.plain_text || "").join("");
+  const newThumb = (newProps.Thumbnail?.rich_text || []).map((t) => t.plain_text || "").join("");
+  if (newThumb && newThumb !== "📍" && (!existThumb || existThumb === "📍")) patch.Thumbnail = newProps.Thumbnail;
+
+  // PriorityScore：取最大
+  const existScore = ep.PriorityScore?.number || 0;
+  const newScore = newProps.PriorityScore?.number || 0;
+  if (newScore > existScore) patch.PriorityScore = newProps.PriorityScore;
+
+  // Notes：append（不重複）
+  const existNotes = (ep.Notes?.rich_text || []).map((t) => t.plain_text || "").join("");
+  const newNotes = (newProps.Notes?.rich_text || []).map((t) => t.plain_text || "").join("");
+  if (newNotes && !existNotes.includes(newNotes)) {
+    const combined = existNotes ? `${existNotes}\n---\n${newNotes}` : newNotes;
+    patch.Notes = { rich_text: [{ text: { content: combined.slice(0, 2000) } }] };
+  }
+
+  // SourceLinks：append（不重複）
+  const existLinks = (ep.SourceLinks?.rich_text || []).map((t) => t.plain_text || "").join("");
+  const newLinks = (newProps.SourceLinks?.rich_text || []).map((t) => t.plain_text || "").join("");
+  if (newLinks && !existLinks.includes(newLinks)) {
+    const combined = existLinks ? `${existLinks}, ${newLinks}` : newLinks;
+    patch.SourceLinks = { rich_text: [{ text: { content: combined.slice(0, 2000) } }] };
+  }
+
+  return patch;
+}
+
 export async function onRequestPost(context) {
   try {
     const env = context.env;
@@ -43,7 +173,7 @@ export async function onRequestPost(context) {
 
     const platform = String(analysis.sourcePlatform || "Website");
     const contentKind = String(analysis.contentKind || "source_only");
-    const citySlug = String(analysis.citySlug || "");
+    const citySlug = normalizeCitySlug(String(analysis.citySlug || "")) || "";
     const summary = String(analysis.summary || "");
     const confidence = Number(analysis.confidence || 0);
     const items = Array.isArray(analysis.items) ? analysis.items : [];
@@ -69,14 +199,23 @@ export async function onRequestPost(context) {
     const eventPageIds = [];
 
     if (items.length && (env.NOTION_SPOTS_DATA_SOURCE_ID || env.NOTION_EVENTS_DATA_SOURCE_ID)) {
+      let geoCallCount = 0;
       for (const item of items) {
-        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "");
-        const spotPage = await createSpotPage({
-          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
+        const itemCitySlug = normalizeCitySlug(String(item?.citySlug || item?.city_slug || citySlug || "")) || "";
+        // Nominatim 1 req/sec 限制
+        if (geoCallCount > 0) await delay(1100);
+        const geoResult = await geocodeSpot(
+          item.name, item.area,
+          CITY_DATA_MAP[itemCitySlug]?.label,
+          CITY_DATA_MAP[itemCitySlug]
+        );
+        geoCallCount++;
+        const spotPage = await upsertSpotPage({
+          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle, geoResult,
         });
         const spotId = spotPage?.id || null;
         if (spotId) spotPageIds.push(spotId);
-        created.spots.push({ id: spotId, name: item.name || "未命名景點" });
+        created.spots.push({ id: spotId, name: item.name || "未命名景點", action: spotPage?.action || "created" });
       }
     }
 
@@ -265,8 +404,8 @@ async function createSourcePage({
   return await notionCreatePage(env, payload);
 }
 
-// ── Spots ──────────────────────────────────────────────────
-async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
+// ── Spots（upsert = find existing → merge or create）─────────
+async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle, geoResult }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
   const normalizedTags = Array.isArray(item.tags)
@@ -276,16 +415,33 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
     ? normalizedTags.join(", ")
     : [item.category || "景點", item.area || "", citySlug || ""].filter(Boolean).join(", ");
 
+  // 套用 geocoding 結果
+  const geo = geoResult || {};
+  const lat = geo.lat && geo.lat !== 0 ? geo.lat : (Number.isFinite(item?.lat) && item.lat !== 0 ? item.lat : null);
+  const lng = geo.lng && geo.lng !== 0 ? geo.lng : (Number.isFinite(item?.lng) && item.lng !== 0 ? item.lng : null);
+  const confidence = geo.confidence || "推定";
   const mapQuery = encodeURIComponent(`${item.name} ${cityLabel}`);
-  const mapUrl = item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+  const mapUrl = geo.mapUrl || item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
-  const lat = Number.isFinite(item?.lat) && Math.abs(item.lat) <= 90 && item.lat !== 0 ? item.lat : null;
-  const lng = Number.isFinite(item?.lng) && Math.abs(item.lng) <= 180 && item.lng !== 0 ? item.lng : null;
   const priorityScore = Number.isFinite(item?.itemConfidence)
     ? Math.round(item.itemConfidence * 100)
     : Number.isFinite(item?.item_confidence)
       ? Math.round(item.item_confidence * 100)
       : 0;
+
+  // BE-san: soft-log 品質警示（欄位無中文）
+  const qualityWarnings = [];
+  if (item.name && !/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(item.name)) {
+    qualityWarnings.push("quality-warn: name has no CJK characters");
+  }
+  if (item.area && !/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(item.area)) {
+    qualityWarnings.push("quality-warn: area has no CJK characters");
+  }
+
+  const baseNotes = buildItemNotes(item);
+  const notesWithWarnings = qualityWarnings.length
+    ? [baseNotes, ...qualityWarnings].filter(Boolean).join(" || ")
+    : baseNotes;
 
   const properties = {
     Name:             { title: [{ text: { content: cleanText(item.name || "未命名項目").slice(0, 200) } }] },
@@ -294,9 +450,10 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
     Category:         { rich_text: [{ text: { content: cleanText(item.category || "待分類") } }] },
     City:             { select: { name: cityLabel || "未分類" } },
     CitySlug:         { select: { name: String(citySlug || "未分類") } },
+    Confidence:       { select: { name: confidence } },
     Description:      { rich_text: [{ text: { content: cleanText(item.description).slice(0, 2000) } }] },
     MapUrl:           { url: mapUrl || null },
-    Notes:            { rich_text: [{ text: { content: buildItemNotes(item) } }] },
+    Notes:            { rich_text: [{ text: { content: notesWithWarnings.slice(0, 2000) } }] },
     PriorityScore:    { number: priorityScore },
     Published:        { checkbox: true },
     SourceTitleCache: { rich_text: [{ text: { content: cleanText(sourceTitle).slice(0, 200) } }] },
@@ -305,15 +462,33 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
   };
   if (lat !== null) properties.Lat = { number: lat };
   if (lng !== null) properties.Lng = { number: lng };
-
   if (sourcePageId) {
     properties.SourceLinks = { rich_text: [{ text: { content: String(sourcePageId) } }] };
   }
 
-  return await notionCreatePage(env, {
+  // BE-2: 重複偵測 → 合併
+  const existing = await findExistingSpot(env, item.name, citySlug);
+  if (existing) {
+    const patch = buildMergedPatch(properties, existing);
+    // 若 geocoding 取得真實座標，且現有記錄仍是推定，則更新座標
+    const existConf = existing.properties?.Confidence?.select?.name;
+    if (confidence === "已確認" && existConf !== "已確認") {
+      patch.Confidence = { select: { name: "已確認" } };
+      patch.MapUrl = { url: mapUrl };
+      if (lat !== null) patch.Lat = { number: lat };
+      if (lng !== null) patch.Lng = { number: lng };
+    }
+    if (Object.keys(patch).length > 0) {
+      await notionPatchPage(env, existing.id, patch);
+    }
+    return { id: existing.id, action: "merged" };
+  }
+
+  const created = await notionCreatePage(env, {
     parent: { data_source_id: env.NOTION_SPOTS_DATA_SOURCE_ID },
     properties,
   });
+  return { ...created, action: "created" };
 }
 
 // ── Events ─────────────────────────────────────────────────
@@ -412,6 +587,21 @@ function buildItemNotes(item) {
 }
 
 // ── Notion API ─────────────────────────────────────────────
+async function notionPatchPage(env, pageId, properties) {
+  const resp = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${env.NOTION_TOKEN}`,
+      "Content-Type": "application/json",
+      "Notion-Version": NOTION_VERSION,
+    },
+    body: JSON.stringify({ properties }),
+  });
+  const jsonBody = await resp.json();
+  if (!resp.ok) throw new Error(jsonBody?.message || "合併更新 Notion 失敗。");
+  return jsonBody;
+}
+
 async function notionCreatePage(env, payload) {
   const resp = await fetch("https://api.notion.com/v1/pages", {
     method: "POST",
