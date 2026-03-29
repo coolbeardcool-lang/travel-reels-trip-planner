@@ -989,7 +989,7 @@ export default function App() {
                 <button type="button" onClick={() => { setInputExpanded(false); setAnalysisPreview(null); setSelectedAnalysisItemIds(new Set()); setSubmitStatus({ kind: "idle", message: "" }); }}
                   style={{ background: "transparent", border: "none", color: "#a8a29e", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>✕</button>
               </div>
-            <div className="floating-scroll" style={{ overflowY: "auto", paddingRight: 2 }}>
+            <div style={{ overflowY: "auto", paddingRight: 2 }}>
             <form onSubmit={handleAnalyzeUrl} style={{ marginTop: 16, display: "grid", gap: 12 }}>
               <input value={submitUrl} onChange={(e) => setSubmitUrl(e.target.value)} placeholder="只貼 Instagram Reel / Threads / 網址 就可以"
                 style={{ width: "100%", borderRadius: 18, border: `1px solid ${isDuplicateUrl ? "#fb923c" : "rgba(255,255,255,0.15)"}`, background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
