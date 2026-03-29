@@ -558,6 +558,71 @@
   ],
   "sources": [
     {
+      "id": "33224c5d-f0b3-81bb-afa8-dce2bbb71bf0",
+      "title": "Instagram 來源・大阪",
+      "url": "https://www.instagram.com/reel/DWbB04-hJd9",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "osaka"
+      ],
+      "relatedCityIds": [
+        [
+          "osaka"
+        ]
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-8120-86fb-cb2382d2f49b",
+      "title": "首爾・延南洞的光雞餐廳提供美味的人蔘雞，適合單人用餐。",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWMD8DVEx6E/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "延南洞的光雞餐廳提供美味的人蔘雞，適合單人用餐。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-81c7-afb5-ec7658a72a0b",
+      "title": "首爾・弘大區域的一間韓牛燒肉餐廳，提供高品質的肉品與服務。",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "弘大區域的一間韓牛燒肉餐廳，提供高品質的肉品與服務。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33224c5d-f0b3-81e3-b6fe-f330dfcb9e2d",
       "title": "京都・京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
       "url": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
@@ -891,7 +956,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T18:46:22.463Z",
+    "lastSyncedAt": "2026-03-29T18:56:07.493Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
