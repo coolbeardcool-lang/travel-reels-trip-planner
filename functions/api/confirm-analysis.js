@@ -1,4 +1,5 @@
 // functions/api/confirm-analysis.js
+import { CITY_SLUG_MAP } from "../../src/utils/citySlugMap.js";
 
 const NOTION_VERSION = "2025-09-03";
 
@@ -19,16 +20,9 @@ const CITY_DATA_MAP = {
 };
 
 // ── CitySlug 正規化 ────────────────────────────────────────
-const CITY_SLUG_ALIAS = {
-  東京: "tokyo", 京都: "kyoto", 大阪: "osaka", 奈良: "nara",
-  沖繩: "okinawa", 北海道: "hokkaido", 福岡: "fukuoka",
-  台北: "taipei", 台中: "taichung", 台南: "tainan", 高雄: "kaohsiung",
-  首爾: "seoul", 釜山: "busan", 彰化: "changhua",
-};
-
 function normalizeCitySlug(raw) {
   const v = String(raw || "").trim();
-  return CITY_SLUG_ALIAS[v] || v.toLowerCase().replace(/\s+/g, "-") || null;
+  return CITY_SLUG_MAP[v] || v.toLowerCase().replace(/\s+/g, "-") || null;
 }
 
 // 名稱正規化（用於重複比對）
@@ -72,12 +66,16 @@ async function geocodeSpot(name, area, cityLabel, cityDefaults) {
   };
 }
 
-// ── 重複景點查詢 ───────────────────────────────────────────
-async function findExistingSpot(env, name, citySlug) {
-  if (!env.NOTION_SPOTS_DATA_SOURCE_ID || !name) return null;
+// ── 重複記錄查詢（含 per-request 快取，減少 Notion API 呼叫）──
+async function queryExistingByCity(env, dbId, citySlug, filterType, cache) {
+  const key = `${dbId}:${citySlug}`;
+  if (cache.has(key)) return cache.get(key);
   try {
+    const filter = filterType === "select"
+      ? { property: "CitySlug", select: { equals: citySlug } }
+      : { property: "CitySlug", rich_text: { equals: citySlug } };
     const res = await fetch(
-      `https://api.notion.com/v1/data_sources/${env.NOTION_SPOTS_DATA_SOURCE_ID}/query`,
+      `https://api.notion.com/v1/data_sources/${dbId}/query`,
       {
         method: "POST",
         headers: {
@@ -85,27 +83,30 @@ async function findExistingSpot(env, name, citySlug) {
           "Content-Type": "application/json",
           "Notion-Version": NOTION_VERSION,
         },
-        body: JSON.stringify({
-          page_size: 100,
-          filter: { property: "CitySlug", select: { equals: citySlug } },
-        }),
+        body: JSON.stringify({ page_size: 100, filter }),
       }
     );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const target = normalizeName(name);
-    return (data.results || []).find((page) => {
-      if (page.archived) return false;
-      const pageName = (page.properties?.Name?.title || []).map((t) => t.plain_text || "").join("").trim();
-      return normalizeName(pageName) === target;
-    }) || null;
+    const results = res.ok ? ((await res.json()).results || []) : [];
+    cache.set(key, results);
+    return results;
   } catch {
-    return null;
+    return [];
   }
 }
 
+async function findExistingRecord(env, dbId, name, citySlug, filterType, cache) {
+  if (!dbId || !name) return null;
+  const pages = await queryExistingByCity(env, dbId, citySlug, filterType, cache);
+  const target = normalizeName(name);
+  return pages.find((page) => {
+    if (page.archived) return false;
+    const pageName = (page.properties?.Name?.title || []).map((t) => t.plain_text || "").join("").trim();
+    return normalizeName(pageName) === target;
+  }) || null;
+}
+
 // ── 智慧合併：回傳需更新的欄位 ────────────────────────────
-function buildMergedPatch(newProps, existingPage) {
+function buildMergedPatch(newProps, existingPage, kind = "spot") {
   const ep = existingPage.properties || {};
   const patch = {};
 
@@ -122,15 +123,17 @@ function buildMergedPatch(newProps, existingPage) {
   const mergedTags = [...new Set([...existTags, ...newTags])].join(", ");
   if (mergedTags !== existTagStr) patch.Tags = { rich_text: [{ text: { content: mergedTags.slice(0, 2000) } }] };
 
-  // Thumbnail：非 📍 優先
-  const existThumb = (ep.Thumbnail?.rich_text || []).map((t) => t.plain_text || "").join("");
-  const newThumb = (newProps.Thumbnail?.rich_text || []).map((t) => t.plain_text || "").join("");
-  if (newThumb && newThumb !== "📍" && (!existThumb || existThumb === "📍")) patch.Thumbnail = newProps.Thumbnail;
+  if (kind === "spot") {
+    // Thumbnail：非 📍 優先（Spot 專屬）
+    const existThumb = (ep.Thumbnail?.rich_text || []).map((t) => t.plain_text || "").join("");
+    const newThumb = (newProps.Thumbnail?.rich_text || []).map((t) => t.plain_text || "").join("");
+    if (newThumb && newThumb !== "📍" && (!existThumb || existThumb === "📍")) patch.Thumbnail = newProps.Thumbnail;
 
-  // PriorityScore：取最大
-  const existScore = ep.PriorityScore?.number || 0;
-  const newScore = newProps.PriorityScore?.number || 0;
-  if (newScore > existScore) patch.PriorityScore = newProps.PriorityScore;
+    // PriorityScore：取最大（Spot 專屬）
+    const existScore = ep.PriorityScore?.number || 0;
+    const newScore = newProps.PriorityScore?.number || 0;
+    if (newScore > existScore) patch.PriorityScore = newProps.PriorityScore;
+  }
 
   // Notes：append（不重複）
   const existNotes = (ep.Notes?.rich_text || []).map((t) => t.plain_text || "").join("");
@@ -200,6 +203,8 @@ export async function onRequestPost(context) {
     const created = { sourcePageId, spots: [], events: [] };
     const spotPageIds = [];
     const eventPageIds = [];
+    // Per-request dedup cache: avoids repeated Notion queries for same citySlug
+    const existingCache = new Map();
 
     if (items.length && (env.NOTION_SPOTS_DATA_SOURCE_ID || env.NOTION_EVENTS_DATA_SOURCE_ID)) {
       let geoCallCount = 0;
@@ -214,7 +219,7 @@ export async function onRequestPost(context) {
         );
         geoCallCount++;
         const spotPage = await upsertSpotPage({
-          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle, geoResult,
+          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle, geoResult, cache: existingCache,
         });
         const spotId = spotPage?.id || null;
         if (spotId) spotPageIds.push(spotId);
@@ -226,7 +231,7 @@ export async function onRequestPost(context) {
       for (const item of items) {
         const itemCitySlug = normalizeCitySlug(String(item?.citySlug || item?.city_slug || citySlug || "")) || "";
         const eventPage = await upsertEventPage({
-          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
+          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle, cache: existingCache,
         });
         const eventId = eventPage?.id || null;
         if (eventId) eventPageIds.push(eventId);
@@ -397,7 +402,7 @@ async function createSourcePage({
       SourceUrl:  { url },
       Platform:   { rich_text: [{ text: { content: platform } }] },
       SourceType: { rich_text: [{ text: { content: contentKind === "event" ? "活動資訊" : contentKind === "spot" ? "景點美食" : "手動整理" } }] },
-      Status:     { rich_text: [{ text: { content: "已匯入" } }] },
+      Status:     { select: { name: "已匯入" } },
       Note:       { rich_text: [{ text: { content: (notes || summary || "").slice(0, 2000) } }] },
       CityHints:  { multi_select: citySlug ? [{ name: citySlug }] : [] },
       Published:  { checkbox: true },
@@ -408,7 +413,7 @@ async function createSourcePage({
 }
 
 // ── Spots（upsert = find existing → merge or create）─────────
-async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle, geoResult }) {
+async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle, geoResult, cache }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
   const normalizedTags = Array.isArray(item.tags)
@@ -470,7 +475,7 @@ async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
   }
 
   // BE-2: 重複偵測 → 合併
-  const existing = await findExistingSpot(env, item.name, citySlug);
+  const existing = await findExistingRecord(env, env.NOTION_SPOTS_DATA_SOURCE_ID, item.name, citySlug, "select", cache);
   if (existing) {
     const patch = buildMergedPatch(properties, existing);
     // 若 geocoding 取得真實座標，且現有記錄仍是推定，則更新座標
@@ -495,7 +500,7 @@ async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
 }
 
 // ── Events（upsert = find existing → merge or create）────────
-async function upsertEventPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
+async function upsertEventPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle, cache }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
   const normalizedTags = normalizeTags(item.tags);
@@ -537,9 +542,9 @@ async function upsertEventPage({ env, item, citySlug, sourceUrl, sourcePageId, s
   }
 
   // 重複偵測：同 Name + CitySlug
-  const existing = await findExistingEvent(env, item.name, citySlug);
+  const existing = await findExistingRecord(env, env.NOTION_EVENTS_DATA_SOURCE_ID, item.name, citySlug, "rich_text", cache);
   if (existing) {
-    const patch = buildMergedPatch(properties, existing);
+    const patch = buildMergedPatch(properties, existing, "event");
     if (Object.keys(patch).length > 0) {
       await notionPatchPage(env, existing.id, patch);
     }
@@ -551,37 +556,6 @@ async function upsertEventPage({ env, item, citySlug, sourceUrl, sourcePageId, s
     properties,
   });
   return { ...created, action: "created" };
-}
-
-async function findExistingEvent(env, name, citySlug) {
-  if (!env.NOTION_EVENTS_DATA_SOURCE_ID || !name) return null;
-  try {
-    const res = await fetch(
-      `https://api.notion.com/v1/data_sources/${env.NOTION_EVENTS_DATA_SOURCE_ID}/query`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.NOTION_TOKEN}`,
-          "Content-Type": "application/json",
-          "Notion-Version": NOTION_VERSION,
-        },
-        body: JSON.stringify({
-          page_size: 100,
-          filter: { property: "CitySlug", rich_text: { equals: citySlug } },
-        }),
-      }
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const target = normalizeName(name);
-    return (data.results || []).find((page) => {
-      if (page.archived) return false;
-      const pageName = (page.properties?.Name?.title || []).map((t) => t.plain_text || "").join("").trim();
-      return normalizeName(pageName) === target;
-    }) || null;
-  } catch {
-    return null;
-  }
 }
 
 function guessThumbnail(category) {

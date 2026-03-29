@@ -2,17 +2,11 @@ import React from "react";
 import { COLORS, ANALYZE_TYPE_OPTIONS } from "../config/theme.js";
 import { prettyAnalysisKind } from "../utils/format.js";
 import { PrimaryButton } from "./ui/PrimaryButton.jsx";
-
-const CITY_SLUG_ALIAS = {
-  東京: "tokyo", 京都: "kyoto", 大阪: "osaka", 奈良: "nara",
-  沖繩: "okinawa", 北海道: "hokkaido", 福岡: "fukuoka",
-  台北: "taipei", 台中: "taichung", 台南: "tainan", 高雄: "kaohsiung",
-  首爾: "seoul", 釜山: "busan", 彰化: "changhua",
-};
+import { CITY_SLUG_MAP } from "../utils/citySlugMap.js";
 
 function normalizeCitySlugValue(raw) {
   const v = String(raw || "").trim();
-  return CITY_SLUG_ALIAS[v] || v.toLowerCase().replace(/\s+/g, "-") || "";
+  return CITY_SLUG_MAP[v] || v.toLowerCase().replace(/\s+/g, "-") || "";
 }
 
 function hasChinese(str) {

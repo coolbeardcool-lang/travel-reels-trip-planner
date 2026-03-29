@@ -364,7 +364,7 @@ export default function App() {
     if (selectedItems.length === 0 && analysisPreview.contentKind !== "source_only") {
       setSubmitStatus({ kind: "error", message: "請至少選取一個項目後再寫入。" }); return;
     }
-    const previewToSubmit = { ...analysisPreview, items: selectedItems };
+    const previewToSubmit = { ...analysisPreview, items: selectedItems.map((i) => ({ ...i, citySlug: analysisPreview.citySlug })) };
     setIsConfirming(true);
     setWriteOverlay({ status: "writing", dispatched: false, submittedItems: selectedItems, result: null });
     setSubmitStatus({ kind: "loading", message: "正在確認並寫入資料庫…" });
