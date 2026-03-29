@@ -1,10 +1,6 @@
-const CITY_ALIAS_MAP = {
-  京都: "kyoto", 大阪: "osaka", 東京: "tokyo", 福岡: "fukuoka", 沖繩: "okinawa",
-  奈良: "nara", 北海道: "hokkaido",
-  台北: "taipei", 台中: "taichung", 台南: "tainan", 高雄: "kaohsiung",
-  首爾: "seoul", 釜山: "busan",
-  全部: "all", all: "all",
-};
+import { CITY_SLUG_MAP } from "./citySlugMap.js";
+
+const CITY_ALIAS_MAP = { ...CITY_SLUG_MAP, 全部: "all", all: "all" };
 
 export function normalizeCitySlugValue(value) {
   const raw = String(value || "").trim();
@@ -21,6 +17,10 @@ export function normalizeCity(city, index) {
     description: city.description || "",
     heroArea: city.heroArea || "",
     spotlight: Array.isArray(city.spotlight) ? city.spotlight : [],
+    defaultMapLat: Number.isFinite(city.defaultMapLat) ? city.defaultMapLat : null,
+    defaultMapLng: Number.isFinite(city.defaultMapLng) ? city.defaultMapLng : null,
+    timezone: city.timezone || "Asia/Tokyo",
+    coverImageUrl: city.coverImageUrl || "",
   };
 }
 
@@ -52,14 +52,18 @@ export function normalizeSpot(spot, index, cityIndex) {
     category: spot.category || "景點",
     description: spot.description || "",
     sourceId: spot.sourceId || "",
+    sourceTitle: spot.sourceTitle || "",
     sourceUrl: spot.sourceUrl || "",
     bestTime: spot.bestTime || "下午",
     stayMinutes: Number.isFinite(spot.stayMinutes) ? spot.stayMinutes : Number(spot.stayMinutes) || 30,
     tags: Array.isArray(spot.tags) ? spot.tags : [],
     lat: Number.isFinite(spot.lat) ? spot.lat : Number(spot.lat) || 0,
     lng: Number.isFinite(spot.lng) ? spot.lng : Number(spot.lng) || 0,
+    confidence: spot.confidence || "推定",
     thumbnail: spot.thumbnail || "📍",
     mapUrl: spot.mapUrl || "",
+    priorityScore: Number.isFinite(spot.priorityScore) ? spot.priorityScore : 0,
+    notes: spot.notes || "",
   };
 }
 
@@ -128,14 +132,19 @@ export function normalizeAnalysisPayload(payload, fallback = {}) {
     items: items.map((item, index) => ({
       id: item.id || `analysis-item-${index}`,
       name: item.name || `候選項目 ${index + 1}`,
+      itemKind: item.itemKind || item.item_kind || (contentKind === "event" ? "event" : "spot"),
       category: item.category || (contentKind === "event" ? "活動" : "景點"),
       description: item.description || "",
       tags: Array.isArray(item.tags) ? item.tags : [],
       area: item.area || payload?.area || fallback.area || "",
+      citySlug: normalizeCitySlugValue(item.citySlug || item.city_slug || payload?.citySlug || ""),
+      thumbnail: item.thumbnail || "",
       best_time: item.best_time || "",
       stay_minutes: Number.isFinite(item.stay_minutes) ? item.stay_minutes : Number(item.stay_minutes) || 0,
       starts_on: item.starts_on || null,
       ends_on: item.ends_on || null,
+      itemConfidence: Number.isFinite(item.itemConfidence) ? item.itemConfidence : Number(item.item_confidence) || 0,
+      needsReview: item.needsReview !== false && item.needs_review !== false,
       reason: item.reason || "",
     })),
   };

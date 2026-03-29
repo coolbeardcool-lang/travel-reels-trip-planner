@@ -45,8 +45,11 @@ export function LeafletMap({ items, visibleIds, activeItemId, onSelectItem }) {
       const toShow = items.filter((i) => visibleIds.has(i.id) && i.lat && i.lng);
       toShow.forEach((item) => {
         const active = item.id === activeItemId;
+        const confirmed = item.confidence === "已確認";
+        const bgColor = active ? "#1c1917" : (confirmed ? "#dcfce7" : "#fef9c3");
+        const borderColor = active ? "#1c1917" : (confirmed ? "#15803d" : "#ca8a04");
         const icon = L.divIcon({
-          html: `<div style="width:36px;height:36px;background:${active ? "#1c1917" : "#fff"};border:2.5px solid #1c1917;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 3px 10px rgba(0,0,0,.25)">${item.thumbnail}</div>`,
+          html: `<div style="width:36px;height:36px;background:${bgColor};border:2.5px solid ${borderColor};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 3px 10px rgba(0,0,0,.25)">${item.thumbnail}</div>`,
           className: "", iconSize: [36, 36], iconAnchor: [18, 18],
         });
         const marker = L.marker([item.lat, item.lng], { icon })

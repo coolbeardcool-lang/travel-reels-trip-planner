@@ -133,6 +133,11 @@ export function MapSection({
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
                           <span style={chipStyle(item.category)}>{item.category}</span>
                           <span style={{ borderRadius: 999, border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11 }}>{item.bestTime}</span>
+                          {item.confidence && (
+                            <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: item.confidence === "已確認" ? "#dcfce7" : "#fef9c3", color: item.confidence === "已確認" ? "#15803d" : "#92400e" }}>
+                              {item.confidence === "已確認" ? "🟢 已確認" : "🟡 推定"}
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontWeight: 900, fontSize: 15 }}>{item.name}</div>
                         <div style={{ fontSize: 12, color: COLORS.subtext, marginTop: 2 }}>{item.city}・{item.area}</div>

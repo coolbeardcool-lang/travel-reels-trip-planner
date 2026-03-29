@@ -359,8 +359,12 @@ export default function App() {
 
   async function handleConfirmAnalysis() {
     if (!analysisPreview) { setSubmitStatus({ kind: "error", message: "目前沒有可確認寫入的分析結果。" }); return; }
+    if (!analysisPreview.citySlug) { setSubmitStatus({ kind: "error", message: "請先確認城市（citySlug 不可為空），再寫入資料庫。" }); return; }
     const selectedItems = analysisPreview.items.filter((i) => selectedAnalysisItemIds.has(i.id));
-    const previewToSubmit = { ...analysisPreview, items: selectedItems };
+    if (selectedItems.length === 0 && analysisPreview.contentKind !== "source_only") {
+      setSubmitStatus({ kind: "error", message: "請至少選取一個項目後再寫入。" }); return;
+    }
+    const previewToSubmit = { ...analysisPreview, items: selectedItems.map((i) => ({ ...i, citySlug: analysisPreview.citySlug })) };
     setIsConfirming(true);
     setWriteOverlay({ status: "writing", dispatched: false, submittedItems: selectedItems, result: null });
     setSubmitStatus({ kind: "loading", message: "正在確認並寫入資料庫…" });

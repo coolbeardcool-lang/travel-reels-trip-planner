@@ -2,6 +2,24 @@ import React from "react";
 import { COLORS, ANALYZE_TYPE_OPTIONS } from "../config/theme.js";
 import { prettyAnalysisKind } from "../utils/format.js";
 import { PrimaryButton } from "./ui/PrimaryButton.jsx";
+import { CITY_SLUG_MAP } from "../utils/citySlugMap.js";
+
+function normalizeCitySlugValue(raw) {
+  const v = String(raw || "").trim();
+  return CITY_SLUG_MAP[v] || v.toLowerCase().replace(/\s+/g, "-") || "";
+}
+
+function hasChinese(str) {
+  return /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(String(str || ""));
+}
+
+function getItemWarnings(item) {
+  const warnings = [];
+  if (item.name && !hasChinese(item.name)) warnings.push("名稱缺繁中");
+  if (item.area && !hasChinese(item.area)) warnings.push("區域缺繁中");
+  if (!item.description) warnings.push("說明為空");
+  return warnings;
+}
 
 export function UrlAnalyzerPanel({
   isMobile, cityIndex,
@@ -96,7 +114,7 @@ export function UrlAnalyzerPanel({
                 <span style={{ fontSize: 12, color: "#d6d3d1" }}>城市（可修正）</span>
                 <input
                   value={analysisPreview.citySlug || ""}
-                  onChange={(e) => setAnalysisPreview((prev) => ({ ...prev, citySlug: e.target.value.toLowerCase().trim() }))}
+                  onChange={(e) => setAnalysisPreview((prev) => ({ ...prev, citySlug: normalizeCitySlugValue(e.target.value) }))}
                   placeholder="如 seoul / tokyo"
                   style={{ flex: 1, minWidth: 120, borderRadius: 10, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", padding: "6px 10px", fontSize: 12, outline: "none" }}
                 />
@@ -124,6 +142,7 @@ export function UrlAnalyzerPanel({
           <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
             {analysisPreview.items.length ? analysisPreview.items.map((item) => {
               const checked = selectedItems.includes(item.id);
+              const warnings = getItemWarnings(item);
               return (
                 <div key={item.id} style={{ borderRadius: 18, background: checked ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)", padding: 14, cursor: "pointer", border: `1px solid ${checked ? "rgba(255,255,255,0.3)" : "transparent"}` }}
                   onClick={() => setSelectedItems((prev) => prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id])}>
@@ -141,6 +160,15 @@ export function UrlAnalyzerPanel({
                   {item.area && <div style={{ marginTop: 5, fontSize: 12, color: "#d6d3d1" }}>📍 {item.area}</div>}
                   {item.description && <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.7, color: "#f5f5f4" }}>{item.description}</div>}
                   {item.reason && <div style={{ marginTop: 5, fontSize: 11, color: "#a8a29e", fontStyle: "italic" }}>💡 {item.reason}</div>}
+                  {warnings.length > 0 && (
+                    <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {warnings.map((w) => (
+                        <span key={w} style={{ borderRadius: 999, padding: "3px 8px", fontSize: 11, background: COLORS.warningBg, color: COLORS.warningText, fontWeight: 600 }}>
+                          ⚠️ {w}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             }) : (

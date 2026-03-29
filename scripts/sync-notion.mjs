@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { CITY_SLUG_MAP } from "../src/utils/citySlugMap.js";
 
 const NOTION_API_KEY = process.env.NOTION_API_KEY;
 const NOTION_CITIES_DATA_SOURCE_ID = process.env.NOTION_CITIES_DATA_SOURCE_ID;
@@ -112,6 +113,11 @@ function slugify(value) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, "-");
 }
 
+function normalizeCitySlug(raw) {
+  const v = String(raw || "").trim();
+  return CITY_SLUG_MAP[v] || v.toLowerCase().replace(/\s+/g, "-") || null;
+}
+
 function ensureArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -124,9 +130,21 @@ function richTextToArray(value) {
   return [];
 }
 
+// SYNC-2: mapUrl 依 confidence 選格式
+// 已確認 → 座標型 URL；推定 → search query URL（或保留 Notion 儲存值）
+function buildSpotMapUrl(confidence, lat, lng, storedUrl, name, cityLabel) {
+  if (confidence === "已確認" && lat && lat !== 0 && lng && lng !== 0) {
+    return `https://www.google.com/maps?q=${lat},${lng}`;
+  }
+  if (storedUrl) return storedUrl;
+  const query = encodeURIComponent([name, cityLabel].filter(Boolean).join(" "));
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
 function normalizeCity(page) {
   const name = getProp(page, "Name", "");
-  const slug = getProp(page, "Slug", "") || slugify(name);
+  const rawSlug = getProp(page, "Slug", "") || slugify(name);
+  const slug = normalizeCitySlug(rawSlug) || slugify(name);
   return {
     id: page.id,
     slug,
@@ -174,7 +192,8 @@ function normalizeSource(page) {
 
 function normalizeSpot(page, sourcesById) {
   const cityLabel = getProp(page, "City", "") || "";
-  const citySlug = getProp(page, "CitySlug", "") || slugify(cityLabel);
+  const rawCitySlug = getProp(page, "CitySlug", "") || slugify(cityLabel);
+  const citySlug = normalizeCitySlug(rawCitySlug) || slugify(cityLabel);
   const sourceId = getProp(page, "SourceLinks", "") || "";
   const source = sourceId ? sourcesById.get(sourceId.trim()) : null;
   const tagsRaw = getProp(page, "Tags", "") || "";
@@ -198,7 +217,14 @@ function normalizeSpot(page, sourcesById) {
     lng: getProp(page, "Lng", 0) ?? 0,
     confidence: getProp(page, "Confidence", "推定") || "推定",
     thumbnail: getProp(page, "Thumbnail", "📍") || "📍",
-    mapUrl: getProp(page, "MapUrl", "") || "",
+    mapUrl: buildSpotMapUrl(
+      getProp(page, "Confidence", "推定") || "推定",
+      getProp(page, "Lat", 0) ?? 0,
+      getProp(page, "Lng", 0) ?? 0,
+      getProp(page, "MapUrl", "") || "",
+      getProp(page, "Name", "") || "",
+      cityLabel
+    ),
     published: Boolean(getProp(page, "Published", false)),
     priorityScore: getProp(page, "PriorityScore", 0) ?? 0,
     lastReviewedAt: getProp(page, "LastReviewedAt", null)?.start || null,
@@ -207,8 +233,9 @@ function normalizeSpot(page, sourcesById) {
 }
 
 function normalizeEvent(page, sourcesById) {
-  const citySlug = getProp(page, "CitySlug", "") || "";
+  const rawCitySlug = getProp(page, "CitySlug", "") || "";
   const cityLabel = getProp(page, "City", "") || "";
+  const citySlug = normalizeCitySlug(rawCitySlug) || normalizeCitySlug(cityLabel) || "";
   const sourceId = getProp(page, "SourceLinks", "") || "";
   const source = sourceId ? sourcesById.get(sourceId.trim()) : null;
   const tagsRaw = getProp(page, "Tags", "") || "";
@@ -284,8 +311,19 @@ async function main() {
   const publicDataDir = path.join(process.cwd(), "public", "data");
   const citiesDir = path.join(publicDataDir, "cities");
 
+  // 清理 stale 城市檔案：保留 index.json，刪除其他不在本次 cities 清單內的 .json
+  const activeSlugs = new Set(cities.map((c) => c.slug));
+  try {
+    const existing = await fs.readdir(citiesDir);
+    await Promise.all(
+      existing
+        .filter((f) => f.endsWith(".json") && f !== "index.json" && !activeSlugs.has(f.replace(".json", "")))
+        .map((f) => fs.unlink(path.join(citiesDir, f)).catch(() => {}))
+    );
+  } catch {}
+
   const cityIndexPayload = {
-    cities: cities.map(({ id, sortOrder, published, ...rest }) => rest),
+    cities: cities.map(({ id, sortOrder, published, lastReviewedAt, ...rest }) => rest),
     meta: buildMeta(NOTION_CITIES_DATA_SOURCE_ID, cities.length),
   };
 
@@ -316,6 +354,10 @@ async function main() {
         status: city.status,
         spotlight: city.spotlight,
         heroArea: city.heroArea,
+        defaultMapLat: city.defaultMapLat,
+        defaultMapLng: city.defaultMapLng,
+        coverImageUrl: city.coverImageUrl,
+        timezone: city.timezone,
       },
       spots: citySpots,
       events: cityEvents,
