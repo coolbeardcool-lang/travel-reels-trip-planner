@@ -168,6 +168,7 @@ export function MapSection({
               </div>
             </div>
           )}
+        </div>
       ) : (
         <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 28, textAlign: "center", color: COLORS.subtext }}>
           <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.text }}>請先選擇城市</div>
