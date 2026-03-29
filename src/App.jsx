@@ -663,6 +663,7 @@ export default function App() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showCitySources, setShowCitySources] = useState(false);
+  const [selectedAnalysisItemIds, setSelectedAnalysisItemIds] = useState(new Set());
 
   const hasCitySelected = selectedCitySlug !== "unselected";
 
@@ -764,6 +765,15 @@ export default function App() {
     setSelectedCategories((prev) => prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]);
   }
 
+  function toggleAnalysisItemSelection(itemId) {
+    setSelectedAnalysisItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
   // 手動更新資料
   async function handleManualSync() {
     setSyncing(true);
@@ -786,6 +796,7 @@ export default function App() {
     if (!cleanUrl) { setSubmitStatus({ kind: "error", message: "請先貼上 Reel 或網址。" }); return; }
     setIsAnalyzing(true);
     setAnalysisPreview(null);
+    setSelectedAnalysisItemIds(new Set());
     setSubmitStatus({ kind: "loading", message: "正在分析網址內容，完成後會先顯示給你確認。" });
     try {
       const response = await fetch(ANALYZE_API_PATH, {
@@ -817,6 +828,7 @@ export default function App() {
         droppedItemsCount: dropped,
       };
       setAnalysisPreview(filteredPreview);
+      setSelectedAnalysisItemIds(new Set(kept.map((item) => item.id)));
       setSubmitStatus({ kind: "success", message: "分析完成。請先檢查下方結果，確認無誤後再寫入資料庫。" });
     } catch (error) {
       setSubmitStatus({ kind: "error", message: error instanceof Error ? error.message : "分析失敗。" });
@@ -827,6 +839,8 @@ export default function App() {
 
   async function handleConfirmAnalysis() {
     if (!analysisPreview) { setSubmitStatus({ kind: "error", message: "目前沒有可確認寫入的分析結果。" }); return; }
+    const selectedItems = analysisPreview.items.filter((item) => selectedAnalysisItemIds.has(item.id));
+    if (!selectedItems.length) { setSubmitStatus({ kind: "error", message: "請至少勾選 1 筆要寫入的項目。" }); return; }
     setIsConfirming(true);
     setSubmitStatus({ kind: "loading", message: "正在確認並寫入資料庫…" });
     try {
@@ -837,7 +851,7 @@ export default function App() {
           url: submitUrl.trim(),
           sourceTitle: submitTitle.trim() || analysisPreview.sourceTitle,
           notes: submitNotes.trim(),
-          analysis: analysisPreview,
+          analysis: { ...analysisPreview, items: selectedItems },
         }),
       });
       const text = await response.text();
@@ -857,6 +871,7 @@ export default function App() {
       }
       setSubmitUrl(""); setSubmitTitle(""); setSubmitType("auto"); setSubmitCitySlug(""); setSubmitNotes("");
       setAnalysisPreview(null);
+      setSelectedAnalysisItemIds(new Set());
       setSubmitStatus({ kind: "idle", message: "" });
     } catch (error) {
       setSubmitStatus({ kind: "error", message: error instanceof Error ? error.message : "寫入失敗。" });
@@ -894,6 +909,25 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.pageBg, color: COLORS.text, fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+      <style>{`
+        .floating-scroll, .preview-items-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.32) rgba(255,255,255,0.08);
+        }
+        .floating-scroll::-webkit-scrollbar, .preview-items-scroll::-webkit-scrollbar {
+          width: 10px;
+        }
+        .floating-scroll::-webkit-scrollbar-track, .preview-items-scroll::-webkit-scrollbar-track {
+          background: rgba(255,255,255,0.08);
+          border-radius: 999px;
+        }
+        .floating-scroll::-webkit-scrollbar-thumb, .preview-items-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.32);
+          border-radius: 999px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+      `}</style>
 
       {/* 右上角資料版本列 */}
       <div style={{
@@ -952,7 +986,7 @@ export default function App() {
             <div style={{ background: COLORS.primary, color: "#fff", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.35)", height: "min(76vh, 820px)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div style={{ fontSize: 16, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
-                <button type="button" onClick={() => { setInputExpanded(false); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); }}
+                <button type="button" onClick={() => { setInputExpanded(false); setAnalysisPreview(null); setSelectedAnalysisItemIds(new Set()); setSubmitStatus({ kind: "idle", message: "" }); }}
                   style={{ background: "transparent", border: "none", color: "#a8a29e", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>✕</button>
               </div>
             <div style={{ overflowY: "auto", paddingRight: 2 }}>
@@ -1034,11 +1068,34 @@ export default function App() {
                     已自動略過 {analysisPreview.droppedItemsCount} 筆低信心且非旅遊項目內容。
                   </div>
                 )}
-                <div style={{ marginTop: 14, display: "grid", gap: 10, maxHeight: "34vh", overflowY: "auto", paddingRight: 2 }}>
+                <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: 12, color: "#e7e5e4" }}>
+                    已勾選 {analysisPreview.items.filter((i) => selectedAnalysisItemIds.has(i.id)).length} / {analysisPreview.items.length}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="button" onClick={() => setSelectedAnalysisItemIds(new Set(analysisPreview.items.map((i) => i.id)))}
+                      style={{ borderRadius: 999, border: "1px solid rgba(255,255,255,0.28)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 11, padding: "4px 10px", cursor: "pointer" }}>
+                      全選
+                    </button>
+                    <button type="button" onClick={() => setSelectedAnalysisItemIds(new Set())}
+                      style={{ borderRadius: 999, border: "1px solid rgba(255,255,255,0.28)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 11, padding: "4px 10px", cursor: "pointer" }}>
+                      全不選
+                    </button>
+                  </div>
+                </div>
+                <div className="preview-items-scroll" style={{ marginTop: 14, display: "grid", gap: 10, maxHeight: "34vh", overflowY: "auto", paddingRight: 2 }}>
                   {analysisPreview.items.length ? analysisPreview.items.map((item) => (
-                    <div key={item.id} style={{ borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14 }}>
+                    <div key={item.id} style={{ borderRadius: 18, background: selectedAnalysisItemIds.has(item.id) ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.08)", padding: 14, border: selectedAnalysisItemIds.has(item.id) ? "1px solid rgba(255,255,255,0.2)" : "1px solid transparent" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 800 }}>{item.name}</div>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedAnalysisItemIds.has(item.id)}
+                            onChange={() => toggleAnalysisItemSelection(item.id)}
+                            style={{ width: 16, height: 16, accentColor: "#ffffff" }}
+                          />
+                          <span>{item.name}</span>
+                        </label>
                         <span style={{ borderRadius: 999, padding: "4px 10px", fontSize: 12, background: "rgba(255,255,255,0.12)", color: "#fff" }}>{item.category}</span>
                       </div>
                       {item.area && <div style={{ marginTop: 6, fontSize: 12, color: "#d6d3d1" }}>區域：{item.area}</div>}
