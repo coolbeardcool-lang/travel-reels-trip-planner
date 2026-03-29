@@ -5,11 +5,12 @@ import { distanceScore, estimateTransport, buildRecommendation } from "./utils/g
 import { formatEventWindow, prettyAnalysisKind } from "./utils/format.js";
 import { fetchCityIndex, fetchCityIndexMeta, fetchCityDataset, cityIndexPath } from "./services/cityApi.js";
 import { useResponsiveColumns } from "./hooks/useResponsiveColumns.js";
-import { chipStyle } from "./components/ui/chipStyle.js";
-import { SectionCard } from "./components/ui/SectionCard.jsx";
-import { PrimaryButton } from "./components/ui/PrimaryButton.jsx";
-import { LeafletMap } from "./components/LeafletMap.jsx";
-import { SuccessView } from "./components/SuccessView.jsx";
+import { WriteOverlay } from "./components/WriteOverlay.jsx";
+import { SyncStatusBar } from "./components/SyncStatusBar.jsx";
+import { UrlAnalyzerPanel } from "./components/UrlAnalyzerPanel.jsx";
+import { CitySection } from "./components/CitySection.jsx";
+import { MapSection } from "./components/MapSection.jsx";
+import { RoutePlannerSection } from "./components/RoutePlannerSection.jsx";
 
 export default function App() {
   const isMobile = useResponsiveColumns();
@@ -423,559 +424,118 @@ export default function App() {
         onReload={() => window.location.reload()}
       />
 
-      {/* 右上角資料版本列 */}
-      <div style={{
-        position: "fixed", top: 0, right: 0, zIndex: 999,
-        display: "flex", alignItems: "center", gap: 10,
-        background: "rgba(255,255,255,0.92)",
-        backdropFilter: "blur(8px)",
-        border: `1px solid ${COLORS.border}`,
-        borderRadius: "0 0 0 16px",
-        padding: "8px 16px",
-        fontSize: 12, color: COLORS.subtext,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-      }}>
-        {lastSyncedAt ? (
-          <span>
-            資料版本：{new Date(lastSyncedAt).toLocaleString("zh-TW", {
-              month: "2-digit", day: "2-digit",
-              hour: "2-digit", minute: "2-digit",
-            })}
-          </span>
-        ) : (
-          <span>載入中...</span>
-        )}
-        <button
-          onClick={handleManualSync}
-          disabled={syncing}
-          style={{
-            background: syncing ? COLORS.primarySoft : COLORS.primary,
-            color: syncing ? COLORS.subtext : "#fff",
-            border: "none", borderRadius: 10,
-            padding: "5px 12px", fontSize: 12, fontWeight: 700,
-            cursor: syncing ? "not-allowed" : "pointer",
-          }}
-        >
-          {syncing ? "檢查中..." : "🔄 更新"}
-        </button>
-      </div>
+      <SyncStatusBar
+        lastSyncedAt={lastSyncedAt}
+        syncing={syncing}
+        onSync={handleManualSync}
+      />
 
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: isMobile ? 16 : 28, paddingTop: isMobile ? 56 : 56 }}>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: isMobile ? 16 : 28, paddingTop: 64 }}>
 
-        {/* 浮動貼網址入口 */}
-        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, maxWidth: isMobile ? "calc(100vw - 48px)" : 420 }}>
-          {shouldShowInput ? (
-            <div style={{ background: COLORS.primary, color: "#fff", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.35)", maxHeight: "calc(100vh - 80px)", overflowY: "auto" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div style={{ fontSize: 16, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
-                <button type="button" onClick={() => { setInputExpanded(false); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); }}
-                  style={{ background: "transparent", border: "none", color: "#a8a29e", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>✕</button>
-              </div>
-            <form onSubmit={handleAnalyzeUrl} style={{ marginTop: 16, display: "grid", gap: 12 }}>
-              <input value={submitUrl} onChange={(e) => setSubmitUrl(e.target.value)} placeholder="只貼 Instagram Reel / Threads / 網址 就可以"
-                style={{ width: "100%", borderRadius: 18, border: `1px solid ${isDuplicateUrl ? "#fb923c" : "rgba(255,255,255,0.15)"}`, background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
-              {isDuplicateUrl && (
-                <div style={{ borderRadius: 14, padding: "8px 14px", background: COLORS.warningBg, color: COLORS.warningText, fontSize: 12, fontWeight: 600 }}>
-                  ⚠️ 此網址已提交過，如有需要仍可繼續送出。
-                </div>
-              )}
-              <input value={submitTitle} onChange={(e) => setSubmitTitle(e.target.value)} placeholder="可選：人工補充標題提示"
-                style={{ width: "100%", borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
-              <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-                <select value={submitCitySlug} onChange={(e) => setSubmitCitySlug(e.target.value)}
-                  style={{ borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none" }}>
-                  <option value="" style={{ color: COLORS.text }}>自動判斷城市</option>
-                  {cityIndex.map((city) => <option key={city.slug} value={city.slug} style={{ color: COLORS.text }}>{city.label}</option>)}
-                </select>
-                <select value={submitType} onChange={(e) => setSubmitType(e.target.value)}
-                  style={{ borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none" }}>
-                  {ANALYZE_TYPE_OPTIONS.map((t) => (
-                    <option key={t} value={t} style={{ color: COLORS.text }}>
-                      {t === "auto" ? "自動判斷類型" : t === "spot" ? "偏向景點 / 美食" : "偏向活動 / 展覽"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <textarea value={submitNotes} onChange={(e) => setSubmitNotes(e.target.value)}
-                placeholder="可選：補充提示"
-                style={{ width: "100%", minHeight: 80, borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: 16, outline: "none", resize: "vertical", boxSizing: "border-box" }} />
-              <div style={{ display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-                <PrimaryButton type="submit" disabled={isAnalyzing || isConfirming}>
-                  {isAnalyzing ? "分析中…" : "先分析網址"}
-                </PrimaryButton>
-                <PrimaryButton type="button" secondary onClick={handleConfirmAnalysis} disabled={!analysisPreview || isAnalyzing || isConfirming}>
-                  {isConfirming ? "寫入中…" : "確認後寫入"}
-                </PrimaryButton>
-              </div>
-            </form>
-
-            {submitStatus.kind !== "idle" && (
-              <div style={{ marginTop: 14, borderRadius: 18, padding: 14, fontSize: 13, lineHeight: 1.8, ...submitStatusStyle }}>
-                {submitStatus.message}
-              </div>
-            )}
-
-            {analysisPreview && (
-              <div style={{ marginTop: 16, borderRadius: 22, background: "rgba(255,255,255,0.10)", padding: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: "#d6d3d1" }}>分析預覽 {analysisPreview.cached && "⚡ 快取"}</div>
-                    <div style={{ marginTop: 6, fontSize: 18, fontWeight: 800 }}>{analysisPreview.sourceTitle}</div>
-                    <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.7, color: "#f5f5f4" }}>
-                      類型：{prettyAnalysisKind(analysisPreview.contentKind)} ｜ 平台：{analysisPreview.sourcePlatform} ｜ 城市：{analysisPreview.citySlug || "待判定"}
-                    </div>
-                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 12, color: "#d6d3d1" }}>城市（可修正）</span>
-                      <input
-                        value={analysisPreview.citySlug || ""}
-                        onChange={(e) => setAnalysisPreview((prev) => ({ ...prev, citySlug: e.target.value.toLowerCase().trim() }))}
-                        placeholder="如 seoul / tokyo"
-                        style={{ flex: 1, minWidth: 120, borderRadius: 10, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", padding: "6px 10px", fontSize: 12, outline: "none" }}
-                      />
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 12, background: "rgba(255,255,255,0.12)", color: "#fff" }}>
-                      信心 {Math.round((analysisPreview.confidence || 0) * 100)}%
-                    </span>
-                    <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 12, background: analysisPreview.needsReview ? COLORS.warningBg : COLORS.successBg, color: analysisPreview.needsReview ? COLORS.warningText : COLORS.successText }}>
-                      {analysisPreview.needsReview ? "建議人工確認" : "可直接寫入"}
-                    </span>
-                  </div>
-                </div>
-                {analysisPreview.summary && <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.8, color: "#f5f5f4" }}>{analysisPreview.summary}</div>}
-                {analysisPreview.items.length > 0 && (
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12, color: "#d6d3d1" }}>已選 {selectedAnalysisItemIds.size} / {analysisPreview.items.length}</span>
-                    <button type="button" onClick={() => setSelectedAnalysisItemIds(new Set(analysisPreview.items.map((i) => i.id)))}
-                      style={{ fontSize: 11, padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>全選</button>
-                    <button type="button" onClick={() => setSelectedAnalysisItemIds(new Set())}
-                      style={{ fontSize: 11, padding: "3px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>全取消</button>
-                  </div>
-                )}
-                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                  {analysisPreview.items.length ? analysisPreview.items.map((item) => {
-                    const checked = selectedAnalysisItemIds.has(item.id);
-                    return (
-                      <div key={item.id}
-                        onClick={() => setSelectedAnalysisItemIds((prev) => { const next = new Set(prev); if (next.has(item.id)) next.delete(item.id); else next.add(item.id); return next; })}
-                        style={{ borderRadius: 18, background: checked ? "rgba(255,255,255,0.13)" : "rgba(255,255,255,0.04)", padding: 14, cursor: "pointer", border: `1px solid ${checked ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.08)"}`, opacity: checked ? 1 : 0.55 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <div style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${checked ? "#fff" : "rgba(255,255,255,0.4)"}`, background: checked ? "#fff" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              {checked && <span style={{ color: COLORS.primary, fontSize: 11, fontWeight: 900 }}>✓</span>}
-                            </div>
-                            <div style={{ fontWeight: 800 }}>{item.name}</div>
-                          </div>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            <span style={{ borderRadius: 999, padding: "3px 8px", fontSize: 11, background: "rgba(255,255,255,0.12)", color: "#fff" }}>{item.category}</span>
-                            {item.needsReview && <span style={{ borderRadius: 999, padding: "3px 8px", fontSize: 11, background: COLORS.warningBg, color: COLORS.warningText }}>需確認</span>}
-                          </div>
-                        </div>
-                        {item.area && <div style={{ marginTop: 5, fontSize: 12, color: "#d6d3d1" }}>📍 {item.area}</div>}
-                        {item.description && <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.7, color: "#f5f5f4" }}>{item.description}</div>}
-                        {item.reason && <div style={{ marginTop: 5, fontSize: 11, color: "#a8a29e", fontStyle: "italic" }}>💡 {item.reason}</div>}
-                      </div>
-                    );
-                  }) : (
-                    <div style={{ borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14, fontSize: 13, color: "#f5f5f4", lineHeight: 1.8 }}>
-                      目前沒有拆出明確的景點或活動項目，確認後會先以來源資料寫入待整理清單。
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+        {/* 頁面標題列 */}
+        <div style={{ marginBottom: 28, display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: isMobile ? 26 : 34, fontWeight: 900, letterSpacing: "-0.5px" }}>
+              Travel Reels
+            </h1>
+            <p style={{ margin: "6px 0 0", fontSize: 14, color: COLORS.subtext }}>
+              從 Reels 收集靈感，規劃你的旅行行程
+            </p>
+          </div>
+          {(globalStats.spots > 0 || globalStats.events > 0) && (
+            <div style={{ display: "flex", gap: 12, fontSize: 13, color: COLORS.subtext }}>
+              <span>🗺 {globalStats.spots} 個景點</span>
+              <span>🎫 {globalStats.events} 個活動</span>
             </div>
-          ) : (
-            <button type="button"
-              onMouseEnter={() => setInputExpanded(true)}
-              onClick={() => setInputExpanded(true)}
-              style={{ background: COLORS.primary, color: "#fff", border: "none", borderRadius: 20, padding: "13px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 28px rgba(0,0,0,0.22)", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
-              <span style={{ fontSize: 18 }}>＋</span> 貼網址分析
-            </button>
           )}
         </div>
 
-        {/* 城市入口 */}
-        <div style={{ marginTop: 20 }}>
-          <SectionCard title="城市入口">
-            {hasCitySelected ? (
-              <div style={{ display: "grid", gap: 14 }}>
-                {cityIndex.filter((c) => c.slug === selectedCitySlug).map((city) => (
-                  <div key={city.slug} style={{ border: `2px solid ${COLORS.primary}`, borderRadius: 28, background: "#fff", boxShadow: "0 10px 26px rgba(0,0,0,0.08)", padding: 24 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ fontSize: 40 }}>{city.emoji}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 26, fontWeight: 900 }}>{city.label}</div>
-                        <div style={{ fontSize: 13, color: COLORS.subtext }}>{city.region}</div>
-                      </div>
-                      <button type="button" onClick={() => { setSelectedCitySlug("unselected"); setShowCitySources(false); }}
-                        style={{ fontSize: 12, color: COLORS.subtext, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "6px 12px", background: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}>
-                        取消選擇
-                      </button>
-                    </div>
-                    <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.8, color: COLORS.subtext }}>{city.description}</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 16 }}>
-                      {[
-                        { label: "景點數", value: loadedSpots.length, key: "spots", clickable: false },
-                        { label: "活動數", value: loadedEvents.length, key: "events", clickable: false },
-                        { label: "來源數", value: sources.length, key: "sources", clickable: true },
-                      ].map(({ label, value, key, clickable }) => {
-                        const active = showCitySources && key === "sources";
-                        return (
-                          <div key={key} onClick={clickable ? () => setShowCitySources((s) => !s) : undefined}
-                            style={{ background: active ? COLORS.primary : COLORS.cardMuted, borderRadius: 16, padding: "12px 14px", border: `1px solid ${active ? COLORS.primary : COLORS.border}`, cursor: clickable ? "pointer" : "default", transition: "background 0.15s" }}>
-                            <div style={{ fontSize: 11, color: active ? "#d6d3d1" : COLORS.subtext }}>{label} {clickable && <span style={{ fontSize: 10 }}>{showCitySources ? "▲" : "▼"}</span>}</div>
-                            <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: active ? "#fff" : COLORS.text }}>{value}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {showCitySources && sources.length > 0 && (
-                      <div style={{ marginTop: 14, display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)" }}>
-                        {sources.map((source) => (
-                          <div key={source.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 18, background: COLORS.cardMuted, padding: 14 }}>
-                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                              <span style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "4px 8px", fontSize: 11, color: COLORS.subtext }}>{source.platform}</span>
-                              <span style={{ borderRadius: 999, background: "#fff", border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11, color: COLORS.subtext }}>{source.status}</span>
-                            </div>
-                            <div style={{ marginTop: 8, fontSize: 14, fontWeight: 700 }}>{source.title}</div>
-                            {source.note && <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext, lineHeight: 1.6 }}>{source.note}</div>}
-                            <a href={source.url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 10, fontSize: 12, color: COLORS.primary, fontWeight: 700, textDecoration: "none" }}>→ 查看來源</a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-                      {city.spotlight.map((item) => <span key={item} style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{item}</span>)}
-                    </div>
-                  </div>
-                ))}
-                <div style={{ display: "grid", gap: 10, gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(140px, 1fr))" }}>
-                  {cityIndex.filter((c) => c.slug !== selectedCitySlug).map((city) => (
-                    <button key={city.slug} type="button" onClick={() => setSelectedCitySlug(city.slug)}
-                      style={{ textAlign: "left", border: `1px solid ${COLORS.border}`, borderRadius: 18, background: COLORS.cardMuted, padding: "14px 16px", cursor: "pointer" }}>
-                      <div style={{ fontSize: 26 }}>{city.emoji}</div>
-                      <div style={{ marginTop: 6, fontSize: 15, fontWeight: 800 }}>{city.label}</div>
-                      <div style={{ marginTop: 2, fontSize: 12, color: COLORS.subtext }}>{city.region}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: "grid", gap: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
-                {cityIndex.map((city) => (
-                  <button key={city.slug} type="button" onClick={() => setSelectedCitySlug(city.slug)}
-                    style={{ textAlign: "left", border: `1px solid ${COLORS.border}`, borderRadius: 28, background: COLORS.card, boxShadow: "0 6px 18px rgba(0,0,0,0.04)", padding: 20, cursor: "pointer" }}>
-                    <div style={{ fontSize: 34 }}>{city.emoji}</div>
-                    <div style={{ marginTop: 8, fontSize: 24, fontWeight: 900 }}>{city.label}</div>
-                    <div style={{ marginTop: 4, fontSize: 13, color: COLORS.subtext }}>{city.region}</div>
-                    <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.8, color: COLORS.subtext }}>{city.description}</div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                      {city.spotlight.map((item) => <span key={item} style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{item}</span>)}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </SectionCard>
+        {/* 浮動貼網址入口 */}
+        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, maxWidth: isMobile ? "calc(100vw - 48px)" : 420 }}>
+          <UrlAnalyzerPanel
+            isMobile={isMobile}
+            cityIndex={cityIndex}
+            submitUrl={submitUrl} setSubmitUrl={setSubmitUrl}
+            submitTitle={submitTitle} setSubmitTitle={setSubmitTitle}
+            submitType={submitType} setSubmitType={setSubmitType}
+            submitCitySlug={submitCitySlug} setSubmitCitySlug={setSubmitCitySlug}
+            submitNotes={submitNotes} setSubmitNotes={setSubmitNotes}
+            analysisPreview={analysisPreview} setAnalysisPreview={setAnalysisPreview}
+            submitStatus={submitStatus} setSubmitStatus={setSubmitStatus}
+            isAnalyzing={isAnalyzing} isConfirming={isConfirming}
+            isDuplicateUrl={isDuplicateUrl}
+            shouldShowInput={shouldShowInput}
+            submitStatusStyle={submitStatusStyle}
+            onAnalyze={handleAnalyzeUrl}
+            onConfirm={handleConfirmAnalysis}
+            onClose={{ open: () => setInputExpanded(true), close: () => { setInputExpanded(false); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); } }}
+            selectedItems={[...selectedAnalysisItemIds]} setSelectedItems={(ids) => setSelectedAnalysisItemIds(new Set(ids))}
+          />
         </div>
 
-        {/* 地圖 */}
-        <div style={{ marginTop: 20 }}>
-          <SectionCard title={selectedCity ? `${selectedCity.label} 旅遊地圖` : "城市地圖"}
-              right={
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜尋景點、活動、地區"
-                    style={{ minWidth: 180, borderRadius: 14, border: `1px solid ${COLORS.border}`, padding: "10px 12px", outline: "none" }} disabled={!hasCitySelected} />
-                  <select value={selectedCitySlug} onChange={(e) => setSelectedCitySlug(e.target.value)}
-                    style={{ borderRadius: 14, border: `1px solid ${COLORS.border}`, padding: "10px 12px", outline: "none" }}>
-                    <option value="unselected">請先選擇城市</option>
-                    {cityIndex.map((city) => <option key={city.slug} value={city.slug}>{city.label}</option>)}
-                    <option value="all">全部城市</option>
-                  </select>
-                </div>
-              }>
-              <div style={{ marginBottom: 16, display: "grid", gap: 10 }}>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  {CONTENT_MODES.map((mode) => {
-                    const active = selectedContentMode === mode;
-                    const label = mode === "all"
-                      ? `全部 (${loadedSpots.length + loadedEvents.length})`
-                      : mode === "spots" ? `景點 (${loadedSpots.length})` : `活動 (${loadedEvents.length})`;
-                    return (
-                      <button key={mode} type="button" onClick={() => setSelectedContentMode(mode)}
-                        style={{ borderRadius: 999, padding: "10px 14px", border: `1px solid ${active ? COLORS.primary : COLORS.border}`, background: active ? COLORS.primary : "#ffffff", color: active ? "#ffffff" : COLORS.text, cursor: "pointer", fontWeight: 700 }}>
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {allCategories.map((cat) => {
-                    const active = selectedCategories.includes(cat);
-                    const theme = CATEGORY_THEME[cat] || { bg: COLORS.primarySoft, color: COLORS.text };
-                    return (
-                      <button key={cat} type="button" onClick={() => toggleCategory(cat)}
-                        style={{ ...chipStyle(cat), background: active ? theme.bg : "#ffffff", color: active ? theme.color : COLORS.subtext, border: `1px solid ${active ? theme.bg : COLORS.border}`, cursor: "pointer" }}>
-                        {cat}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              {hasCitySelected ? (
-                <div>
-                  <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    {isMobile && (
-                      <div style={{ display: "flex", borderRadius: 12, overflow: "hidden", border: `1px solid ${COLORS.border}` }}>
-                        {["list", "map"].map((tab) => (
-                          <button key={tab} type="button" onClick={() => setMapViewTab(tab)}
-                            style={{ padding: "6px 16px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", background: mapViewTab === tab ? COLORS.primary : "#fff", color: mapViewTab === tab ? "#fff" : COLORS.text }}>
-                            {tab === "list" ? "清單" : "地圖"}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <span style={{ fontSize: 13, color: COLORS.subtext }}>在地圖上標示：</span>
-                    <button type="button" onClick={() => setAllVisible(true)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer", fontWeight: 600 }}>全選</button>
-                    <button type="button" onClick={() => setAllVisible(false)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer", fontWeight: 600 }}>全取消</button>
-                    <span style={{ fontSize: 12, color: COLORS.subtext }}>已選 {effectiveVisibleIds.size} / {activeCollection.length}</span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "220px 1fr", borderRadius: 20, overflow: "hidden", border: `1px solid ${COLORS.border}`, height: 460 }}>
-                    <div style={{ overflowY: "auto", height: 460, borderRight: isMobile ? "none" : `1px solid ${COLORS.border}`, display: isMobile && mapViewTab === "map" ? "none" : "block" }}>
-                      {activeCollection.length ? activeCollection.map((item) => {
-                        const active = activeItemId === item.id;
-                        const checked = effectiveVisibleIds.has(item.id);
-                        return (
-                          <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${COLORS.border}`, background: active ? COLORS.primarySoft : "#fff", cursor: "pointer" }}
-                            onClick={() => setActiveItemId(item.id)}>
-                            <input type="checkbox" checked={checked}
-                              onChange={(e) => { e.stopPropagation(); toggleItemVisible(item.id); }}
-                              onClick={(e) => e.stopPropagation()}
-                              style={{ cursor: "pointer", width: 15, height: 15, flexShrink: 0 }} />
-                            <span style={{ fontSize: 20, flexShrink: 0 }}>{item.thumbnail}</span>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontWeight: active ? 800 : 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? COLORS.primary : checked ? COLORS.text : COLORS.subtext }}>{item.name}</div>
-                              <div style={{ fontSize: 11, color: COLORS.subtext }}>{item.area}</div>
-                            </div>
-                          </div>
-                        );
-                      }) : <div style={{ padding: 16, fontSize: 13, color: COLORS.subtext }}>目前無資料</div>}
-                    </div>
-                    <div style={{ height: 460, position: "relative", display: isMobile && mapViewTab === "list" ? "none" : "block" }}>
-                      <LeafletMap
-                        items={activeCollection}
-                        visibleIds={effectiveVisibleIds}
-                        activeItemId={activeItemId}
-                        onSelectItem={setActiveItemId}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 28, textAlign: "center", color: COLORS.subtext }}>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.text }}>請先選擇城市</div>
-                  <div style={{ marginTop: 10, lineHeight: 1.8 }}>選好城市後，頁面才會載入對應的景點與活動資料。</div>
-                </div>
-              )}
-              {/* 選取景點詳細資訊（顯示所有有勾選的） */}
-              {hasCitySelected && visibleItems.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.subtext, marginBottom: 10 }}>已選景點詳情（{visibleItems.length} 筆）</div>
-                  <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)" }}>
-                    {visibleItems.map((item) => (
-                      <div key={item.id} style={{ border: `1px solid ${activeItemId === item.id ? COLORS.primary : COLORS.border}`, borderRadius: 20, background: COLORS.card, padding: 16, cursor: "pointer" }}
-                        onClick={() => setActiveItemId(item.id)}>
-                        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                          <div style={{ fontSize: 32 }}>{item.thumbnail}</div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                              <span style={chipStyle(item.category)}>{item.category}</span>
-                              <span style={{ borderRadius: 999, border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11 }}>{item.bestTime}</span>
-                            </div>
-                            <div style={{ fontWeight: 900, fontSize: 15 }}>{item.name}</div>
-                            <div style={{ fontSize: 12, color: COLORS.subtext, marginTop: 2 }}>{item.city}・{item.area}</div>
-                          </div>
-                        </div>
-                        {item.description && <div style={{ marginTop: 10, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{item.description}</div>}
-                        {(item.startsOn || item.endsOn) && (
-                          <div style={{ marginTop: 10, borderRadius: 12, background: COLORS.warningBg, color: COLORS.warningText, padding: 10, fontSize: 12 }}>
-                            {formatEventWindow(item)} ｜ {item.ticketType || "未設定票務"}{item.priceNote ? ` ／ ${item.priceNote}` : ""}
-                          </div>
-                        )}
-                        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                          <span style={{ fontSize: 12, color: COLORS.subtext, background: COLORS.cardMuted, borderRadius: 8, padding: "4px 8px" }}>⏱ {item.stayMinutes} 分</span>
-                          {item.mapUrl && (
-                            <a href={item.mapUrl} target="_blank" rel="noreferrer"
-                              style={{ fontSize: 12, color: "#1a73e8", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
-                              onClick={(e) => e.stopPropagation()}>
-                              📍 Google Maps
-                            </a>
-                          )}
-                          {item.sourceUrl && (
-                            <a href={item.sourceUrl} target="_blank" rel="noreferrer"
-                              style={{ fontSize: 12, color: COLORS.subtext, textDecoration: "none" }}
-                              onClick={(e) => e.stopPropagation()}>
-                              → 原始來源
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-          </SectionCard>
-        </div>
+        {/* 主內容 */}
+        <div style={{ display: "grid", gap: 20 }}>
+          <CitySection
+            isMobile={isMobile}
+            cityIndex={cityIndex}
+            selectedCitySlug={selectedCitySlug}
+            hasCitySelected={hasCitySelected}
+            loadedSpots={loadedSpots}
+            loadedEvents={loadedEvents}
+            sources={sources}
+            showCitySources={showCitySources}
+            setSelectedCitySlug={setSelectedCitySlug}
+            setShowCitySources={setShowCitySources}
+          />
 
-        {/* 行程規劃（全寬，底部） */}
-        <div style={{ marginTop: 20 }}>
-          <SectionCard title="行程規劃"
-            right={
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <select value={timeOfDay} onChange={(e) => setTimeOfDay(e.target.value)}
-                  style={{ borderRadius: 10, border: `1px solid ${COLORS.border}`, padding: "8px 10px", outline: "none", fontSize: 13 }} disabled={!hasCitySelected}>
-                  {["早上", "中午", "下午", "晚上"].map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <select value={baseArea} onChange={(e) => setBaseArea(e.target.value)}
-                  style={{ borderRadius: 10, border: `1px solid ${COLORS.border}`, padding: "8px 10px", outline: "none", fontSize: 13 }} disabled={!hasCitySelected || !allAreas.length}>
-                  {allAreas.length ? allAreas.map((a) => <option key={a} value={a}>{a}</option>) : <option value="">起點區域</option>}
-                </select>
-              </div>
-            }>
-            {hasCitySelected && routeItems.length > 0 ? (
-              <>
-                <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 12, color: COLORS.subtext }}>拖曳 ☰ 調整順序。點擊 📍 開啟 Google Maps 導航。</span>
-                  <button type="button" onClick={handleGetLocation} disabled={locating}
-                    style={{ borderRadius: 10, padding: "6px 14px", background: userLocation ? COLORS.successBg : "#fff", color: userLocation ? COLORS.successText : COLORS.text, border: `1px solid ${userLocation ? "#bbf7d0" : COLORS.border}`, fontSize: 12, fontWeight: 700, cursor: locating ? "not-allowed" : "pointer" }}>
-                    {locating ? "定位中…" : userLocation ? "✅ 已取得位置" : "📍 從我的位置出發"}
-                  </button>
-                  {userLocation && (
-                    <button type="button" onClick={() => setUserLocation(null)}
-                      style={{ fontSize: 11, color: COLORS.subtext, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>清除</button>
-                  )}
-                </div>
-                <div style={{ display: "grid", gap: 0 }}>
-                  {routeItems.map((item, i) => {
-                    const prevItem = i > 0 ? routeItems[i - 1] : null;
-                    const prevPoint = i === 0 && userLocation ? userLocation : prevItem;
-                    const transport = prevPoint ? estimateTransport(prevPoint, item) : null;
-                    const isTransit = transport?.icon === "🚌" || transport?.icon === "🚇";
-                    const originCoords = i === 0 && userLocation
-                      ? `${userLocation.lat},${userLocation.lng}`
-                      : prevItem?.lat && prevItem?.lng ? `${prevItem.lat},${prevItem.lng}` : null;
-                    const dirUrl = originCoords && item.lat && item.lng
-                      ? `https://www.google.com/maps/dir/?api=1&origin=${originCoords}&destination=${item.lat},${item.lng}&travelmode=transit`
-                      : null;
-                    const isDraggingOver = dragOverId === item.id;
-                    return (
-                      <React.Fragment key={item.id}>
-                        {transport && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0 4px 24px" }}>
-                            <div style={{ width: 2, height: 22, background: COLORS.border, flexShrink: 0 }} />
-                            <span style={{ fontSize: 16 }}>{transport.icon}</span>
-                            <span style={{ fontSize: 12, color: COLORS.subtext }}>{transport.label}・約 {transport.minutes} 分・{transport.km.toFixed(1)} km</span>
-                            {(isTransit || (i === 0 && userLocation)) && dirUrl && (
-                              <a href={dirUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#1a73e8", fontWeight: 700, textDecoration: "none", marginLeft: 4 }}>查路線 →</a>
-                            )}
-                          </div>
-                        )}
-                        <div
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, item.id)}
-                          onDragOver={(e) => handleDragOver(e, item.id)}
-                          onDrop={(e) => handleDrop(e, item.id)}
-                          onDragEnd={() => { setDragSourceId(null); setDragOverId(null); }}
-                          style={{ border: `1px solid ${isDraggingOver ? COLORS.primary : COLORS.border}`, borderRadius: 20, background: isDraggingOver ? COLORS.primarySoft : COLORS.card, padding: "14px 16px", opacity: dragSourceId === item.id ? 0.45 : 1, cursor: "grab" }}>
-                          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                            <span style={{ fontSize: 18, color: COLORS.subtext, cursor: "grab", userSelect: "none" }}>☰</span>
-                            <div style={{ width: 30, height: 30, borderRadius: 999, background: COLORS.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, flexShrink: 0 }}>{item.order}</div>
-                            <span style={{ fontSize: 22 }}>{item.thumbnail}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontWeight: 800, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
-                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4, alignItems: "center" }}>
-                                <span style={chipStyle(item.category)}>{item.category}</span>
-                                <span style={{ fontSize: 12, color: COLORS.subtext }}>{item.bestTime}・⏱ {item.stayMinutes} 分</span>
-                              </div>
-                              {item.reason && (
-                                <div style={{ marginTop: 4, fontSize: 11, color: COLORS.subtext, lineHeight: 1.5, fontStyle: "italic" }}>💡 {item.reason}</div>
-                              )}
-                            </div>
-                            {item.mapUrl && (
-                              <a href={item.mapUrl} target="_blank" rel="noreferrer"
-                                style={{ fontSize: 20, textDecoration: "none", flexShrink: 0 }}
-                                onClick={(e) => e.stopPropagation()}
-                                title="Google Maps">📍</a>
-                            )}
-                          </div>
-                        </div>
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-                {routeItems.length > 1 && (() => {
-                  const stayTotal = routeItems.reduce((s, item) => s + (item.stayMinutes || 0), 0);
-                  const travelTotal = routeItems.slice(1).reduce((s, item, i) => {
-                    const t = estimateTransport(routeItems[i], item);
-                    return s + (t?.minutes || 0);
-                  }, 0);
-                  const kmTotal = routeItems.slice(1).reduce((s, item, i) => {
-                    const t = estimateTransport(routeItems[i], item);
-                    return s + (t?.km || 0);
-                  }, 0);
-                  const totalHours = Math.round((stayTotal + travelTotal) / 6) / 10;
-                  return (
-                    <div style={{ marginTop: 14, borderRadius: 16, background: COLORS.cardMuted, border: `1px solid ${COLORS.border}`, padding: "12px 16px", display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, color: COLORS.subtext }}>
-                      <span>🗓 共 <strong style={{ color: COLORS.text }}>{routeItems.length}</strong> 個景點</span>
-                      <span>⏱ 預計 <strong style={{ color: COLORS.text }}>{totalHours}</strong> 小時</span>
-                      <span>🚶 總移動 <strong style={{ color: COLORS.text }}>{kmTotal.toFixed(1)}</strong> km</span>
-                    </div>
-                  );
-                })()}
+          <MapSection
+            isMobile={isMobile}
+            selectedCity={selectedCity}
+            hasCitySelected={hasCitySelected}
+            cityIndex={cityIndex}
+            selectedCitySlug={selectedCitySlug}
+            setSelectedCitySlug={setSelectedCitySlug}
+            search={search} setSearch={setSearch}
+            selectedContentMode={selectedContentMode}
+            setSelectedContentMode={setSelectedContentMode}
+            allCategories={allCategories}
+            selectedCategories={selectedCategories}
+            toggleCategory={toggleCategory}
+            mapViewTab={mapViewTab} setMapViewTab={setMapViewTab}
+            activeCollection={activeCollection}
+            activeItemId={activeItemId} setActiveItemId={setActiveItemId}
+            effectiveVisibleIds={effectiveVisibleIds}
+            visibleItems={visibleItems}
+            toggleItemVisible={toggleItemVisible}
+            setAllVisible={setAllVisible}
+            loadedSpots={loadedSpots}
+            loadedEvents={loadedEvents}
+          />
 
-                {/* 儲存 & 分享 */}
-                <div style={{ marginTop: 20, borderTop: `1px solid ${COLORS.border}`, paddingTop: 16, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                  <input value={newRouteName} onChange={(e) => setNewRouteName(e.target.value)} placeholder="輸入行程名稱…"
-                    style={{ flex: 1, minWidth: 140, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: "10px 14px", outline: "none", fontSize: 14 }} />
-                  <button type="button" onClick={handleSaveRoute} disabled={!newRouteName.trim()}
-                    style={{ borderRadius: 12, padding: "10px 18px", background: newRouteName.trim() ? COLORS.primary : COLORS.primarySoft, color: newRouteName.trim() ? "#fff" : COLORS.subtext, border: "none", fontWeight: 700, fontSize: 14, cursor: newRouteName.trim() ? "pointer" : "not-allowed" }}>
-                    💾 儲存行程
-                  </button>
-                  <button type="button" onClick={handleCopyShare}
-                    style={{ borderRadius: 12, padding: "10px 18px", background: "#fff", border: `1px solid ${COLORS.border}`, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-                    🔗 複製分享連結
-                  </button>
-                  {savedRoutes.length > 0 && (
-                    <button type="button" onClick={() => setShowSavedRoutes((s) => !s)}
-                      style={{ borderRadius: 12, padding: "10px 18px", background: "#fff", border: `1px solid ${COLORS.border}`, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-                      📋 已儲存 ({savedRoutes.length}) {showSavedRoutes ? "▲" : "▼"}
-                    </button>
-                  )}
-                </div>
-
-                {showSavedRoutes && (
-                  <div style={{ marginTop: 14, display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)" }}>
-                    {savedRoutes.map((route) => (
-                      <div key={route.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 16, background: COLORS.cardMuted, padding: 14 }}>
-                        <div style={{ fontWeight: 800, fontSize: 14 }}>{route.name}</div>
-                        <div style={{ fontSize: 12, color: COLORS.subtext, marginTop: 4 }}>{route.citySlug}・{route.itemIds.length} 個景點・{new Date(route.createdAt).toLocaleDateString("zh-TW")}</div>
-                        <button type="button" onClick={() => handleLoadRoute(route)}
-                          style={{ marginTop: 10, borderRadius: 10, padding: "8px 14px", background: COLORS.primary, color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}>
-                          載入此行程
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div style={{ borderRadius: 18, background: COLORS.cardMuted, padding: 16, color: COLORS.subtext }}>
-                {hasCitySelected ? "請在地圖上勾選景點以規劃行程。" : "請先選擇城市，再從地圖勾選景點。"}
-              </div>
-            )}
-          </SectionCard>
+          <RoutePlannerSection
+            isMobile={isMobile}
+            hasCitySelected={hasCitySelected}
+            routeItems={routeItems}
+            allAreas={allAreas}
+            timeOfDay={timeOfDay} setTimeOfDay={setTimeOfDay}
+            baseArea={baseArea} setBaseArea={setBaseArea}
+            dragSourceId={dragSourceId} dragOverId={dragOverId}
+            handleDragStart={handleDragStart}
+            handleDragOver={handleDragOver}
+            handleDrop={handleDrop}
+            setDragSourceId={setDragSourceId}
+            setDragOverId={setDragOverId}
+            userLocation={userLocation}
+            setUserLocation={setUserLocation}
+            locating={locating}
+            handleGetLocation={handleGetLocation}
+            newRouteName={newRouteName} setNewRouteName={setNewRouteName}
+            savedRoutes={savedRoutes}
+            showSavedRoutes={showSavedRoutes} setShowSavedRoutes={setShowSavedRoutes}
+            handleSaveRoute={handleSaveRoute}
+            handleCopyShare={handleCopyShare}
+            handleLoadRoute={handleLoadRoute}
+          />
         </div>
       </div>
     </div>
