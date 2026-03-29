@@ -191,38 +191,6 @@
       "recurringType": "一次性",
       "published": true,
       "lastReviewedAt": null
-    },
-    {
-      "id": "33124c5d-f0b3-8154-89af-e12917b19cc4",
-      "city": "京都",
-      "citySlug": "kyoto",
-      "area": "東山周邊",
-      "name": "京都夜櫻點燈示意活動",
-      "category": "活動",
-      "description": "示意用活動資料。正式版會由 Notion Events 資料庫同步，適合做期間限定活動展示。",
-      "sourceId": "京都夜櫻活動範例",
-      "sourceTitle": "",
-      "sourceUrl": "https://example.com/kyoto-night-event",
-      "tags": [
-        "夜櫻",
-        "期間限定",
-        "春季"
-      ],
-      "lat": 35.0037,
-      "lng": 135.7788,
-      "thumbnail": "🎫",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E6%9D%B1%E5%B1%B1+%E4%BA%AC%E9%83%BD",
-      "startsOn": "2026-03-25",
-      "endsOn": "2026-04-10",
-      "startTime": "18:00",
-      "endTime": "21:00",
-      "ticketType": "現場購票",
-      "priceNote": "示意資料",
-      "officialUrl": "https://example.com/kyoto-night-event",
-      "status": "待整理",
-      "recurringType": "一次性",
-      "published": true,
-      "lastReviewedAt": "2026-03-28"
     }
   ],
   "sources": [
@@ -255,10 +223,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T10:31:41.418Z",
+    "lastSyncedAt": "2026-03-29T14:06:57.534Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 7
+    "count": 6
   }
 }

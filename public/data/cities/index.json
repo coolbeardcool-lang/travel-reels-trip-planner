@@ -43,56 +43,26 @@
       "label": "首爾",
       "emoji": "🇰🇷",
       "region": "韓國",
-      "description": "韓流文化發源地，美食、購物與歷史景點密集。",
+      "description": "在地傳統市場與街邊小吃密集，望遠洞一帶保留濃厚的首爾日常生活感。",
       "status": "active",
       "spotlight": [
-        "美食",
-        "購物",
-        "文化"
+        "市場小吃",
+        "街邊美食",
+        "在地生活"
       ],
-      "heroArea": "明洞／弘大",
+      "heroArea": "望遠洞一帶",
       "coverImageUrl": "",
       "timezone": "Asia/Seoul",
       "defaultMapLat": 37.5665,
       "defaultMapLng": 126.978,
-      "lastReviewedAt": null
-    },
-    {
-      "slug": "大阪",
-      "label": "大阪",
-      "emoji": "📍",
-      "region": "其他",
-      "description": "",
-      "status": "active",
-      "spotlight": [],
-      "heroArea": "",
-      "coverImageUrl": "",
-      "timezone": "Asia/Tokyo",
-      "defaultMapLat": 0,
-      "defaultMapLng": 0,
-      "lastReviewedAt": null
-    },
-    {
-      "slug": "彰化",
-      "label": "彰化",
-      "emoji": "📍",
-      "region": "其他",
-      "description": "",
-      "status": "active",
-      "spotlight": [],
-      "heroArea": "",
-      "coverImageUrl": "",
-      "timezone": "Asia/Tokyo",
-      "defaultMapLat": 0,
-      "defaultMapLng": 0,
-      "lastReviewedAt": null
+      "lastReviewedAt": "2026-03-29"
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T10:31:41.416Z",
+    "lastSyncedAt": "2026-03-29T14:06:57.531Z",
     "notionDataSourceId": "33124c5d-f0b3-8087-84f4-000b2b0702f9",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 5
+    "count": 3
   }
 }
