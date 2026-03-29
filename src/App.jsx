@@ -1,503 +1,29 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { BASE_URL, COLORS, CATEGORY_THEME, ANALYZE_API_PATH, CONFIRM_ANALYSIS_API_PATH, CONTENT_MODES, ANALYZE_TYPE_OPTIONS } from "./config/theme.js";
+import { normalizeCitySlugValue, normalizeAnalysisPayload } from "./utils/normalize.js";
+import { distanceScore, estimateTransport, buildRecommendation } from "./utils/geo.js";
+import { formatEventWindow, prettyAnalysisKind } from "./utils/format.js";
+import { fetchCityIndex, fetchCityIndexMeta, fetchCityDataset, cityIndexPath } from "./services/cityApi.js";
+import { useResponsiveColumns } from "./hooks/useResponsiveColumns.js";
+import { chipStyle } from "./components/ui/chipStyle.js";
+import { SectionCard } from "./components/ui/SectionCard.jsx";
+import { PrimaryButton } from "./components/ui/PrimaryButton.jsx";
+import { LeafletMap } from "./components/LeafletMap.jsx";
+import { SuccessView } from "./components/SuccessView.jsx";
 
-const BASE_URL = (() => {
-  try {
-    if (
-      typeof import.meta !== "undefined" &&
-      import.meta &&
-      import.meta.env &&
-      typeof import.meta.env.BASE_URL === "string" &&
-      import.meta.env.BASE_URL.length > 0
-    ) {
-      return import.meta.env.BASE_URL;
-    }
-  } catch (_error) {}
-  return "/";
-})();
-
-const ANALYZE_API_PATH = `${BASE_URL}api/analyze-url`;
-const CONFIRM_ANALYSIS_API_PATH = `${BASE_URL}api/confirm-analysis`;
-const CONTENT_MODES = ["spots", "events"];
-const ANALYZE_TYPE_OPTIONS = ["auto", "spot", "event"];
-
-const COLORS = {
-  pageBg: "linear-gradient(135deg, #fafaf9 0%, #ffffff 48%, #fff7ed 100%)",
-  card: "#ffffff",
-  cardMuted: "#fafaf9",
-  text: "#292524",
-  subtext: "#57534e",
-  border: "#e7e5e4",
-  primary: "#1c1917",
-  primarySoft: "#f5f5f4",
-  successBg: "#ecfdf5",
-  successText: "#166534",
-  errorBg: "#fef2f2",
-  errorText: "#991b1b",
-  infoBg: "#eff6ff",
-  infoText: "#1d4ed8",
-  warningBg: "#fff7ed",
-  warningText: "#c2410c",
-};
-
-const CATEGORY_THEME = {
-  景點: { bg: "#e0f2fe", color: "#0369a1" },
-  餐廳: { bg: "#ffe4e6", color: "#be123c" },
-  小吃: { bg: "#fef3c7", color: "#b45309" },
-  逛街: { bg: "#ede9fe", color: "#6d28d9" },
-  甜點: { bg: "#fce7f3", color: "#be185d" },
-  寺社: { bg: "#d1fae5", color: "#047857" },
-  活動: { bg: "#ffedd5", color: "#c2410c" },
-};
-
-const CITY_INDEX_SEED = [
-  {
-    slug: "kyoto", label: "京都", emoji: "⛩️", region: "關西",
-    description: "寺社、散步、甜點與選物密度高，適合慢節奏安排。",
-    heroArea: "佛光寺周邊", spotlight: ["寺社", "甜點", "散步"],
-  },
-  {
-    slug: "osaka", label: "大阪", emoji: "🍢", region: "關西",
-    description: "小吃、商圈與夜間行程豐富，適合美食導向安排。",
-    heroArea: "新世界／通天閣", spotlight: ["小吃", "商圈", "夜生活"],
-  },
-];
-
-const SOURCES_SEED = [
-  {
-    id: "src-osaka-gyutan", title: "大阪牛舌 Reel",
-    url: "https://www.instagram.com/reel/DWOiXYxkf97/",
-    platform: "Instagram Reel", status: "已匯入", note: "已整理成大阪牛舌相關景點。",
-  },
-  {
-    id: "src-kyoto-hidden-list", title: "京都私藏清單 Reel",
-    url: "https://www.instagram.com/reel/DWWQYkuAfHD/",
-    platform: "Instagram Reel", status: "已匯入", note: "已整理成京都選店與寺社點位。",
-  },
-];
-
-const SPOTS_SEED = [
-  {
-    id: "osaka-nonkiya", city: "大阪", citySlug: "osaka", area: "新世界／通天閣",
-    name: "Nonkiya のんきや", category: "小吃",
-    description: "新世界人氣立食關東煮與土手燒。",
-    sourceId: "src-osaka-gyutan", sourceUrl: "https://www.instagram.com/reel/DWOiXYxkf97/",
-    bestTime: "下午", stayMinutes: 35, tags: ["關東煮", "立食"],
-    lat: 34.6529, lng: 135.5057, thumbnail: "🍢",
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=Nonkiya+大阪",
-  },
-  {
-    id: "kyoto-bukkouji-dd", city: "京都", citySlug: "kyoto", area: "佛光寺周邊",
-    name: "D&DEPARTMENT KYOTO", category: "逛街",
-    description: "位在佛光寺境內的京都選物店。",
-    sourceId: "src-kyoto-hidden-list", sourceUrl: "https://www.instagram.com/reel/DWWQYkuAfHD/",
-    bestTime: "下午", stayMinutes: 50, tags: ["選物店", "散步"],
-    lat: 35.0018, lng: 135.7596, thumbnail: "🛍️",
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=D%26DEPARTMENT+KYOTO",
-  },
-];
-
-const EVENTS_SEED = [
-  {
-    id: "evt-kyoto-sakura-night", city: "京都", citySlug: "kyoto", area: "東山周邊",
-    name: "京都夜櫻點燈示意活動", category: "活動",
-    description: "示意活動資料。",
-    sourceId: "src-kyoto-hidden-list", sourceUrl: "https://www.instagram.com/reel/DWWQYkuAfHD/",
-    tags: ["夜櫻", "春季"], lat: 35.0037, lng: 135.7788, thumbnail: "🌸",
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=東山+京都",
-    startsOn: "2026-03-25", endsOn: "2026-04-10",
-    startTime: "18:00", endTime: "21:00", ticketType: "現場購票", priceNote: "示意資料",
-  },
-];
-
-// ── 資料處理 ───────────────────────────────────────────────
-function normalizeCitySlugValue(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const aliasMap = { 京都: "kyoto", 大阪: "osaka", 東京: "tokyo", 福岡: "fukuoka", 沖繩: "okinawa", 全部: "all", all: "all" };
-  return aliasMap[raw] || raw.toLowerCase();
-}
-
-function cityIndexPath() { return `${BASE_URL}data/cities/index.json`; }
-
-function cityDataPaths(citySlug) {
-  const normalized = normalizeCitySlugValue(citySlug);
-  if (!normalized || normalized === "unselected") return [];
-  if (normalized === "all") return [`${BASE_URL}data/all.json`];
-  return [`${BASE_URL}data/cities/${normalized}.json`, `${BASE_URL}data/${normalized}.json`];
-}
-
-function normalizeCity(city, index) {
-  return {
-    slug: normalizeCitySlugValue(city.slug || city.label || `city-${index}`) || `city-${index}`,
-    label: city.label || city.name || `城市 ${index + 1}`,
-    emoji: city.emoji || "📍",
-    region: city.region || "未分類",
-    description: city.description || "",
-    heroArea: city.heroArea || "",
-    spotlight: Array.isArray(city.spotlight) ? city.spotlight : [],
-  };
-}
-
-function normalizeSource(source, index) {
-  return {
-    id: source.id || `source-${index}`,
-    title: source.title || "未命名來源",
-    url: source.url || "",
-    platform: source.platform || "手動新增",
-    status: source.status || "待整理",
-    note: source.note || "",
-  };
-}
-
-function filterByCitySlug(items, citySlug) {
-  if (!citySlug || citySlug === "unselected") return [];
-  if (citySlug === "all") return items;
-  return items.filter((item) => item.citySlug === citySlug);
-}
-
-function filterSourcesByLinkedIds(items, sources) {
-  const sourceIds = new Set(items.map((item) => item.sourceId).filter(Boolean));
-  return sources.filter((source) => sourceIds.has(source.id));
-}
-
-function normalizeSpot(spot, index, cityIndex) {
-  const cityLabel = spot.city || cityIndex.find((c) => c.slug === spot.citySlug)?.label || "未分類";
-  return {
-    id: spot.id || `spot-${index}`,
-    city: cityLabel,
-    citySlug: normalizeCitySlugValue(spot.citySlug || cityLabel),
-    area: spot.area || "未分類區域",
-    name: spot.name || "未命名景點",
-    category: spot.category || "景點",
-    description: spot.description || "",
-    sourceId: spot.sourceId || "",
-    sourceUrl: spot.sourceUrl || "",
-    bestTime: spot.bestTime || "下午",
-    stayMinutes: Number.isFinite(spot.stayMinutes) ? spot.stayMinutes : Number(spot.stayMinutes) || 30,
-    tags: Array.isArray(spot.tags) ? spot.tags : [],
-    lat: Number.isFinite(spot.lat) ? spot.lat : Number(spot.lat) || 0,
-    lng: Number.isFinite(spot.lng) ? spot.lng : Number(spot.lng) || 0,
-    thumbnail: spot.thumbnail || "📍",
-    mapUrl: spot.mapUrl || "",
-  };
-}
-
-function normalizeEvent(event, index, cityIndex) {
-  const cityLabel = event.city || cityIndex.find((c) => c.slug === event.citySlug)?.label || "未分類";
-  return {
-    id: event.id || `event-${index}`,
-    city: cityLabel,
-    citySlug: normalizeCitySlugValue(event.citySlug || cityLabel),
-    area: event.area || "未分類區域",
-    name: event.name || "未命名活動",
-    category: event.category || "活動",
-    description: event.description || "",
-    sourceId: event.sourceId || "",
-    sourceUrl: event.sourceUrl || "",
-    tags: Array.isArray(event.tags) ? event.tags : [],
-    lat: Number.isFinite(event.lat) ? event.lat : Number(event.lat) || 0,
-    lng: Number.isFinite(event.lng) ? event.lng : Number(event.lng) || 0,
-    thumbnail: event.thumbnail || "🎫",
-    mapUrl: event.mapUrl || "",
-    startsOn: event.startsOn || null,
-    endsOn: event.endsOn || null,
-    startTime: event.startTime || "",
-    endTime: event.endTime || "",
-    ticketType: event.ticketType || "",
-    priceNote: event.priceNote || "",
-  };
-}
-
-function normalizeCityIndexPayload(payload) {
-  const rawCities = Array.isArray(payload?.cities) ? payload.cities : [];
-  return { cities: rawCities.map((city, index) => normalizeCity(city, index)) };
-}
-
-function normalizeCityPayload(payload, fallbackSlug, cityIndex) {
-  const rawSpots = Array.isArray(payload?.spots) ? payload.spots : [];
-  const rawEvents = Array.isArray(payload?.events) ? payload.events : [];
-  const rawSources = Array.isArray(payload?.sources) ? payload.sources : [];
-  const spots = rawSpots.map((spot, index) => normalizeSpot(spot, index, cityIndex));
-  const events = rawEvents.map((event, index) => normalizeEvent(event, index, cityIndex));
-  const sources = rawSources.map((source, index) => normalizeSource(source, index));
-  return {
-    city: normalizeCity(payload?.city || { slug: fallbackSlug }, 0),
-    spots,
-    events,
-    sources: sources.length ? sources : filterSourcesByLinkedIds([...spots, ...events], SOURCES_SEED),
-  };
-}
-
-async function fetchCityIndex() {
-  const response = await fetch(cityIndexPath() + "?t=" + Date.now(), { headers: { Accept: "application/json" } });
-  if (!response.ok) throw new Error(`無法載入城市索引`);
-  return normalizeCityIndexPayload(await response.json());
-}
-
-async function fetchCityIndexMeta() {
-  const response = await fetch(cityIndexPath() + "?t=" + Date.now(), { headers: { Accept: "application/json" } });
-  if (!response.ok) return null;
-  const data = await response.json();
-  return data?.meta?.lastSyncedAt || null;
-}
-
-async function fetchCityDataset(citySlug, cityIndex) {
-  const paths = cityDataPaths(citySlug);
-  if (!paths.length) return { city: normalizeCity({ slug: "unselected" }, 0), spots: [], events: [], sources: [] };
-  for (const path of paths) {
-    const response = await fetch(path + "?t=" + Date.now(), { headers: { Accept: "application/json" } });
-    if (response.ok) return normalizeCityPayload(await response.json(), normalizeCitySlugValue(citySlug), cityIndex);
-  }
-  throw new Error(`無法載入城市資料：${citySlug}`);
-}
-
-function normalizeAnalysisPayload(payload, fallback = {}) {
-  const items = Array.isArray(payload?.items) ? payload.items : [];
-  const contentKind = payload?.contentKind || payload?.content_kind || fallback.contentKind || "source_only";
-  return {
-    sourceTitle: payload?.sourceTitle || payload?.source_title || fallback.sourceTitle || "未命名來源",
-    sourcePlatform: payload?.sourcePlatform || payload?.source_platform || fallback.sourcePlatform || "未知來源",
-    contentKind,
-    citySlug: normalizeCitySlugValue(payload?.citySlug || payload?.city_slug || fallback.citySlug || ""),
-    area: payload?.area || fallback.area || "",
-    confidence: Number.isFinite(payload?.confidence) ? payload.confidence : Number(payload?.confidence) || 0,
-    needsReview: payload?.needsReview !== false && payload?.needs_review !== false,
-    summary: payload?.summary || fallback.summary || "",
-    analysis_id: payload?.analysis_id || payload?.analysisId || "",
-    cached: Boolean(payload?.cached),
-    items: items.map((item, index) => ({
-      id: item.id || `analysis-item-${index}`,
-      name: item.name || `候選項目 ${index + 1}`,
-      category: item.category || (contentKind === "event" ? "活動" : "景點"),
-      description: item.description || "",
-      tags: Array.isArray(item.tags) ? item.tags : [],
-      area: item.area || payload?.area || fallback.area || "",
-      best_time: item.best_time || "",
-      stay_minutes: Number.isFinite(item.stay_minutes) ? item.stay_minutes : Number(item.stay_minutes) || 0,
-      starts_on: item.starts_on || null,
-      ends_on: item.ends_on || null,
-      reason: item.reason || "",
-    })),
-  };
-}
-
-function normalizeItemsForMap(items) {
-  if (!items.length) return [];
-  const lats = items.map((i) => i.lat);
-  const lngs = items.map((i) => i.lng);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-  const latRange = Math.max(maxLat - minLat, 0.001);
-  const lngRange = Math.max(maxLng - minLng, 0.001);
-  return items.map((item) => ({
-    id: item.id,
-    left: 10 + ((item.lng - minLng) / lngRange) * 80,
-    top: 10 + (1 - (item.lat - minLat) / latRange) * 80,
-  }));
-}
-
-function distanceScore(spot, baseArea, currentTime) {
-  let score = 0;
-  if (spot.area === baseArea) score += 3;
-  if (spot.bestTime === currentTime) score += 3;
-  if (currentTime === "晚上" && ["餐廳", "小吃"].includes(spot.category)) score += 2;
-  if (currentTime === "下午" && ["逛街", "甜點", "寺社"].includes(spot.category)) score += 2;
-  if (currentTime === "早上" && ["小吃", "寺社"].includes(spot.category)) score += 2;
-  return score;
-}
-
-function buildRecommendation(spots, baseArea, currentTime) {
-  return [...spots]
-    .sort((a, b) => distanceScore(b, baseArea, currentTime) - distanceScore(a, baseArea, currentTime))
-    .slice(0, 4)
-    .map((spot, index) => ({
-      ...spot,
-      order: index + 1,
-      reason: spot.area === baseArea
-        ? "離你目前設定區域最近，順路最好排。"
-        : spot.bestTime === currentTime
-          ? `這個點更適合現在的「${currentTime}」時段。`
-          : `可作為 ${currentTime} 的延伸行程。`,
-    }));
-}
-
-function formatEventWindow(event) {
-  const timePart = event.startTime || event.endTime ? `｜${event.startTime || "--:--"} - ${event.endTime || "--:--"}` : "";
-  return `${event.startsOn || "未定"} ～ ${event.endsOn || "未定"}${timePart}`;
-}
-
-function prettyAnalysisKind(kind) {
-  if (kind === "event") return "活動";
-  if (kind === "spot") return "景點 / 美食";
-  return "來源待整理";
-}
-
-// ── UI 元件 ────────────────────────────────────────────────
-function chipStyle(category) {
-  const theme = CATEGORY_THEME[category] || { bg: COLORS.primarySoft, color: COLORS.text };
-  return { display: "inline-flex", alignItems: "center", gap: 6, background: theme.bg, color: theme.color, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 700, border: `1px solid ${theme.bg}` };
-}
-
-function MetricCard({ label, value, sub }) {
-  return (
-    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 16 }}>
-      <div style={{ fontSize: 13, color: COLORS.subtext }}>{label}</div>
-      <div style={{ marginTop: 8, fontSize: 30, fontWeight: 800, color: COLORS.text }}>{value}</div>
-      <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext }}>{sub}</div>
-    </div>
-  );
-}
-
-function SectionCard({ children, title, right }) {
-  return (
-    <div style={{ background: COLORS.card, border: `1px solid ${COLORS.border}`, borderRadius: 28, boxShadow: "0 8px 30px rgba(0,0,0,0.05)" }}>
-      {(title || right) && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "24px 24px 8px" }}>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: COLORS.text }}>{title}</h2>
-          {right}
-        </div>
-      )}
-      <div style={{ padding: 24 }}>{children}</div>
-    </div>
-  );
-}
-
-function PrimaryButton({ children, href, secondary = false, block = false, onClick, type = "button", disabled = false }) {
-  const style = {
-    display: block ? "flex" : "inline-flex",
-    width: block ? "100%" : undefined,
-    justifyContent: "center", alignItems: "center", gap: 8,
-    borderRadius: 18, padding: "12px 16px", textDecoration: "none",
-    border: secondary ? `1px solid ${COLORS.border}` : `1px solid ${COLORS.primary}`,
-    background: disabled ? COLORS.primarySoft : secondary ? "#ffffff" : COLORS.primary,
-    color: disabled ? COLORS.subtext : secondary ? COLORS.text : "#ffffff",
-    fontWeight: 700, fontSize: 14,
-    cursor: disabled ? "not-allowed" : "pointer",
-    boxSizing: "border-box",
-  };
-  if (href) return <a href={href} target="_blank" rel="noreferrer" style={style}>{children}</a>;
-  return <button type={type} onClick={onClick} disabled={disabled} style={style}>{children}</button>;
-}
-
-function VisualMap({ items, activeItemId, onSelect }) {
-  const points = useMemo(() => normalizeItemsForMap(items), [items]);
-  const pointMap = useMemo(() => new Map(points.map((p) => [p.id, p])), [points]);
-  return (
-    <div style={{ position: "relative", minHeight: 520, overflow: "hidden", borderRadius: 28, border: `1px solid ${COLORS.border}`, background: "linear-gradient(135deg,#fff7ed 0%,#ffffff 48%,#f5f5f4 100%)" }}>
-      <div style={{ position: "absolute", inset: 0, opacity: 0.5, backgroundImage: "linear-gradient(to right, rgba(120,113,108,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(120,113,108,0.12) 1px, transparent 1px)", backgroundSize: "36px 36px" }} />
-      <div style={{ position: "absolute", left: 20, top: 20, zIndex: 1, background: "rgba(255,255,255,0.88)", border: `1px solid ${COLORS.border}`, borderRadius: 20, padding: 16, maxWidth: 340 }}>
-        <div style={{ fontWeight: 800, fontSize: 15, color: COLORS.text }}>旅遊大地圖</div>
-        <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.6, color: COLORS.subtext }}>點選地圖上的位置，即可查看景點或活動資訊。</div>
-      </div>
-      {items.map((item) => {
-        const point = pointMap.get(item.id);
-        if (!point) return null;
-        const active = activeItemId === item.id;
-        return (
-          <button key={item.id} type="button" onClick={() => onSelect(item.id)} style={{ position: "absolute", left: `${point.left}%`, top: `${point.top}%`, transform: "translate(-50%, -50%)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 999, background: "#ffffff", border: active ? `2px solid ${COLORS.primary}` : "2px solid #ffffff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 18px rgba(0,0,0,0.15)", fontSize: 22 }}>{item.thumbnail}</div>
-            <div style={{ marginTop: 8, whiteSpace: "nowrap", borderRadius: 999, padding: "6px 12px", background: active ? COLORS.primary : "rgba(255,255,255,0.92)", color: active ? "#ffffff" : COLORS.text, fontSize: 12, fontWeight: 700, boxShadow: "0 6px 18px rgba(0,0,0,0.10)" }}>{item.name}</div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function useResponsiveColumns() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const update = () => setIsMobile(window.innerWidth < 980);
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-  return isMobile;
-}
-
-// ── SuccessView ────────────────────────────────────────────
-function SuccessView({ result, onReset }) {
-  const [countdown, setCountdown] = useState(90);
-  const [synced, setSynced] = useState(false);
-
-  useEffect(() => {
-    if (!result.dispatched) return;
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setSynced(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [result.dispatched]);
-
-  return (
-    <div style={{ maxWidth: 560, margin: "0 auto", marginTop: 40, padding: "0 16px" }}>
-      <div style={{ background: COLORS.successBg, border: `1px solid #bbf7d0`, borderRadius: 24, padding: 28, textAlign: "center" }}>
-        <div style={{ fontSize: 48 }}>✅</div>
-        <div style={{ marginTop: 12, fontSize: 20, fontWeight: 800, color: COLORS.successText }}>已寫入 Notion！</div>
-
-        {result.dispatched ? (
-          <div style={{ marginTop: 16 }}>
-            {!synced ? (
-              <div style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: 16, padding: 16 }}>
-                <div style={{ fontSize: 13, color: COLORS.successText, fontWeight: 600 }}>⚙️ GitHub Actions 同步中...</div>
-                <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#15803d" }}>{countdown}s</div>
-                <div style={{ marginTop: 6, fontSize: 12, color: "#4ade80" }}>約 {countdown} 秒後頁面資料將更新</div>
-                <div style={{ marginTop: 10, background: "#dcfce7", borderRadius: 999, height: 6, overflow: "hidden" }}>
-                  <div style={{ height: "100%", background: "#16a34a", width: `${((90 - countdown) / 90) * 100}%`, transition: "width 1s linear" }} />
-                </div>
-              </div>
-            ) : (
-              <div style={{ background: "#fff", border: "1px solid #bbf7d0", borderRadius: 16, padding: 16 }}>
-                <div style={{ fontSize: 13, color: COLORS.successText, fontWeight: 600 }}>✨ 同步完成！點下方按鈕查看最新資料</div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div style={{ marginTop: 12, fontSize: 13, color: COLORS.subtext }}>資料已寫入，請稍後手動重新整理頁面查看。</div>
-        )}
-
-        <div style={{ marginTop: 20, display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-          {synced && (
-            <button
-              onClick={() => window.location.reload()}
-              style={{ background: "#16a34a", color: "#fff", border: "none", borderRadius: 14, padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-            >
-              🔄 重新載入查看新資料
-            </button>
-          )}
-          <button
-            onClick={onReset}
-            style={{ background: "#fff", color: COLORS.text, border: `1px solid ${COLORS.border}`, borderRadius: 14, padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-          >
-            再貼一個網址
-          </button>
-        </div>
-
-        {result.created?.sourcePageId && (
-          <div style={{ marginTop: 16, fontSize: 12, color: "#9ca3af" }}>
-            Source ID: <code>{result.created.sourcePageId}</code>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── 主元件 ────────────────────────────────────────────────
 export default function App() {
   const isMobile = useResponsiveColumns();
-  const [cityIndex, setCityIndex] = useState(CITY_INDEX_SEED);
+  const [cityIndex, setCityIndex] = useState([]);
   const [selectedCitySlug, setSelectedCitySlug] = useState("unselected");
   const [selectedContentMode, setSelectedContentMode] = useState("spots");
-  const [sources, setSources] = useState(SOURCES_SEED);
+  const [sources, setSources] = useState([]);
   const [loadedSpots, setLoadedSpots] = useState([]);
   const [loadedEvents, setLoadedEvents] = useState([]);
+  const [globalStats, setGlobalStats] = useState({ spots: 0, events: 0 });
+  const [submittedUrls, setSubmittedUrls] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("trt:submittedUrls") || "[]")); }
+    catch { return new Set(); }
+  });
   const [search, setSearch] = useState("");
   const [timeOfDay, setTimeOfDay] = useState("下午");
   const [baseArea, setBaseArea] = useState("");
@@ -521,8 +47,40 @@ export default function App() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmResult, setConfirmResult] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [inputExpanded, setInputExpanded] = useState(false);
+  const [showCitySources, setShowCitySources] = useState(false);
+  const [visibleItemIds, setVisibleItemIds] = useState(null); // null = all visible
+  const [routeOrder, setRouteOrder] = useState([]);
+  const [dragSourceId, setDragSourceId] = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
+  const [savedRoutes, setSavedRoutes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("trt:routes") || "[]"); } catch { return []; }
+  });
+  const [newRouteName, setNewRouteName] = useState("");
+  const [showSavedRoutes, setShowSavedRoutes] = useState(false);
+  const [pendingRouteIds, setPendingRouteIds] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [mapViewTab, setMapViewTab] = useState("list");
 
   const hasCitySelected = selectedCitySlug !== "unselected";
+
+  // iPhone Web Share Target + 行程分享還原
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shared = params.get("url") || params.get("text");
+    if (shared && /^https?:\/\//i.test(shared)) {
+      setSubmitUrl(shared);
+      setInputExpanded(true);
+    }
+    const cityParam = params.get("city");
+    const spotsParam = params.get("spots");
+    const orderParam = params.get("order");
+    if (cityParam) {
+      setSelectedCitySlug(cityParam);
+      if (spotsParam) setPendingRouteIds({ ids: spotsParam.split(","), order: orderParam ? orderParam.split(",") : null });
+    }
+  }, []);
 
   // 載入城市索引
   useEffect(() => {
@@ -534,46 +92,63 @@ export default function App() {
         const meta = await fetchCityIndexMeta();
         if (!cancelled) setLastSyncedAt(meta);
       } catch {
-        if (!cancelled) setCityIndex(CITY_INDEX_SEED);
+        // 載入失敗時保持空陣列，不用 seed 資料
       }
     }
     loadIndex();
     return () => { cancelled = true; };
   }, [reloadKey]);
 
+  // 載入全域統計
+  useEffect(() => {
+    fetch(`${BASE_URL}data/all.json`, { headers: { Accept: "application/json" } })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) setGlobalStats({
+          spots: Array.isArray(data.spots) ? data.spots.length : 0,
+          events: Array.isArray(data.events) ? data.events.length : 0,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
   // 載入城市資料
   useEffect(() => {
     let cancelled = false;
     async function loadCityData() {
       if (!hasCitySelected) {
-        setLoadedSpots([]); setLoadedEvents([]); setSources(SOURCES_SEED);
+        setLoadedSpots([]); setLoadedEvents([]); setSources([]);
         setActiveItemId(null); setBaseArea(""); setSelectedCategories([]);
+        setVisibleItemIds(null); setRouteOrder([]);
         return;
       }
       try {
         const payload = await fetchCityDataset(selectedCitySlug, cityIndex);
         if (cancelled) return;
-        const fallbackSpots = filterByCitySlug(SPOTS_SEED, selectedCitySlug);
-        const fallbackEvents = filterByCitySlug(EVENTS_SEED, selectedCitySlug);
-        const safeSpots = payload.spots.length ? payload.spots : fallbackSpots;
-        const safeEvents = payload.events.length ? payload.events : fallbackEvents;
-        const safeSources = payload.sources.length ? payload.sources : filterSourcesByLinkedIds([...safeSpots, ...safeEvents], SOURCES_SEED);
-        setLoadedSpots(safeSpots); setLoadedEvents(safeEvents); setSources(safeSources);
-        setBaseArea(safeSpots[0]?.area || safeEvents[0]?.area || payload.city.heroArea || "");
-        setActiveItemId((selectedContentMode === "events" ? safeEvents[0]?.id : safeSpots[0]?.id) || null);
+        setLoadedSpots(payload.spots); setLoadedEvents(payload.events); setSources(payload.sources);
+        setBaseArea(payload.spots[0]?.area || payload.events[0]?.area || payload.city.heroArea || "");
+        setActiveItemId((selectedContentMode === "events" ? payload.events[0]?.id : payload.spots[0]?.id) || null);
+        setVisibleItemIds(null); setRouteOrder([]);
       } catch {
         if (cancelled) return;
-        const fallbackSpots = filterByCitySlug(SPOTS_SEED, selectedCitySlug);
-        const fallbackEvents = filterByCitySlug(EVENTS_SEED, selectedCitySlug);
-        setLoadedSpots(fallbackSpots); setLoadedEvents(fallbackEvents);
-        setSources(filterSourcesByLinkedIds([...fallbackSpots, ...fallbackEvents], SOURCES_SEED));
-        setBaseArea(fallbackSpots[0]?.area || fallbackEvents[0]?.area || "");
-        setActiveItemId((selectedContentMode === "events" ? fallbackEvents[0]?.id : fallbackSpots[0]?.id) || null);
+        setLoadedSpots([]); setLoadedEvents([]); setSources([]);
+        setBaseArea(""); setActiveItemId(null);
+        setVisibleItemIds(null); setRouteOrder([]);
       }
     }
     loadCityData();
     return () => { cancelled = true; };
   }, [selectedCitySlug, selectedContentMode, hasCitySelected, cityIndex, reloadKey]);
+
+  // 套用分享行程的待處理 IDs
+  useEffect(() => {
+    if (!pendingRouteIds || !loadedSpots.length) return;
+    const allIds = new Set([...loadedSpots, ...loadedEvents].map((i) => i.id));
+    const validIds = pendingRouteIds.ids.filter((id) => allIds.has(id));
+    setVisibleItemIds(validIds.length ? new Set(validIds) : null);
+    if (pendingRouteIds.order) setRouteOrder(pendingRouteIds.order.filter((id) => allIds.has(id)));
+    setPendingRouteIds(null);
+  }, [pendingRouteIds, loadedSpots, loadedEvents]);
 
   const selectedCity = useMemo(() => cityIndex.find((c) => c.slug === selectedCitySlug) || null, [cityIndex, selectedCitySlug]);
   const allAreas = useMemo(() => [...new Set((selectedContentMode === "events" ? loadedEvents : loadedSpots).map((i) => i.area).filter(Boolean))], [loadedEvents, loadedSpots, selectedContentMode]);
@@ -595,24 +170,128 @@ export default function App() {
     ? (filteredEvents.length ? filteredEvents : loadedEvents)
     : (filteredSpots.length ? filteredSpots : loadedSpots);
 
-  const activeItem = useMemo(() => {
-    if (!activeItemId) return activeCollection[0] || null;
-    return activeCollection.find((i) => i.id === activeItemId) || activeCollection[0] || null;
-  }, [activeCollection, activeItemId]);
 
-  const recommendations = useMemo(() => buildRecommendation(
-    filteredSpots.length ? filteredSpots : loadedSpots, baseArea, timeOfDay
-  ), [filteredSpots, loadedSpots, baseArea, timeOfDay]);
+  const effectiveVisibleIds = useMemo(() => {
+    if (visibleItemIds === null) return new Set(activeCollection.map((i) => i.id));
+    return visibleItemIds;
+  }, [visibleItemIds, activeCollection]);
+
+  const visibleItems = useMemo(() =>
+    activeCollection.filter((i) => effectiveVisibleIds.has(i.id)),
+    [activeCollection, effectiveVisibleIds]
+  );
+
+  const routeItems = useMemo(() => {
+    const base = selectedContentMode === "events"
+      ? visibleItems
+      : [...visibleItems].sort((a, b) => distanceScore(b, baseArea, timeOfDay) - distanceScore(a, baseArea, timeOfDay));
+    let ordered;
+    if (!routeOrder.length) {
+      ordered = base;
+    } else {
+      const itemMap = new Map(visibleItems.map((i) => [i.id, i]));
+      const inOrder = routeOrder.filter((id) => itemMap.has(id)).map((id) => itemMap.get(id));
+      const remaining = base.filter((i) => !new Set(routeOrder).has(i.id));
+      ordered = [...inOrder, ...remaining];
+    }
+    const reasonMap = new Map();
+    if (selectedContentMode === "spots") {
+      buildRecommendation(visibleItems, baseArea, timeOfDay).forEach((item) => {
+        reasonMap.set(item.id, item.reason);
+      });
+    }
+    return ordered.map((item, i) => ({ ...item, order: i + 1, reason: reasonMap.get(item.id) || "" }));
+  }, [routeOrder, visibleItems, selectedContentMode, baseArea, timeOfDay]);
 
   function toggleCategory(cat) {
     setSelectedCategories((prev) => prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]);
+  }
+
+  function toggleItemVisible(id) {
+    setVisibleItemIds((prev) => {
+      const base = prev ?? new Set(activeCollection.map((i) => i.id));
+      const next = new Set(base);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function setAllVisible(on) {
+    if (on) setVisibleItemIds(null);
+    else setVisibleItemIds(new Set());
+  }
+
+  function handleDragStart(e, id) {
+    setDragSourceId(id);
+    e.dataTransfer.effectAllowed = "move";
+  }
+
+  function handleDragOver(e, id) {
+    e.preventDefault();
+    setDragOverId(id);
+  }
+
+  function handleDrop(e, targetId) {
+    e.preventDefault();
+    if (!dragSourceId || dragSourceId === targetId) { setDragSourceId(null); setDragOverId(null); return; }
+    const base = routeOrder.length ? routeOrder : routeItems.map((i) => i.id);
+    const arr = [...base];
+    const from = arr.indexOf(dragSourceId);
+    const to = arr.indexOf(targetId);
+    if (from === -1 && to !== -1) { arr.splice(to, 0, dragSourceId); }
+    else if (from !== -1 && to !== -1) { arr.splice(from, 1); arr.splice(arr.indexOf(targetId), 0, dragSourceId); }
+    setRouteOrder(arr);
+    setDragSourceId(null); setDragOverId(null);
+  }
+
+  function handleSaveRoute() {
+    if (!newRouteName.trim() || !hasCitySelected || !routeItems.length) return;
+    const route = {
+      id: Date.now().toString(),
+      name: newRouteName.trim(),
+      citySlug: selectedCitySlug,
+      mode: selectedContentMode,
+      itemIds: routeItems.map((i) => i.id),
+      order: routeItems.map((i) => i.id),
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [route, ...savedRoutes].slice(0, 20);
+    localStorage.setItem("trt:routes", JSON.stringify(updated));
+    setSavedRoutes(updated); setNewRouteName("");
+  }
+
+  function handleLoadRoute(route) {
+    setSelectedCitySlug(route.citySlug);
+    setSelectedContentMode(route.mode || "spots");
+    setPendingRouteIds({ ids: route.itemIds, order: route.order });
+    setShowSavedRoutes(false);
+  }
+
+  async function handleCopyShare() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("city", selectedCitySlug);
+    url.searchParams.set("spots", routeItems.map((i) => i.id).join(","));
+    const order = routeOrder.join(",");
+    if (order) url.searchParams.set("order", order);
+    const shareUrl = url.toString();
+    try { await navigator.clipboard.writeText(shareUrl); alert("🔗 連結已複製到剪貼簿！"); }
+    catch { window.prompt("複製以下連結：", shareUrl); }
+  }
+
+  function handleGetLocation() {
+    if (!navigator.geolocation) { alert("您的瀏覽器不支援定位功能。"); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocating(false); },
+      () => { alert("無法取得定位，請確認已允許位置權限。"); setLocating(false); }
+    );
   }
 
   // 手動更新資料
   async function handleManualSync() {
     setSyncing(true);
     try {
-      const r = await fetch(cityIndexPath() + "?t=" + Date.now());
+      const r = await fetch(cityIndexPath(), { cache: "no-store" });
       const data = await r.json();
       const newTime = data?.meta?.lastSyncedAt || null;
       if (newTime && newTime !== lastSyncedAt) {
@@ -684,6 +363,15 @@ export default function App() {
       if (!response.ok) throw new Error(payload?.message || `寫入失敗，HTTP ${response.status}`);
       setConfirmResult(payload);
       setShowSuccess(true);
+      const confirmedUrl = submitUrl.trim();
+      if (confirmedUrl) {
+        setSubmittedUrls((prev) => {
+          const next = new Set(prev);
+          next.add(confirmedUrl);
+          try { localStorage.setItem("trt:submittedUrls", JSON.stringify([...next])); } catch {}
+          return next;
+        });
+      }
       setSubmitUrl(""); setSubmitTitle(""); setSubmitType("auto"); setSubmitCitySlug(""); setSubmitNotes("");
       setAnalysisPreview(null);
       setSubmitStatus({ kind: "idle", message: "" });
@@ -700,12 +388,8 @@ export default function App() {
       ? { background: COLORS.errorBg, color: COLORS.errorText }
       : { background: COLORS.infoBg, color: COLORS.infoText };
 
-  const cityStats = {
-    cities: cityIndex.length,
-    spots: loadedSpots.length || SPOTS_SEED.length,
-    events: loadedEvents.length || EVENTS_SEED.length,
-    picks: recommendations.length,
-  };
+  const isDuplicateUrl = Boolean(submitUrl.trim() && submittedUrls.has(submitUrl.trim()));
+  const shouldShowInput = inputExpanded || Boolean(submitUrl || analysisPreview);
 
   if (showSuccess && confirmResult) {
     return (
@@ -760,32 +444,23 @@ export default function App() {
 
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: isMobile ? 16 : 28, paddingTop: isMobile ? 56 : 56 }}>
 
-        {/* Hero + 分析入口 */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr", gap: 16, alignItems: "stretch" }}>
-          <SectionCard>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <span style={{ ...chipStyle("景點"), background: COLORS.primary, color: "#ffffff", borderColor: COLORS.primary }}>旅遊行程地圖</span>
-              <span style={{ ...chipStyle("活動"), background: "#ffffff", color: COLORS.subtext, border: `1px solid ${COLORS.border}` }}>網址分析入口</span>
-            </div>
-            <div style={{ marginTop: 18 }}>
-              <h1 style={{ margin: 0, fontSize: isMobile ? 30 : 52, lineHeight: 1.08, fontWeight: 900 }}>把旅遊靈感整理成<br />可直接使用的城市地圖與行程頁</h1>
-              <p style={{ marginTop: 14, maxWidth: 820, color: COLORS.subtext, fontSize: 16, lineHeight: 1.8 }}>依城市查看景點、活動、地圖位置與推薦安排，並可直接在頁面上貼上網址，先分析，再確認寫入。</p>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginTop: 20 }}>
-              <MetricCard label="城市數" value={String(cityStats.cities)} sub="持續擴充中" />
-              <MetricCard label="景點數" value={String(cityStats.spots)} sub="目前可瀏覽" />
-              <MetricCard label="活動數" value={String(cityStats.events)} sub="目前可瀏覽" />
-              <MetricCard label="推薦安排" value={String(cityStats.picks)} sub="依時間與區域計算" />
-            </div>
-          </SectionCard>
-
-          {/* 分析入口 */}
-          <div style={{ background: COLORS.primary, color: "#ffffff", borderRadius: 28, padding: 24, boxShadow: "0 10px 35px rgba(0,0,0,0.14)" }}>
-            <div style={{ fontSize: 13, color: "#d6d3d1" }}>網址分析入口</div>
-            <div style={{ marginTop: 8, fontSize: 30, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
+        {/* 浮動貼網址入口 */}
+        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, maxWidth: isMobile ? "calc(100vw - 48px)" : 420 }}>
+          {shouldShowInput ? (
+            <div style={{ background: COLORS.primary, color: "#fff", borderRadius: 24, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.35)", maxHeight: "calc(100vh - 80px)", overflowY: "auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div style={{ fontSize: 16, fontWeight: 900 }}>貼網址 → 分析 → 確認寫入</div>
+                <button type="button" onClick={() => { setInputExpanded(false); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); }}
+                  style={{ background: "transparent", border: "none", color: "#a8a29e", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>✕</button>
+              </div>
             <form onSubmit={handleAnalyzeUrl} style={{ marginTop: 16, display: "grid", gap: 12 }}>
               <input value={submitUrl} onChange={(e) => setSubmitUrl(e.target.value)} placeholder="只貼 Instagram Reel / Threads / 網址 就可以"
-                style={{ width: "100%", borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
+                style={{ width: "100%", borderRadius: 18, border: `1px solid ${isDuplicateUrl ? "#fb923c" : "rgba(255,255,255,0.15)"}`, background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
+              {isDuplicateUrl && (
+                <div style={{ borderRadius: 14, padding: "8px 14px", background: COLORS.warningBg, color: COLORS.warningText, fontSize: 12, fontWeight: 600 }}>
+                  ⚠️ 此網址已提交過，如有需要仍可繼續送出。
+                </div>
+              )}
               <input value={submitTitle} onChange={(e) => setSubmitTitle(e.target.value)} placeholder="可選：人工補充標題提示"
                 style={{ width: "100%", borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: "14px 16px", outline: "none", boxSizing: "border-box" }} />
               <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
@@ -869,43 +544,88 @@ export default function App() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* 來源清單 */}
-        <div style={{ marginTop: 20 }}>
-          <SectionCard title="來源清單">
-            {sources.length > 0 ? (
-              <div style={{ display: "grid", gap: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
-                {sources.map((source) => (
-                  <div key={source.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.card, padding: 18 }}>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <span style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{source.platform}</span>
-                      <span style={{ borderRadius: 999, background: "#ffffff", border: `1px solid ${COLORS.border}`, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{source.status}</span>
-                    </div>
-                    <div style={{ marginTop: 12, fontSize: 18, fontWeight: 800 }}>{source.title}</div>
-                    <div style={{ marginTop: 8, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{source.note}</div>
-                    <div style={{ marginTop: 14 }}>
-                      <PrimaryButton href={source.url} block secondary>開啟原始來源</PrimaryButton>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ color: COLORS.subtext, fontSize: 14 }}>請先選擇城市以顯示對應來源清單。</div>
-            )}
-          </SectionCard>
+            </div>
+          ) : (
+            <button type="button"
+              onMouseEnter={() => setInputExpanded(true)}
+              onClick={() => setInputExpanded(true)}
+              style={{ background: COLORS.primary, color: "#fff", border: "none", borderRadius: 20, padding: "13px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 28px rgba(0,0,0,0.22)", display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 18 }}>＋</span> 貼網址分析
+            </button>
+          )}
         </div>
 
         {/* 城市入口 */}
         <div style={{ marginTop: 20 }}>
           <SectionCard title="城市入口">
-            <div style={{ display: "grid", gap: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
-              {cityIndex.map((city) => {
-                const active = selectedCitySlug === city.slug;
-                return (
+            {hasCitySelected ? (
+              <div style={{ display: "grid", gap: 14 }}>
+                {cityIndex.filter((c) => c.slug === selectedCitySlug).map((city) => (
+                  <div key={city.slug} style={{ border: `2px solid ${COLORS.primary}`, borderRadius: 28, background: "#fff", boxShadow: "0 10px 26px rgba(0,0,0,0.08)", padding: 24 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ fontSize: 40 }}>{city.emoji}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 26, fontWeight: 900 }}>{city.label}</div>
+                        <div style={{ fontSize: 13, color: COLORS.subtext }}>{city.region}</div>
+                      </div>
+                      <button type="button" onClick={() => { setSelectedCitySlug("unselected"); setShowCitySources(false); }}
+                        style={{ fontSize: 12, color: COLORS.subtext, border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "6px 12px", background: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}>
+                        取消選擇
+                      </button>
+                    </div>
+                    <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.8, color: COLORS.subtext }}>{city.description}</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 16 }}>
+                      {[
+                        { label: "景點數", value: loadedSpots.length, key: "spots", clickable: false },
+                        { label: "活動數", value: loadedEvents.length, key: "events", clickable: false },
+                        { label: "來源數", value: sources.length, key: "sources", clickable: true },
+                      ].map(({ label, value, key, clickable }) => {
+                        const active = showCitySources && key === "sources";
+                        return (
+                          <div key={key} onClick={clickable ? () => setShowCitySources((s) => !s) : undefined}
+                            style={{ background: active ? COLORS.primary : COLORS.cardMuted, borderRadius: 16, padding: "12px 14px", border: `1px solid ${active ? COLORS.primary : COLORS.border}`, cursor: clickable ? "pointer" : "default", transition: "background 0.15s" }}>
+                            <div style={{ fontSize: 11, color: active ? "#d6d3d1" : COLORS.subtext }}>{label} {clickable && <span style={{ fontSize: 10 }}>{showCitySources ? "▲" : "▼"}</span>}</div>
+                            <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: active ? "#fff" : COLORS.text }}>{value}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {showCitySources && sources.length > 0 && (
+                      <div style={{ marginTop: 14, display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)" }}>
+                        {sources.map((source) => (
+                          <div key={source.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 18, background: COLORS.cardMuted, padding: 14 }}>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              <span style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "4px 8px", fontSize: 11, color: COLORS.subtext }}>{source.platform}</span>
+                              <span style={{ borderRadius: 999, background: "#fff", border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11, color: COLORS.subtext }}>{source.status}</span>
+                            </div>
+                            <div style={{ marginTop: 8, fontSize: 14, fontWeight: 700 }}>{source.title}</div>
+                            {source.note && <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext, lineHeight: 1.6 }}>{source.note}</div>}
+                            <a href={source.url} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 10, fontSize: 12, color: COLORS.primary, fontWeight: 700, textDecoration: "none" }}>→ 查看來源</a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+                      {city.spotlight.map((item) => <span key={item} style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{item}</span>)}
+                    </div>
+                  </div>
+                ))}
+                <div style={{ display: "grid", gap: 10, gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(140px, 1fr))" }}>
+                  {cityIndex.filter((c) => c.slug !== selectedCitySlug).map((city) => (
+                    <button key={city.slug} type="button" onClick={() => setSelectedCitySlug(city.slug)}
+                      style={{ textAlign: "left", border: `1px solid ${COLORS.border}`, borderRadius: 18, background: COLORS.cardMuted, padding: "14px 16px", cursor: "pointer" }}>
+                      <div style={{ fontSize: 26 }}>{city.emoji}</div>
+                      <div style={{ marginTop: 6, fontSize: 15, fontWeight: 800 }}>{city.label}</div>
+                      <div style={{ marginTop: 2, fontSize: 12, color: COLORS.subtext }}>{city.region}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
+                {cityIndex.map((city) => (
                   <button key={city.slug} type="button" onClick={() => setSelectedCitySlug(city.slug)}
-                    style={{ textAlign: "left", border: `1px solid ${active ? COLORS.primary : COLORS.border}`, borderRadius: 28, background: active ? "#fff" : COLORS.card, boxShadow: active ? "0 10px 26px rgba(0,0,0,0.08)" : "0 6px 18px rgba(0,0,0,0.04)", padding: 20, cursor: "pointer" }}>
+                    style={{ textAlign: "left", border: `1px solid ${COLORS.border}`, borderRadius: 28, background: COLORS.card, boxShadow: "0 6px 18px rgba(0,0,0,0.04)", padding: 20, cursor: "pointer" }}>
                     <div style={{ fontSize: 34 }}>{city.emoji}</div>
                     <div style={{ marginTop: 8, fontSize: 24, fontWeight: 900 }}>{city.label}</div>
                     <div style={{ marginTop: 4, fontSize: 13, color: COLORS.subtext }}>{city.region}</div>
@@ -914,16 +634,15 @@ export default function App() {
                       {city.spotlight.map((item) => <span key={item} style={{ borderRadius: 999, background: COLORS.primarySoft, padding: "6px 10px", fontSize: 12, color: COLORS.subtext }}>{item}</span>)}
                     </div>
                   </button>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </SectionCard>
         </div>
 
-        {/* 地圖 + 推薦 */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.2fr 1.2fr 0.9fr", gap: 16, marginTop: 20 }}>
-          <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
-            <SectionCard title={selectedCity ? `${selectedCity.label} 旅遊地圖` : "城市地圖"}
+        {/* 地圖 */}
+        <div style={{ marginTop: 20 }}>
+          <SectionCard title={selectedCity ? `${selectedCity.label} 旅遊地圖` : "城市地圖"}
               right={
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜尋景點、活動、地區"
@@ -961,90 +680,257 @@ export default function App() {
                   })}
                 </div>
               </div>
-              {hasCitySelected
-                ? <VisualMap items={activeCollection} activeItemId={activeItem?.id || null} onSelect={setActiveItemId} />
-                : <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 28, textAlign: "center", color: COLORS.subtext }}>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.text }}>請先選擇城市</div>
-                    <div style={{ marginTop: 10, lineHeight: 1.8 }}>選好城市後，頁面才會載入對應的景點與活動資料。</div>
+              {hasCitySelected ? (
+                <div>
+                  <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    {isMobile && (
+                      <div style={{ display: "flex", borderRadius: 12, overflow: "hidden", border: `1px solid ${COLORS.border}` }}>
+                        {["list", "map"].map((tab) => (
+                          <button key={tab} type="button" onClick={() => setMapViewTab(tab)}
+                            style={{ padding: "6px 16px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer", background: mapViewTab === tab ? COLORS.primary : "#fff", color: mapViewTab === tab ? "#fff" : COLORS.text }}>
+                            {tab === "list" ? "清單" : "地圖"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <span style={{ fontSize: 13, color: COLORS.subtext }}>在地圖上標示：</span>
+                    <button type="button" onClick={() => setAllVisible(true)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer", fontWeight: 600 }}>全選</button>
+                    <button type="button" onClick={() => setAllVisible(false)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer", fontWeight: 600 }}>全取消</button>
+                    <span style={{ fontSize: 12, color: COLORS.subtext }}>已選 {effectiveVisibleIds.size} / {activeCollection.length}</span>
                   </div>
-              }
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.2fr 0.8fr", gap: 16, marginTop: 16 }}>
-                <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.card, padding: 20 }}>
-                  {activeItem ? (
-                    <>
-                      <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
-                        <div style={{ fontSize: 42 }}>{activeItem.thumbnail}</div>
-                        <div>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <span style={chipStyle(activeItem.category)}>{activeItem.category}</span>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "220px 1fr", borderRadius: 20, overflow: "hidden", border: `1px solid ${COLORS.border}`, height: 460 }}>
+                    <div style={{ overflowY: "auto", height: 460, borderRight: isMobile ? "none" : `1px solid ${COLORS.border}`, display: isMobile && mapViewTab === "map" ? "none" : "block" }}>
+                      {activeCollection.length ? activeCollection.map((item) => {
+                        const active = activeItemId === item.id;
+                        const checked = effectiveVisibleIds.has(item.id);
+                        return (
+                          <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${COLORS.border}`, background: active ? COLORS.primarySoft : "#fff", cursor: "pointer" }}
+                            onClick={() => setActiveItemId(item.id)}>
+                            <input type="checkbox" checked={checked}
+                              onChange={(e) => { e.stopPropagation(); toggleItemVisible(item.id); }}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ cursor: "pointer", width: 15, height: 15, flexShrink: 0 }} />
+                            <span style={{ fontSize: 20, flexShrink: 0 }}>{item.thumbnail}</span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontWeight: active ? 800 : 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? COLORS.primary : checked ? COLORS.text : COLORS.subtext }}>{item.name}</div>
+                              <div style={{ fontSize: 11, color: COLORS.subtext }}>{item.area}</div>
+                            </div>
                           </div>
-                          <div style={{ marginTop: 10, fontSize: 22, fontWeight: 900 }}>{activeItem.name}</div>
-                          <div style={{ marginTop: 6, fontSize: 14, color: COLORS.subtext }}>{activeItem.city}・{activeItem.area}</div>
-                        </div>
-                      </div>
-                      <div style={{ marginTop: 14, fontSize: 14, color: COLORS.subtext, lineHeight: 1.8 }}>{activeItem.description}</div>
-                      {selectedContentMode === "events" && (
-                        <div style={{ marginTop: 14, borderRadius: 18, background: COLORS.warningBg, color: COLORS.warningText, padding: 14, fontSize: 13, lineHeight: 1.8 }}>
-                          活動期間：{formatEventWindow(activeItem)}<br />
-                          票務：{activeItem.ticketType || "未設定"}{activeItem.priceNote ? ` ／ ${activeItem.priceNote}` : ""}
-                        </div>
-                      )}
-                    </>
-                  ) : <div style={{ color: COLORS.subtext }}>目前沒有可顯示的內容。</div>}
-                </div>
-                <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 20 }}>
-                  <div style={{ fontSize: 13, color: COLORS.subtext }}>操作</div>
-                  <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-                    {activeItem && <>
-                      <PrimaryButton href={activeItem.mapUrl} block>開啟 Google Maps</PrimaryButton>
-                      {activeItem.sourceUrl && <PrimaryButton href={activeItem.sourceUrl} block secondary>查看原始來源</PrimaryButton>}
-                    </>}
-                  </div>
-                </div>
-              </div>
-            </SectionCard>
-          </div>
-
-          <SectionCard title="現在怎麼排最順">
-            <div style={{ display: "grid", gap: 14 }}>
-              <div>
-                <div style={{ fontSize: 13, color: COLORS.subtext, marginBottom: 8 }}>目前時間</div>
-                <select value={timeOfDay} onChange={(e) => setTimeOfDay(e.target.value)}
-                  style={{ width: "100%", borderRadius: 14, border: `1px solid ${COLORS.border}`, padding: "12px 12px", outline: "none" }} disabled={!hasCitySelected}>
-                  {["早上", "中午", "下午", "晚上"].map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <div style={{ fontSize: 13, color: COLORS.subtext, marginBottom: 8 }}>你人在哪一區附近</div>
-                <select value={baseArea} onChange={(e) => setBaseArea(e.target.value)}
-                  style={{ width: "100%", borderRadius: 14, border: `1px solid ${COLORS.border}`, padding: "12px 12px", outline: "none" }} disabled={!hasCitySelected || !allAreas.length || selectedContentMode === "events"}>
-                  {allAreas.length ? allAreas.map((area) => <option key={area} value={area}>{area}</option>) : <option value="">請先選城市</option>}
-                </select>
-              </div>
-            </div>
-            <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-              {recommendations.map((item) => (
-                <div key={item.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 22, background: COLORS.card, padding: 16 }}>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 999, background: COLORS.primary, color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 }}>{item.order}</div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 800 }}>{item.name}</div>
-                        <span style={{ border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: "4px 10px", fontSize: 12 }}>{item.bestTime}</span>
-                      </div>
-                      <div style={{ marginTop: 8, fontSize: 14, color: COLORS.subtext }}>{item.reason}</div>
-                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8, fontSize: 12, color: COLORS.subtext }}>
-                        <span>{item.stayMinutes} 分</span>
-                        <span>{item.city}・{item.area}</span>
-                      </div>
+                        );
+                      }) : <div style={{ padding: 16, fontSize: 13, color: COLORS.subtext }}>目前無資料</div>}
+                    </div>
+                    <div style={{ height: 460, position: "relative", display: isMobile && mapViewTab === "list" ? "none" : "block" }}>
+                      <LeafletMap
+                        items={activeCollection}
+                        visibleIds={effectiveVisibleIds}
+                        activeItemId={activeItemId}
+                        onSelectItem={setActiveItemId}
+                      />
                     </div>
                   </div>
                 </div>
-              ))}
-              {!recommendations.length && hasCitySelected && (
-                <div style={{ borderRadius: 18, background: COLORS.cardMuted, padding: 16, color: COLORS.subtext }}>目前這個城市還沒有可推薦的景點資料。</div>
+              ) : (
+                <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 28, textAlign: "center", color: COLORS.subtext }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.text }}>請先選擇城市</div>
+                  <div style={{ marginTop: 10, lineHeight: 1.8 }}>選好城市後，頁面才會載入對應的景點與活動資料。</div>
+                </div>
               )}
-            </div>
+              {/* 選取景點詳細資訊（顯示所有有勾選的） */}
+              {hasCitySelected && visibleItems.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.subtext, marginBottom: 10 }}>已選景點詳情（{visibleItems.length} 筆）</div>
+                  <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)" }}>
+                    {visibleItems.map((item) => (
+                      <div key={item.id} style={{ border: `1px solid ${activeItemId === item.id ? COLORS.primary : COLORS.border}`, borderRadius: 20, background: COLORS.card, padding: 16, cursor: "pointer" }}
+                        onClick={() => setActiveItemId(item.id)}>
+                        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <div style={{ fontSize: 32 }}>{item.thumbnail}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                              <span style={chipStyle(item.category)}>{item.category}</span>
+                              <span style={{ borderRadius: 999, border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11 }}>{item.bestTime}</span>
+                            </div>
+                            <div style={{ fontWeight: 900, fontSize: 15 }}>{item.name}</div>
+                            <div style={{ fontSize: 12, color: COLORS.subtext, marginTop: 2 }}>{item.city}・{item.area}</div>
+                          </div>
+                        </div>
+                        {item.description && <div style={{ marginTop: 10, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{item.description}</div>}
+                        {selectedContentMode === "events" && (
+                          <div style={{ marginTop: 10, borderRadius: 12, background: COLORS.warningBg, color: COLORS.warningText, padding: 10, fontSize: 12 }}>
+                            {formatEventWindow(item)} ｜ {item.ticketType || "未設定票務"}{item.priceNote ? ` ／ ${item.priceNote}` : ""}
+                          </div>
+                        )}
+                        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                          <span style={{ fontSize: 12, color: COLORS.subtext, background: COLORS.cardMuted, borderRadius: 8, padding: "4px 8px" }}>⏱ {item.stayMinutes} 分</span>
+                          {item.mapUrl && (
+                            <a href={item.mapUrl} target="_blank" rel="noreferrer"
+                              style={{ fontSize: 12, color: "#1a73e8", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
+                              onClick={(e) => e.stopPropagation()}>
+                              📍 Google Maps
+                            </a>
+                          )}
+                          {item.sourceUrl && (
+                            <a href={item.sourceUrl} target="_blank" rel="noreferrer"
+                              style={{ fontSize: 12, color: COLORS.subtext, textDecoration: "none" }}
+                              onClick={(e) => e.stopPropagation()}>
+                              → 原始來源
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+          </SectionCard>
+        </div>
+
+        {/* 行程規劃（全寬，底部） */}
+        <div style={{ marginTop: 20 }}>
+          <SectionCard title="行程規劃"
+            right={
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <select value={timeOfDay} onChange={(e) => setTimeOfDay(e.target.value)}
+                  style={{ borderRadius: 10, border: `1px solid ${COLORS.border}`, padding: "8px 10px", outline: "none", fontSize: 13 }} disabled={!hasCitySelected}>
+                  {["早上", "中午", "下午", "晚上"].map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <select value={baseArea} onChange={(e) => setBaseArea(e.target.value)}
+                  style={{ borderRadius: 10, border: `1px solid ${COLORS.border}`, padding: "8px 10px", outline: "none", fontSize: 13 }} disabled={!hasCitySelected || !allAreas.length}>
+                  {allAreas.length ? allAreas.map((a) => <option key={a} value={a}>{a}</option>) : <option value="">起點區域</option>}
+                </select>
+              </div>
+            }>
+            {hasCitySelected && routeItems.length > 0 ? (
+              <>
+                <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, color: COLORS.subtext }}>拖曳 ☰ 調整順序。點擊 📍 開啟 Google Maps 導航。</span>
+                  <button type="button" onClick={handleGetLocation} disabled={locating}
+                    style={{ borderRadius: 10, padding: "6px 14px", background: userLocation ? COLORS.successBg : "#fff", color: userLocation ? COLORS.successText : COLORS.text, border: `1px solid ${userLocation ? "#bbf7d0" : COLORS.border}`, fontSize: 12, fontWeight: 700, cursor: locating ? "not-allowed" : "pointer" }}>
+                    {locating ? "定位中…" : userLocation ? "✅ 已取得位置" : "📍 從我的位置出發"}
+                  </button>
+                  {userLocation && (
+                    <button type="button" onClick={() => setUserLocation(null)}
+                      style={{ fontSize: 11, color: COLORS.subtext, border: `1px solid ${COLORS.border}`, borderRadius: 8, padding: "4px 8px", background: "#fff", cursor: "pointer" }}>清除</button>
+                  )}
+                </div>
+                <div style={{ display: "grid", gap: 0 }}>
+                  {routeItems.map((item, i) => {
+                    const prevItem = i > 0 ? routeItems[i - 1] : null;
+                    const prevPoint = i === 0 && userLocation ? userLocation : prevItem;
+                    const transport = prevPoint ? estimateTransport(prevPoint, item) : null;
+                    const isTransit = transport?.icon === "🚌" || transport?.icon === "🚇";
+                    const originCoords = i === 0 && userLocation
+                      ? `${userLocation.lat},${userLocation.lng}`
+                      : prevItem?.lat && prevItem?.lng ? `${prevItem.lat},${prevItem.lng}` : null;
+                    const dirUrl = originCoords && item.lat && item.lng
+                      ? `https://www.google.com/maps/dir/?api=1&origin=${originCoords}&destination=${item.lat},${item.lng}&travelmode=transit`
+                      : null;
+                    const isDraggingOver = dragOverId === item.id;
+                    return (
+                      <React.Fragment key={item.id}>
+                        {transport && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0 4px 24px" }}>
+                            <div style={{ width: 2, height: 22, background: COLORS.border, flexShrink: 0 }} />
+                            <span style={{ fontSize: 16 }}>{transport.icon}</span>
+                            <span style={{ fontSize: 12, color: COLORS.subtext }}>{transport.label}・約 {transport.minutes} 分・{transport.km.toFixed(1)} km</span>
+                            {(isTransit || (i === 0 && userLocation)) && dirUrl && (
+                              <a href={dirUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#1a73e8", fontWeight: 700, textDecoration: "none", marginLeft: 4 }}>查路線 →</a>
+                            )}
+                          </div>
+                        )}
+                        <div
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, item.id)}
+                          onDragOver={(e) => handleDragOver(e, item.id)}
+                          onDrop={(e) => handleDrop(e, item.id)}
+                          onDragEnd={() => { setDragSourceId(null); setDragOverId(null); }}
+                          style={{ border: `1px solid ${isDraggingOver ? COLORS.primary : COLORS.border}`, borderRadius: 20, background: isDraggingOver ? COLORS.primarySoft : COLORS.card, padding: "14px 16px", opacity: dragSourceId === item.id ? 0.45 : 1, cursor: "grab" }}>
+                          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                            <span style={{ fontSize: 18, color: COLORS.subtext, cursor: "grab", userSelect: "none" }}>☰</span>
+                            <div style={{ width: 30, height: 30, borderRadius: 999, background: COLORS.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, flexShrink: 0 }}>{item.order}</div>
+                            <span style={{ fontSize: 22 }}>{item.thumbnail}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 800, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4, alignItems: "center" }}>
+                                <span style={chipStyle(item.category)}>{item.category}</span>
+                                <span style={{ fontSize: 12, color: COLORS.subtext }}>{item.bestTime}・⏱ {item.stayMinutes} 分</span>
+                              </div>
+                              {item.reason && (
+                                <div style={{ marginTop: 4, fontSize: 11, color: COLORS.subtext, lineHeight: 1.5, fontStyle: "italic" }}>💡 {item.reason}</div>
+                              )}
+                            </div>
+                            {item.mapUrl && (
+                              <a href={item.mapUrl} target="_blank" rel="noreferrer"
+                                style={{ fontSize: 20, textDecoration: "none", flexShrink: 0 }}
+                                onClick={(e) => e.stopPropagation()}
+                                title="Google Maps">📍</a>
+                            )}
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+                {routeItems.length > 1 && (() => {
+                  const stayTotal = routeItems.reduce((s, item) => s + (item.stayMinutes || 0), 0);
+                  const travelTotal = routeItems.slice(1).reduce((s, item, i) => {
+                    const t = estimateTransport(routeItems[i], item);
+                    return s + (t?.minutes || 0);
+                  }, 0);
+                  const kmTotal = routeItems.slice(1).reduce((s, item, i) => {
+                    const t = estimateTransport(routeItems[i], item);
+                    return s + (t?.km || 0);
+                  }, 0);
+                  const totalHours = Math.round((stayTotal + travelTotal) / 6) / 10;
+                  return (
+                    <div style={{ marginTop: 14, borderRadius: 16, background: COLORS.cardMuted, border: `1px solid ${COLORS.border}`, padding: "12px 16px", display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, color: COLORS.subtext }}>
+                      <span>🗓 共 <strong style={{ color: COLORS.text }}>{routeItems.length}</strong> 個景點</span>
+                      <span>⏱ 預計 <strong style={{ color: COLORS.text }}>{totalHours}</strong> 小時</span>
+                      <span>🚶 總移動 <strong style={{ color: COLORS.text }}>{kmTotal.toFixed(1)}</strong> km</span>
+                    </div>
+                  );
+                })()}
+
+                {/* 儲存 & 分享 */}
+                <div style={{ marginTop: 20, borderTop: `1px solid ${COLORS.border}`, paddingTop: 16, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  <input value={newRouteName} onChange={(e) => setNewRouteName(e.target.value)} placeholder="輸入行程名稱…"
+                    style={{ flex: 1, minWidth: 140, borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: "10px 14px", outline: "none", fontSize: 14 }} />
+                  <button type="button" onClick={handleSaveRoute} disabled={!newRouteName.trim()}
+                    style={{ borderRadius: 12, padding: "10px 18px", background: newRouteName.trim() ? COLORS.primary : COLORS.primarySoft, color: newRouteName.trim() ? "#fff" : COLORS.subtext, border: "none", fontWeight: 700, fontSize: 14, cursor: newRouteName.trim() ? "pointer" : "not-allowed" }}>
+                    💾 儲存行程
+                  </button>
+                  <button type="button" onClick={handleCopyShare}
+                    style={{ borderRadius: 12, padding: "10px 18px", background: "#fff", border: `1px solid ${COLORS.border}`, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                    🔗 複製分享連結
+                  </button>
+                  {savedRoutes.length > 0 && (
+                    <button type="button" onClick={() => setShowSavedRoutes((s) => !s)}
+                      style={{ borderRadius: 12, padding: "10px 18px", background: "#fff", border: `1px solid ${COLORS.border}`, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                      📋 已儲存 ({savedRoutes.length}) {showSavedRoutes ? "▲" : "▼"}
+                    </button>
+                  )}
+                </div>
+
+                {showSavedRoutes && (
+                  <div style={{ marginTop: 14, display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)" }}>
+                    {savedRoutes.map((route) => (
+                      <div key={route.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: 16, background: COLORS.cardMuted, padding: 14 }}>
+                        <div style={{ fontWeight: 800, fontSize: 14 }}>{route.name}</div>
+                        <div style={{ fontSize: 12, color: COLORS.subtext, marginTop: 4 }}>{route.citySlug}・{route.itemIds.length} 個景點・{new Date(route.createdAt).toLocaleDateString("zh-TW")}</div>
+                        <button type="button" onClick={() => handleLoadRoute(route)}
+                          style={{ marginTop: 10, borderRadius: 10, padding: "8px 14px", background: COLORS.primary, color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%" }}>
+                          載入此行程
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div style={{ borderRadius: 18, background: COLORS.cardMuted, padding: 16, color: COLORS.subtext }}>
+                {hasCitySelected ? "請在地圖上勾選景點以規劃行程。" : "請先選擇城市，再從地圖勾選景點。"}
+              </div>
+            )}
           </SectionCard>
         </div>
       </div>

@@ -1,12 +1,12 @@
 // functions/api/confirm-analysis.js
 
-const NOTION_VERSION = "2022-06-28";
+const NOTION_VERSION = "2025-09-03";
 
 const CITY_DATA_MAP = {
   tokyo:     { label: "東京",   emoji: "🗼",  region: "日本", timezone: "Asia/Tokyo",  lat: 35.6762, lng: 139.6503, sort: 10,  heroArea: "新宿／澀谷",    spotlight: "購物,美食,文化",   description: "融合傳統與現代的大都市，購物、美食與文化密度極高。" },
-  kyoto:     { label: "京都",   emoji: "⛩️",  region: "日本", timezone: "Asia/Tokyo",  lat: 35.0116, lng: 135.7681, sort: 20,  heroArea: "佛光寺周邊",    spotlight: "寺社,甜點,散步",   description: "寺社、散步、甜點與選物密度高，適合慢節奏安排。" },
-  osaka:     { label: "大阪",   emoji: "🍢",  region: "日本", timezone: "Asia/Tokyo",  lat: 34.6937, lng: 135.5023, sort: 30,  heroArea: "新世界／通天閣",  spotlight: "小吃,商圈,夜生活", description: "小吃、商圈與夜間行程豐富，適合美食導向安排。" },
-  nara:      { label: "奈良",   emoji: "🦌",  region: "日本", timezone: "Asia/Tokyo",  lat: 34.6851, lng: 135.8048, sort: 40,  heroArea: "奈良公園",      spotlight: "景點,自然,歷史",   description: "鹿群漫步的古都，世界遺產與自然景觀並存。" },
+  kyoto:     { label: "京都",   emoji: "⛩️",  region: "關西", timezone: "Asia/Tokyo",  lat: 35.0116, lng: 135.7681, sort: 20,  heroArea: "佛光寺周邊",    spotlight: "寺社,甜點,散步",   description: "寺社、散步、甜點與選物密度高，適合慢節奏安排。" },
+  osaka:     { label: "大阪",   emoji: "🍢",  region: "關西", timezone: "Asia/Tokyo",  lat: 34.6937, lng: 135.5023, sort: 30,  heroArea: "新世界／通天閣",  spotlight: "小吃,商圈,夜生活", description: "小吃、商圈與夜間行程豐富，適合美食導向安排。" },
+  nara:      { label: "奈良",   emoji: "🦌",  region: "關西", timezone: "Asia/Tokyo",  lat: 34.6851, lng: 135.8048, sort: 40,  heroArea: "奈良公園",      spotlight: "景點,自然,歷史",   description: "鹿群漫步的古都，世界遺產與自然景觀並存。" },
   fukuoka:   { label: "福岡",   emoji: "🍜",  region: "日本", timezone: "Asia/Tokyo",  lat: 33.5904, lng: 130.4017, sort: 50,  heroArea: "天神／博多",    spotlight: "拉麵,美食,購物",   description: "九州最大城市，拉麵與海鮮聞名，生活感十足。" },
   hokkaido:  { label: "北海道", emoji: "🐻",  region: "日本", timezone: "Asia/Tokyo",  lat: 43.0642, lng: 141.3469, sort: 60,  heroArea: "札幌市區",      spotlight: "自然,美食,滑雪",   description: "四季分明的北國，自然景觀與乳製品美食著稱。" },
   okinawa:   { label: "沖繩",   emoji: "🌺",  region: "日本", timezone: "Asia/Tokyo",  lat: 26.2124, lng: 127.6809, sort: 70,  heroArea: "國際通",        spotlight: "海灘,文化,美食",   description: "熱帶海島風情，珊瑚礁海灘與獨特琉球文化。" },
@@ -50,7 +50,7 @@ export async function onRequestPost(context) {
 
     // 確保城市存在（需要 READ_ID 查詢 + WRITE_ID 寫入）
     let cityEnsureError = null;
-    if (citySlug && env.NOTION_CITIES_READ_ID && env.NOTION_CITIES_WRITE_ID) {
+    if (citySlug && env.NOTION_CITIES_WRITE_ID) {
       try {
         await ensureCityExists(env, citySlug);
       } catch (e) {
@@ -68,10 +68,11 @@ export async function onRequestPost(context) {
     const spotPageIds = [];
     const eventPageIds = [];
 
-    if (contentKind === "spot" && env.NOTION_SPOTS_DATA_SOURCE_ID) {
+    if (items.length && (env.NOTION_SPOTS_DATA_SOURCE_ID || env.NOTION_EVENTS_DATA_SOURCE_ID)) {
       for (const item of items) {
+        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "");
         const spotPage = await createSpotPage({
-          env, item, citySlug, sourceUrl: url, sourcePageId, sourceTitle,
+          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
         });
         const spotId = spotPage?.id || null;
         if (spotId) spotPageIds.push(spotId);
@@ -81,8 +82,9 @@ export async function onRequestPost(context) {
 
     if (contentKind === "event" && env.NOTION_EVENTS_DATA_SOURCE_ID) {
       for (const item of items) {
+        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "");
         const eventPage = await createEventPage({
-          env, item, citySlug, sourceUrl: url, sourcePageId, sourceTitle,
+          env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle,
         });
         const eventId = eventPage?.id || null;
         if (eventId) eventPageIds.push(eventId);
@@ -137,7 +139,7 @@ async function updateSourceRelations(env, sourcePageId, spotIds, eventIds, cityS
     }
     if (citySlug) {
       properties.CityHints = { multi_select: [{ name: citySlug }] };
-      properties.RelatedCities = { rich_text: [{ text: { content: citySlug } }] };
+      properties.RelatedCities = { multi_select: [{ name: citySlug }] };
     }
     if (Object.keys(properties).length === 0) return;
 
@@ -160,7 +162,7 @@ async function ensureCityExists(env, citySlug) {
   try {
     // 查詢用 database ID（NOTION_CITIES_READ_ID）
     const res = await fetch(
-      `https://api.notion.com/v1/databases/${env.NOTION_CITIES_READ_ID}/query`,
+      `https://api.notion.com/v1/data_sources/${env.NOTION_CITIES_WRITE_ID}/query`,
       {
         method: "POST",
         headers: {
@@ -220,7 +222,7 @@ async function ensureCityExists(env, citySlug) {
           SortOrder:     { number: city.sort },
           DefaultMapLat: { number: city.lat },
           DefaultMapLng: { number: city.lng },
-          Published:     { checkbox: false },
+          Published:     { checkbox: true },
         },
       }),
     });
@@ -267,33 +269,42 @@ async function createSourcePage({
 async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
-  const tags = Array.isArray(item.tags) ? item.tags.join(", ") : item.category || "景點";
+  const normalizedTags = Array.isArray(item.tags)
+    ? item.tags.map((t) => String(t || "").trim()).filter(Boolean)
+    : [];
+  const tags = normalizedTags.length
+    ? normalizedTags.join(", ")
+    : [item.category || "景點", item.area || "", citySlug || ""].filter(Boolean).join(", ");
 
   const mapQuery = encodeURIComponent(`${item.name} ${cityLabel}`);
   const mapUrl = item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
-  const lat = typeof item.lat === "number" && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
-  const lng = typeof item.lng === "number" && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
+  const lat = Number.isFinite(item?.lat) && Math.abs(item.lat) <= 90 && item.lat !== 0 ? item.lat : null;
+  const lng = Number.isFinite(item?.lng) && Math.abs(item.lng) <= 180 && item.lng !== 0 ? item.lng : null;
+  const priorityScore = Number.isFinite(item?.itemConfidence)
+    ? Math.round(item.itemConfidence * 100)
+    : Number.isFinite(item?.item_confidence)
+      ? Math.round(item.item_confidence * 100)
+      : 0;
 
   const properties = {
-    Name:             { title: [{ text: { content: String(item.name || "未命名景點").slice(0, 200) } }] },
-    Area:             { rich_text: [{ text: { content: String(item.area || cityLabel) } }] },
-    BestTime:         { rich_text: [{ text: { content: String(item.best_time || guessBestTime(item.category)) } }] },
-    Category:         { rich_text: [{ text: { content: String(item.category || "景點") } }] },
+    Name:             { title: [{ text: { content: cleanText(item.name || "未命名項目").slice(0, 200) } }] },
+    Area:             { rich_text: [{ text: { content: cleanText(item.area || cityLabel) } }] },
+    BestTime:         { rich_text: [{ text: { content: cleanText(item.best_time) } }] },
+    Category:         { rich_text: [{ text: { content: cleanText(item.category || "待分類") } }] },
     City:             { select: { name: cityLabel || "未分類" } },
     CitySlug:         { select: { name: String(citySlug || "未分類") } },
-    Description:      { rich_text: [{ text: { content: String(item.description || `${cityLabel}的${item.category || "景點"}，值得一訪。`).slice(0, 2000) } }] },
-    Lat:              { number: lat },
-    Lng:              { number: lng },
+    Description:      { rich_text: [{ text: { content: cleanText(item.description).slice(0, 2000) } }] },
     MapUrl:           { url: mapUrl || null },
-    Notes:            { rich_text: [{ text: { content: String(item.reason || "") } }] },
-    PriorityScore:    { number: 0 },
+    Notes:            { rich_text: [{ text: { content: buildItemNotes(item) } }] },
+    PriorityScore:    { number: priorityScore },
     Published:        { checkbox: true },
-    SourceTitleCache: { rich_text: [{ text: { content: String(sourceTitle || "").slice(0, 200) } }] },
-    StayMinutes:      { number: Number(item.stay_minutes || guessStayMinutes(item.category)) },
+    SourceTitleCache: { rich_text: [{ text: { content: cleanText(sourceTitle).slice(0, 200) } }] },
     Tags:             { rich_text: [{ text: { content: tags } }] },
-    Thumbnail:        { rich_text: [{ text: { content: String(item.thumbnail || guessThumbnail(item.category)) } }] },
+    Thumbnail:        { rich_text: [{ text: { content: cleanText(item.thumbnail || guessThumbnail(item.category)) } }] },
   };
+  if (lat !== null) properties.Lat = { number: lat };
+  if (lng !== null) properties.Lng = { number: lng };
 
   if (sourcePageId) {
     properties.SourceLinks = { rich_text: [{ text: { content: String(sourcePageId) } }] };
@@ -309,37 +320,40 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
 async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
-  const tags = Array.isArray(item.tags) ? item.tags.join(", ") : item.category || "活動";
+  const normalizedTags = normalizeTags(item.tags);
+  const tags = normalizedTags.length
+    ? normalizedTags.join(", ")
+    : [cleanText(item.category) || "活動", cleanText(item.area), cleanText(citySlug)].filter(Boolean).join(", ");
 
-  const mapQuery = encodeURIComponent(`${item.venue_name || item.name} ${cityLabel}`);
-  const mapUrl = item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+  const mapQuery = encodeURIComponent(joinClean([item.venue_name || item.name, item.area, cityLabel], " "));
+  const mapUrl = cleanText(item.map_url) || (mapQuery ? `https://www.google.com/maps/search/?api=1&query=${mapQuery}` : null);
 
-  const lat = typeof item.lat === "number" && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
-  const lng = typeof item.lng === "number" && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
+  const lat = Number.isFinite(item?.lat) && Math.abs(item.lat) <= 90 && item.lat !== 0 ? item.lat : null;
+  const lng = Number.isFinite(item?.lng) && Math.abs(item.lng) <= 180 && item.lng !== 0 ? item.lng : null;
 
   const properties = {
-    Name:          { title: [{ text: { content: String(item.name || "未命名活動").slice(0, 200) } }] },
-    Area:          { rich_text: [{ text: { content: String(item.area || cityLabel) } }] },
-    Category:      { select: { name: String(item.category || "活動") } },
-    City:          { rich_text: [{ text: { content: cityLabel } }] },
-    CitySlug:      { rich_text: [{ text: { content: String(citySlug || "") } }] },
-    Description:   { rich_text: [{ text: { content: String(item.description || `${cityLabel}的${item.category || "活動"}，詳情請洽官網。`).slice(0, 2000) } }] },
-    EndTimeText:   { rich_text: [{ text: { content: String(item.end_time || "") } }] },
+    Name:          { title: [{ text: { content: cleanText(item.name || "未命名活動").slice(0, 200) } }] },
+    Area:          { rich_text: [{ text: { content: cleanText(item.area || cityLabel) } }] },
+    Category:      { select: { name: cleanText(item.category || "活動") } },
+    City:          { rich_text: [{ text: { content: cleanText(cityLabel) } }] },
+    CitySlug:      { rich_text: [{ text: { content: cleanText(citySlug) } }] },
+    Description:   { rich_text: [{ text: { content: cleanText(item.description).slice(0, 2000) } }] },
+    EndTimeText:   { rich_text: [{ text: { content: cleanText(item.end_time) } }] },
     EndsOn:        item.ends_on ? { date: { start: String(item.ends_on) } } : { date: null },
-    Lat:           { number: lat },
-    Lng:           { number: lng },
     MapUrl:        { url: mapUrl || null },
-    OfficialUrl:   { url: String(item.official_url || sourceUrl || "") || null },
-    PriceNote:     { rich_text: [{ text: { content: String(item.price_note || "請洽官網") } }] },
+    OfficialUrl:   { url: cleanText(item.official_url || sourceUrl) || null },
+    PriceNote:     { rich_text: [{ text: { content: cleanText(item.price_note) } }] },
     Published:     { checkbox: true },
     RecurringType: { select: { name: "一次性" } },
-    StartTimeText: { rich_text: [{ text: { content: String(item.start_time || "") } }] },
+    StartTimeText: { rich_text: [{ text: { content: cleanText(item.start_time) } }] },
     StartsOn:      item.starts_on ? { date: { start: String(item.starts_on) } } : { date: null },
     Status:        { select: { name: "待整理" } },
     Tags:          { rich_text: [{ text: { content: tags } }] },
-    TicketType:    { rich_text: [{ text: { content: String(item.ticket_type || "請洽官網") } }] },
-    VenueName:     { rich_text: [{ text: { content: String(item.venue_name || item.name || "") } }] },
+    TicketType:    { rich_text: [{ text: { content: cleanText(item.ticket_type) } }] },
+    VenueName:     { rich_text: [{ text: { content: cleanText(item.venue_name || item.name) } }] },
   };
+  if (lat !== null) properties.Lat = { number: lat };
+  if (lng !== null) properties.Lng = { number: lng };
 
   if (sourcePageId) {
     properties.SourceLinks = { rich_text: [{ text: { content: String(sourcePageId) } }] };
@@ -351,25 +365,6 @@ async function createEventPage({ env, item, citySlug, sourceUrl, sourcePageId, s
   });
 }
 
-// ── 智慧預設值 ─────────────────────────────────────────────
-function guessBestTime(category) {
-  const map = {
-    餐廳: "晚上", 小吃: "下午", 咖啡: "下午", 甜點: "下午",
-    景點: "下午", 逛街: "下午", 寺社: "早上", 住宿: "下午",
-    博物館: "下午", 夜市: "晚上", 活動: "下午",
-  };
-  return map[category] || "下午";
-}
-
-function guessStayMinutes(category) {
-  const map = {
-    餐廳: 75, 小吃: 30, 咖啡: 60, 甜點: 45,
-    景點: 60, 逛街: 90, 寺社: 40, 住宿: 60,
-    博物館: 120, 夜市: 90, 活動: 120,
-  };
-  return map[category] || 60;
-}
-
 function guessThumbnail(category) {
   const map = {
     餐廳: "🍽️", 小吃: "🍢", 咖啡: "☕", 甜點: "🍰",
@@ -377,6 +372,43 @@ function guessThumbnail(category) {
     博物館: "🏛️", 夜市: "🏮", 活動: "🎫",
   };
   return map[category] || "📍";
+}
+
+function cleanText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function joinClean(values, sep = " ") {
+  return values.map((v) => cleanText(v)).filter(Boolean).join(sep).trim();
+}
+
+function normalizeTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  return tags.map((t) => cleanText(t)).filter(Boolean).slice(0, 20);
+}
+
+function normalizeItemKind(item, fallback) {
+  const value = cleanText(item?.itemKind || item?.item_kind || fallback);
+  if (value === "event" || value === "spot" || value === "source_only") return value;
+  if (value === "mixed") return "source_only";
+  return fallback === "event" ? "event" : "spot";
+}
+
+function buildItemNotes(item) {
+  const parts = [];
+  const reason = cleanText(item?.reason);
+  const reviewReason = cleanText(item?.reviewReason || item?.review_reason);
+  if (reason) parts.push(`reason: ${reason}`);
+  if (reviewReason) parts.push(`review: ${reviewReason}`);
+  if (Array.isArray(item?.evidence) && item.evidence.length) {
+    const evidenceText = item.evidence
+      .map((e) => cleanText(typeof e === "string" ? e : e?.value || e?.text))
+      .filter(Boolean)
+      .slice(0, 6)
+      .join(" | ");
+    if (evidenceText) parts.push(`evidence: ${evidenceText}`);
+  }
+  return parts.join(" || ").slice(0, 2000);
 }
 
 // ── Notion API ─────────────────────────────────────────────

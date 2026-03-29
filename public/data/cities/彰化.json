@@ -1,23 +1,19 @@
 {
   "city": {
-    "slug": "seoul",
-    "label": "首爾",
-    "emoji": "🇰🇷",
-    "region": "韓國",
-    "description": "韓流文化發源地，美食、購物與歷史景點密集。",
+    "slug": "彰化",
+    "label": "彰化",
+    "emoji": "📍",
+    "region": "其他",
+    "description": "",
     "status": "active",
-    "spotlight": [
-      "美食",
-      "購物",
-      "文化"
-    ],
-    "heroArea": "明洞／弘大"
+    "spotlight": [],
+    "heroArea": ""
   },
   "spots": [],
   "events": [],
   "sources": [],
   "meta": {
-    "lastSyncedAt": "2026-03-29T03:44:29.824Z",
+    "lastSyncedAt": "2026-03-28T18:13:09.947Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
