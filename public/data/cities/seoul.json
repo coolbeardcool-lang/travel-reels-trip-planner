@@ -124,6 +124,35 @@
       "notes": "reason: Derived from source text segment only."
     },
     {
+      "id": "33224c5d-f0b3-81f1-8001-ea4ffc161927",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "Mapo-gu",
+      "name": "우화 홍대 한우 맛집 | 牛火",
+      "category": "餐廳",
+      "description": "主打1++等級的韓牛，油花漂亮，肉質軟嫩多汁，提供代烤服務。",
+      "sourceId": "33224c5d-f0b3-81cb-baf9-cb418dc410b1",
+      "sourceTitle": "首爾・弘大區的韓牛餐廳介紹",
+      "sourceUrl": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "韓國美食",
+        "弘大美食",
+        "首爾燒肉",
+        "韓牛"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9A%B0%ED%99%94%20%ED%99%8D%EB%8C%80%20%ED%95%9C%EC%9A%B0%20%EB%A7%9B%EC%A7%91%20%7C%20%E7%89%9B%E7%81%AB%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 介紹了一家值得一試的韓牛餐廳"
+    },
+    {
       "id": "33224c5d-f0b3-81a8-8599-d83ad6163288",
       "city": "首爾",
       "citySlug": "seoul",
@@ -155,6 +184,31 @@
   ],
   "events": [],
   "sources": [
+    {
+      "id": "33224c5d-f0b3-81cb-baf9-cb418dc410b1",
+      "title": "首爾・弘大區的韓牛餐廳介紹",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "弘大區的韓牛餐廳介紹",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        [
+          "seoul"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-81f1-8001-ea4ffc161927"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
     {
       "id": "33224c5d-f0b3-8152-b354-f3778742d994",
       "title": "Instagram 景點・首爾",
@@ -210,10 +264,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T09:54:47.780Z",
+    "lastSyncedAt": "2026-03-29T09:58:51.461Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 5
+    "count": 6
   }
 }
