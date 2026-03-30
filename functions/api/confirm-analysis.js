@@ -294,6 +294,7 @@ async function createSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
     Category:         { rich_text: [{ text: { content: cleanText(item.category || "待分類") } }] },
     City:             { select: { name: cityLabel || "未分類" } },
     CitySlug:         { select: { name: String(citySlug || "未分類") } },
+    Confidence:       { select: { name: "推定" } },
     Description:      { rich_text: [{ text: { content: cleanText(item.description).slice(0, 2000) } }] },
     MapUrl:           { url: mapUrl || null },
     Notes:            { rich_text: [{ text: { content: buildItemNotes(item) } }] },
