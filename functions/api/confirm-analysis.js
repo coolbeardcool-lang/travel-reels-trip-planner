@@ -3,6 +3,68 @@ import { CITY_SLUG_MAP } from "../../src/utils/citySlugMap.js";
 
 const NOTION_VERSION = "2025-09-03";
 
+// Nominatim 使用政策：需帶 User-Agent，最多 1 req/sec
+const NOMINATIM_USER_AGENT = "TravelReelsTripPlanner/1.0 (https://travel-reels-trip-planner.pages.dev)";
+
+// citySlug → ISO 3166-1 alpha-2，讓 Nominatim 優先搜同國結果
+const CITY_COUNTRY_CODES = {
+  kyoto: "jp", osaka: "jp", tokyo: "jp", nara: "jp",
+  fukuoka: "jp", hokkaido: "jp", okinawa: "jp",
+  taipei: "tw", taichung: "tw", tainan: "tw", kaohsiung: "tw",
+  seoul: "kr", busan: "kr",
+};
+
+// 1 秒延遲，遵守 Nominatim 使用限制
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * 用景點名稱 + 城市向 Nominatim 查詢座標
+ * 回傳 { lat, lng } 或 null（失敗時不中斷主流程）
+ */
+async function geocodeWithNominatim(name, area, citySlug, cityLabel) {
+  try {
+    const countryCode = CITY_COUNTRY_CODES[citySlug] || null;
+    // 組合查詢字串：景點名 + 區域 + 城市，越精確越好
+    const queryParts = [name, area, cityLabel].filter(Boolean);
+    const q = encodeURIComponent(queryParts.join(", "));
+
+    const params = new URLSearchParams({
+      q: queryParts.join(", "),
+      format: "json",
+      limit: "1",
+      "accept-language": "zh,en",
+    });
+    if (countryCode) params.set("countrycodes", countryCode);
+
+    // 用城市中心座標設定 viewbox（±0.5 度範圍），提升結果準確度
+    const cityData = CITY_DATA_MAP[citySlug];
+    if (cityData?.lat && cityData?.lng) {
+      const d = 0.5;
+      params.set("viewbox", `${cityData.lng - d},${cityData.lat + d},${cityData.lng + d},${cityData.lat - d}`);
+      params.set("bounded", "0"); // 0 = viewbox 只是偏好，不強制限制
+    }
+
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+      { headers: { "User-Agent": NOMINATIM_USER_AGENT } }
+    );
+
+    if (!resp.ok) return null;
+    const results = await resp.json();
+    if (!Array.isArray(results) || results.length === 0) return null;
+
+    const { lat, lon } = results[0];
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lon);
+    if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) return null;
+    return { lat: parsedLat, lng: parsedLng };
+  } catch {
+    return null; // geocoding 失敗不中斷寫入流程
+  }
+}
+
 const CITY_DATA_MAP = {
   tokyo:     { label: "東京",   emoji: "🗼",  region: "日本", timezone: "Asia/Tokyo",  lat: 35.6762, lng: 139.6503, sort: 10,  heroArea: "新宿／澀谷",    spotlight: "購物,美食,文化",   description: "融合傳統與現代的大都市，購物、美食與文化密度極高。" },
   kyoto:     { label: "京都",   emoji: "⛩️",  region: "關西", timezone: "Asia/Tokyo",  lat: 35.0116, lng: 135.7681, sort: 20,  heroArea: "佛光寺周邊",    spotlight: "寺社,甜點,散步",   description: "寺社、散步、甜點與選物密度高，適合慢節奏安排。" },
@@ -205,6 +267,24 @@ export async function onRequestPost(context) {
     const eventPageIds = [];
     // Per-request dedup cache: avoids repeated Notion queries for same citySlug
     const existingCache = new Map();
+
+    // ── Nominatim Geocoding ────────────────────────────────
+    // 對沒有座標的 item 補查 lat/lng，每次請求間隔 1.1 秒
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const hasCoords = Number.isFinite(item?.lat) && item.lat !== 0
+                     && Number.isFinite(item?.lng) && item.lng !== 0;
+      if (!hasCoords && item?.name) {
+        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "");
+        const cityLabel = CITY_DATA_MAP[itemCitySlug]?.label || itemCitySlug;
+        if (i > 0) await sleep(1100); // 遵守 Nominatim 1 req/sec 限制
+        const geo = await geocodeWithNominatim(item.name, item.area, itemCitySlug, cityLabel);
+        if (geo) {
+          item.lat = geo.lat;
+          item.lng = geo.lng;
+        }
+      }
+    }
 
     if (items.length && (env.NOTION_SPOTS_DATA_SOURCE_ID || env.NOTION_EVENTS_DATA_SOURCE_ID)) {
       let geoCallCount = 0;
