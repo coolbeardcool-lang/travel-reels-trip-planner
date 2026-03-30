@@ -40,7 +40,7 @@ Review based on Han's five core expectations:
 5. Offline via vite-plugin-pwa (one plugin add)
 
 ## Resolved: App.jsx Split
-Previously identified as risk — **already completed**. App.jsx is now 554 lines with components, hooks, utils, services properly separated. No further refactoring needed.
+Previously identified as risk — **already completed**. App.jsx is now ~690 lines with components, hooks, utils, services properly separated. Size increase from 554 is due to new features (clipboard detection, nearby mode, URL queue, optimistic update). No further refactoring needed.
 
 ## Not Doing
 - Redux/Zustand — current useState scale is manageable
