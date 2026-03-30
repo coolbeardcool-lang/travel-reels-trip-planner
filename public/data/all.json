@@ -558,6 +558,27 @@
   ],
   "sources": [
     {
+      "id": "33324c5d-f0b3-81ec-9864-cda68f7243e1",
+      "title": "京都・推薦的京都美食空蝉亭，提供頂級豬肉料理。",
+      "url": "https://www.instagram.com/reel/DWd9zoPk4JH/?igsh=ZnJreTNwemY3NW9s",
+      "platform": "Instagram",
+      "sourceType": "景點美食",
+      "status": "已匯入",
+      "note": "推薦的京都美食空蝉亭，提供頂級豬肉料理。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "kyoto"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
       "id": "33324c5d-f0b3-81e9-b9ef-ebb05d084443",
       "title": "Website 景點・首爾",
       "url": "https://www.threads.com/@staf0951/post/DWd1ylRCaKS",
@@ -998,7 +1019,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-30T08:12:48.987Z",
+    "lastSyncedAt": "2026-03-30T08:31:42.974Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
