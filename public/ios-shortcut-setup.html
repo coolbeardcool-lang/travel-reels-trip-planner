@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>設定 iOS 捷徑 — Travel Reels</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fafaf9; color: #292524; line-height: 1.7; padding: 20px; max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 900; margin-bottom: 8px; }
+  .subtitle { color: #57534e; font-size: 14px; margin-bottom: 24px; }
+  .step { background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 18px; margin-bottom: 14px; }
+  .step-num { display: inline-flex; width: 28px; height: 28px; border-radius: 999px; background: #1c1917; color: #fff; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; margin-right: 10px; flex-shrink: 0; }
+  .step-title { font-weight: 800; font-size: 15px; display: flex; align-items: center; margin-bottom: 8px; }
+  .step-body { font-size: 13px; color: #57534e; padding-left: 38px; }
+  .step-body code { background: #f5f5f4; border: 1px solid #e7e5e4; border-radius: 6px; padding: 2px 6px; font-size: 12px; word-break: break-all; }
+  .note { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 14px; font-size: 13px; color: #1d4ed8; margin-top: 20px; }
+  .open-btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 14px; background: #1c1917; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 20px; text-align: center; text-decoration: none; }
+  .open-btn:active { opacity: 0.8; }
+  .url-box { margin-top: 16px; background: #fff; border: 1px solid #e7e5e4; border-radius: 12px; padding: 12px; }
+  .url-box label { font-size: 12px; color: #57534e; display: block; margin-bottom: 4px; }
+  .url-box input { width: 100%; border: 1px solid #e7e5e4; border-radius: 8px; padding: 10px; font-size: 13px; outline: none; }
+  .copy-btn { margin-top: 8px; padding: 8px 14px; border: 1px solid #e7e5e4; border-radius: 8px; background: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h1>設定 iOS 捷徑</h1>
+<p class="subtitle">讓你在 Instagram / Threads / Facebook 的分享選單中直接將連結送進 Travel Reels</p>
+
+<div class="url-box">
+  <label>你的 Travel Reels 網址（部署後填入）</label>
+  <input type="url" id="appUrl" placeholder="https://your-app.vercel.app" value="">
+  <button class="copy-btn" onclick="copyUrl()">複製完整捷徑 URL</button>
+</div>
+
+<div style="margin-top: 24px;">
+
+<div class="step">
+  <div class="step-title"><span class="step-num">1</span>打開「捷徑」App</div>
+  <div class="step-body">iPhone 內建的「捷徑」App（Shortcuts），在主畫面搜尋即可找到。</div>
+</div>
+
+<div class="step">
+  <div class="step-title"><span class="step-num">2</span>新增捷徑</div>
+  <div class="step-body">點右上角「+」→ 點「加入動作」。</div>
+</div>
+
+<div class="step">
+  <div class="step-title"><span class="step-num">3</span>設定「分享表單」輸入</div>
+  <div class="step-body">
+    點最上方的捷徑名稱 → 選「在分享表單中顯示」開啟。<br>
+    接收項目類型選：<strong>URL</strong>。
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-title"><span class="step-num">4</span>加入「打開 URL」動作</div>
+  <div class="step-body">
+    搜尋「打開 URL」（Open URLs）動作並加入。<br>
+    在 URL 欄位輸入：<br>
+    <code id="shortcutUrl">https://your-app.vercel.app/?url=</code><br>
+    然後點擊 URL 欄位末尾，插入「捷徑輸入」（Shortcut Input）變數。<br><br>
+    最終格式為：<code>https://your-app.vercel.app/?url=[捷徑輸入]</code>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-title"><span class="step-num">5</span>命名並儲存</div>
+  <div class="step-body">
+    將捷徑命名為「<strong>加到旅行地圖</strong>」（或任何你喜歡的名字）→ 點「完成」。
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-title"><span class="step-num">6</span>使用方式</div>
+  <div class="step-body">
+    在 Instagram / Threads / Facebook 看到想存的內容 → 點「分享」→ 滑到下方選「加到旅行地圖」→ 自動開啟 APP 並帶入連結！
+  </div>
+</div>
+
+</div>
+
+<div class="note">
+  <strong>提示：</strong>第一次使用時，iOS 可能會詢問是否允許捷徑打開網址，請選「允許」。之後就會直接跳轉，不再詢問。
+</div>
+
+<a class="open-btn" href="shortcuts://create-shortcut" id="openShortcuts">
+  打開「捷徑」App
+</a>
+
+<script>
+const urlInput = document.getElementById('appUrl');
+const shortcutUrlEl = document.getElementById('shortcutUrl');
+
+urlInput.addEventListener('input', () => {
+  const base = urlInput.value.replace(/\/+$/, '');
+  shortcutUrlEl.textContent = base ? `${base}/?url=` : 'https://your-app.vercel.app/?url=';
+});
+
+function copyUrl() {
+  const base = urlInput.value.replace(/\/+$/, '') || 'https://your-app.vercel.app';
+  const url = `${base}/?url=`;
+  navigator.clipboard.writeText(url).then(() => {
+    alert('已複製！在捷徑 App 中貼上即可。');
+  }).catch(() => {
+    window.prompt('複製以下網址：', url);
+  });
+}
+</script>
+
+</body>
+</html>

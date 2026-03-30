@@ -555,12 +555,18 @@ export default function App() {
               從 Reels 收集靈感，規劃你的旅行行程
             </p>
           </div>
-          {(globalStats.spots > 0 || globalStats.events > 0) && (
-            <div style={{ display: "flex", gap: 12, fontSize: 13, color: COLORS.subtext }}>
-              <span>🗺 {globalStats.spots} 個景點</span>
-              <span>🎫 {globalStats.events} 個活動</span>
-            </div>
-          )}
+          <div style={{ display: "flex", gap: 12, fontSize: 13, color: COLORS.subtext, alignItems: "center", flexWrap: "wrap" }}>
+            {(globalStats.spots > 0 || globalStats.events > 0) && (
+              <>
+                <span>🗺 {globalStats.spots} 個景點</span>
+                <span>🎫 {globalStats.events} 個活動</span>
+              </>
+            )}
+            <a href="/ios-shortcut-setup.html" target="_blank" rel="noreferrer"
+              style={{ fontSize: 12, color: COLORS.subtext, textDecoration: "none", opacity: 0.7 }}>
+              iPhone 捷徑設定
+            </a>
+          </div>
         </div>
 
         {/* 剪貼簿偵測提示 */}

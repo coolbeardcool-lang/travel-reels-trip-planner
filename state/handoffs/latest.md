@@ -1,7 +1,7 @@
 # Handoff State
 
 ## Task
-Architecture review + all 5 improvements implemented
+Architecture review + all improvements + iOS Shortcut setup page
 
 ## Completed
 - [x] Architecture review: 5 risks + 5 improvements (ADR-001)
@@ -11,44 +11,23 @@ Architecture review + all 5 improvements implemented
 - [x] Nearby mode: "I'm here" button with radius filter in MapSection
 - [x] Offline: vite-plugin-pwa with SW, city data + map tile caching
 - [x] URL queue: "稍後分析" saves URL, queue shown in panel
-- [x] Quick-access notes updated
+- [x] iOS Shortcut setup page: public/ios-shortcut-setup.html + link in header
+- [x] Quick-access notes updated (app-jsx.md reflects ~690 lines)
+- [x] ADR-001 updated (line count corrected)
 - [x] All tests pass (93/93)
 
 ## In Progress
 - None
 
 ## Pending
-- None for this iteration
-
-## Decisions Made
-- Optimistic update uses frontend preview data (no backend change)
-- Nearby mode reuses existing geo.js haversineKm
-- Offline via vite-plugin-pwa (auto SW, no manual SW)
-- URL queue persisted in localStorage
-- Geocoding: limit=3 + pick result closest to city center
-- AI prompt: lowered coordinate threshold (fill when reasonably inferrable)
-
-## Blockers
 - None
 
-## Needs Human Input
-- No
-
-## Files Touched
-- docs/decisions/001-architecture-review.md (new)
-- docs/quick-access/app-jsx.md (rewritten)
-- docs/quick-access/ai-prompt-contract.md (updated coordinates rule)
-- src/App.jsx (clipboard detect, nearby mode, URL queue, optimistic update)
-- src/components/MapSection.jsx (nearby UI, optimistic badge, distance display)
-- src/components/RoutePlannerSection.jsx (optimistic badge)
-- src/components/UrlAnalyzerPanel.jsx (queue UI, "稍後分析" button)
-- src/utils/geo.js (nearbyItems function)
-- functions/api/analyze-url.js (broadened coordinate prompt)
-- functions/api/confirm-analysis.js (Nominatim limit=3, city param, best-pick)
-- vite.config.js (VitePWA plugin)
-- package.json (vite-plugin-pwa devDep)
+## Files Touched (this session)
+- public/ios-shortcut-setup.html (new)
+- src/App.jsx (shortcut link in header)
+- docs/quick-access/app-jsx.md (rewritten, ~690 lines)
+- docs/decisions/001-architecture-review.md (line count fix)
 - state/handoffs/latest.md (updated)
 
 ## Next Best Step
-- Manual testing on iPhone (clipboard detect, nearby mode, offline)
-- Consider iOS Shortcut creation for deeper share integration
+- Deploy and test on iPhone (clipboard detect, shortcut setup, nearby mode, offline)
