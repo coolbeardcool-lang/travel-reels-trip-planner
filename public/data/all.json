@@ -135,8 +135,8 @@
         "羊肉",
         "餐廳"
       ],
-      "lat": 0,
-      "lng": 0,
+      "lat": 24.0251659,
+      "lng": 120.5386078,
       "confidence": "推定",
       "thumbnail": "🍽️",
       "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E9%98%BF%E4%BE%86%E7%BE%8A%E8%82%89%20%E5%BD%B0%E5%8C%96",
@@ -977,7 +977,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-30T00:19:11.958Z",
+    "lastSyncedAt": "2026-03-30T00:36:57.722Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
