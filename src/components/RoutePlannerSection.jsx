@@ -87,7 +87,9 @@ export function RoutePlannerSection({
                       <div style={{ width: 30, height: 30, borderRadius: 999, background: COLORS.primary, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, flexShrink: 0 }}>{item.order}</div>
                       <span style={{ fontSize: 22 }}>{item.thumbnail}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 800, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+                        <div style={{ fontWeight: 800, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {item.name}{item._optimistic && <span style={{ marginLeft: 4, fontSize: 10, color: COLORS.subtext, fontWeight: 400 }}>同步中</span>}
+                        </div>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4, alignItems: "center" }}>
                           <span style={chipStyle(item.category)}>{item.category}</span>
                           <span style={{ fontSize: 12, color: COLORS.subtext }}>{item.bestTime}・⏱ {item.stayMinutes} 分</span>

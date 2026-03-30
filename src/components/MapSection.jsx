@@ -98,9 +98,11 @@ export function MapSection({
                       onChange={(e) => { e.stopPropagation(); toggleItemVisible(item.id); }}
                       onClick={(e) => e.stopPropagation()}
                       style={{ cursor: "pointer", width: 15, height: 15, flexShrink: 0 }} />
-                    <span style={{ fontSize: 20, flexShrink: 0 }}>{item.thumbnail}</span>
+                    <span style={{ fontSize: 20, flexShrink: 0, opacity: item._optimistic ? 0.5 : 1 }}>{item.thumbnail}</span>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: active ? 800 : 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? COLORS.primary : checked ? COLORS.text : COLORS.subtext }}>{item.name}</div>
+                      <div style={{ fontWeight: active ? 800 : 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? COLORS.primary : checked ? COLORS.text : COLORS.subtext }}>
+                        {item.name}{item._optimistic && <span style={{ marginLeft: 4, fontSize: 10, color: COLORS.subtext, fontWeight: 400 }}>同步中</span>}
+                      </div>
                       <div style={{ fontSize: 11, color: COLORS.subtext }}>{item.area}</div>
                     </div>
                   </div>
@@ -156,7 +158,11 @@ export function MapSection({
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
                           <span style={chipStyle(item.category)}>{item.category}</span>
                           <span style={{ borderRadius: 999, border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11 }}>{item.bestTime}</span>
-                          {item.confidence && (
+                          {item._optimistic ? (
+                            <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: "#e0f2fe", color: "#0369a1" }}>
+                              同步中
+                            </span>
+                          ) : item.confidence && (
                             <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: item.confidence === "已確認" ? "#dcfce7" : "#fef9c3", color: item.confidence === "已確認" ? "#15803d" : "#92400e" }}>
                               {item.confidence === "已確認" ? "🟢 已確認" : "🟡 推定"}
                             </span>

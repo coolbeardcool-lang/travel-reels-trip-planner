@@ -406,6 +406,46 @@ export default function App() {
         });
       }
       setWriteOverlay({ status: "syncing", dispatched: Boolean(payload.dispatched), submittedItems: selectedItems, result: payload });
+
+      // Optimistic update: inject confirmed items into loaded data immediately
+      // so Han can see them on the map without waiting for 90s GitHub Actions sync.
+      // These are replaced by real data when reloadKey triggers fetchCityDataset.
+      if (selectedItems.length && analysisPreview.citySlug === selectedCitySlug) {
+        const ts = Date.now();
+        const optimisticSpots = [];
+        const optimisticEvents = [];
+        selectedItems.forEach((item, i) => {
+          const base = {
+            id: `_opt_${ts}_${i}`,
+            name: item.name || "未命名",
+            city: selectedCity?.label || "",
+            citySlug: analysisPreview.citySlug,
+            area: item.area || "",
+            category: item.category || "景點",
+            description: item.description || "",
+            tags: Array.isArray(item.tags) ? item.tags : [],
+            thumbnail: item.thumbnail || "",
+            bestTime: item.best_time || "下午",
+            stayMinutes: item.stay_minutes || 30,
+            lat: 0,
+            lng: 0,
+            confidence: "推定",
+            mapUrl: "",
+            sourceId: "",
+            sourceTitle: analysisPreview.sourceTitle || "",
+            sourceUrl: submitUrl.trim(),
+            _optimistic: true,
+          };
+          if (item.itemKind === "event") {
+            optimisticEvents.push({ ...base, startsOn: item.starts_on || null, endsOn: item.ends_on || null, startTime: "", endTime: "", ticketType: "", priceNote: "" });
+          } else {
+            optimisticSpots.push({ ...base, priorityScore: 0, notes: "" });
+          }
+        });
+        if (optimisticSpots.length) setLoadedSpots((prev) => [...prev, ...optimisticSpots]);
+        if (optimisticEvents.length) setLoadedEvents((prev) => [...prev, ...optimisticEvents]);
+      }
+
       resetSubmitForm();
     } catch (error) {
       setSubmitStatus({ kind: "error", message: error instanceof Error ? error.message : "寫入失敗。" });
