@@ -386,6 +386,8 @@ async function updateSourceRelations(env, sourcePageId, spotIds, eventIds, cityS
 
 // ── 自動確保城市存在 ───────────────────────────────────────
 async function ensureCityExists(env, citySlug) {
+  // 防禦：確保進入此函式前 slug 已正規化（避免中文 slug 被寫入 Notion）
+  citySlug = normalizeCitySlug(citySlug) || citySlug;
   try {
     // 查詢用 database ID（NOTION_CITIES_READ_ID）
     const res = await fetch(

@@ -33,6 +33,21 @@ Rules:
   (it reflects the latest Notion state) UNLESS the conflict involves a deliberate local fix
   that has not yet been synced back to Notion
 
+## Cities Duplicate Prevention
+Cities is a reference table but is still subject to duplicates. Known failure mode:
+
+- `ensureCityExists` receives an un-normalized slug (e.g. `大阪` instead of `osaka`)
+- `CITY_DATA_MAP["大阪"]` is undefined → fallback city is created with lat=0, lng=0, SortOrder=9999
+- The sync script then emits a ghost city entry
+
+Rules:
+- `ensureCityExists` must call `normalizeCitySlug()` on its input as the first line (defense in depth)
+- Any new write path that creates a City record must also normalize the slug first
+- DBA review must include a full Cities dedup check (Name × Slug) — not just Spots and Events
+
+Detection query: look for Cities records where `Slug` matches `CITY_SLUG_MAP` values but Name is duplicated,
+OR where `DefaultMapLat = 0` (indicator of a fallback/garbage record).
+
 ## Dedup and Upsert Consistency
 When adding a new write path (new endpoint, new script) that creates Spot or Event records:
 - It must use the same `findExistingRecord` + merge pattern as `confirm-analysis.js`
