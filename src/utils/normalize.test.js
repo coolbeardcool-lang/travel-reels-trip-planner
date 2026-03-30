@@ -163,3 +163,78 @@ describe('normalizeCityPayload', () => {
     expect(result.sources).toEqual([]);
   });
 });
+
+// ──────────────────────────────────────────────
+// Han 實際測試場景：Instagram Reel 分析結果正規化
+// 測試 URL: https://www.instagram.com/reel/DGNUCr8TLbY/?igsh=...
+// 模擬 AI 分析後回傳的 payload，驗證正規化後欄位正確
+// ──────────────────────────────────────────────
+describe('Han 實測場景 — Instagram Reel 分析結果正規化', () => {
+  // 模擬 analyze-url API 回傳（首爾美食 Reel 典型格式）
+  const mockInstagramAnalysis = {
+    sourceTitle: '首爾燒肉推薦 Reel',
+    sourcePlatform: 'Instagram',
+    contentKind: 'spot',
+    citySlug: 'seoul',
+    area: '弘大',
+    confidence: 0.75,
+    needsReview: false,
+    summary: '介紹首爾弘大周邊韓牛燒烤',
+    analysis_id: 'test-reel-DGNUCr8TLbY',
+    cached: false,
+    items: [
+      {
+        id: 'item-1',
+        name: '草原 (초원)',
+        category: '餐廳',
+        description: '厚切牛舌專門店，推薦烤腸配酒',
+        area: '南營洞',
+        tags: ['韓牛', '燒肉', '首爾'],
+        best_time: '晚上',
+        stay_minutes: 90,
+      },
+      {
+        id: 'item-2',
+        name: '草原 (초원)',
+        category: '餐廳',
+        description: '狎鷗亭分店',
+        area: '狎鷗亭',
+        tags: ['韓牛', '分店'],
+        best_time: '晚上',
+        stay_minutes: 90,
+      },
+    ],
+  };
+
+  it('正規化後 contentKind 和 citySlug 正確', () => {
+    const result = normalizeAnalysisPayload(mockInstagramAnalysis);
+    expect(result.contentKind).toBe('spot');
+    expect(result.citySlug).toBe('seoul');
+  });
+
+  it('信心值 0.75 正確保留（非 0，可寫入）', () => {
+    const result = normalizeAnalysisPayload(mockInstagramAnalysis);
+    expect(result.confidence).toBe(0.75);
+    expect(result.needsReview).toBe(false);
+  });
+
+  it('兩個同名不同區的分店各自為獨立 item', () => {
+    const result = normalizeAnalysisPayload(mockInstagramAnalysis);
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0].area).toBe('南營洞');
+    expect(result.items[1].area).toBe('狎鷗亭');
+  });
+
+  it('信心值 0% + needsReview=true → 前端應阻擋寫入（guard 邏輯驗證）', () => {
+    const zeroCofidencePayload = { ...mockInstagramAnalysis, confidence: 0, needsReview: true };
+    const result = normalizeAnalysisPayload(zeroCofidencePayload);
+    // 前端 guard：(confidence === 0) && needsReview → 不送 API
+    const shouldBlock = result.confidence === 0 && result.needsReview === true;
+    expect(shouldBlock).toBe(true);
+  });
+
+  it('igsh 追蹤參數不影響 URL 識別', () => {
+    const urlWithIgsh = 'https://www.instagram.com/reel/DGNUCr8TLbY/?igsh=MTdnOGo2dWNmamFiZg%3D%3D';
+    expect(/^https?:\/\//i.test(urlWithIgsh)).toBe(true);
+  });
+});

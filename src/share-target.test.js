@@ -111,8 +111,12 @@ describe('Web Share Target URL 參數解析', () => {
 describe('社群平台網址格式支援', () => {
   const platforms = [
     ['Instagram Reel', 'https://www.instagram.com/reel/CxYZabc123/'],
+    // Han 實際測試用的 Reel（含 igsh 追蹤參數）
+    ['Instagram Reel + igsh 追蹤參數', 'https://www.instagram.com/reel/DGNUCr8TLbY/?igsh=MTdnOGo2dWNmamFiZg%3D%3D'],
     ['Instagram 貼文', 'https://www.instagram.com/p/CxYZabc123/'],
     ['Threads', 'https://www.threads.net/@user/post/abc123'],
+    // Han 實際測試 Threads 長網址（含 xmt 追蹤參數）
+    ['Threads + xmt 追蹤參數', 'https://www.threads.com/@whc_photography/post/DWafIpCERVQ?xmt=AQF0KoEzr6qBUS3boz1vVpYM9hvXXQ9KKwLABmqXR2p9RY5Y_l4Cbt6Z3tGDdumZepI9KlHK&slof=1'],
     ['Facebook 影片', 'https://www.facebook.com/reel/123456789'],
     ['Facebook 貼文', 'https://www.facebook.com/photo?fbid=123'],
     ['一般網址', 'https://tabelog.com/kyoto/A2601/A260101/26001234/'],
