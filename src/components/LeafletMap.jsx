@@ -13,6 +13,13 @@ export function LeafletMap({ items, visibleIds, activeItemId, onSelectItem }) {
       link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
       document.head.appendChild(link);
     }
+    // 將 Leaflet controls z-index 降至 500，避免蓋過浮動分析面板（z-index:1000）
+    if (!document.getElementById("leaflet-zfix")) {
+      const style = document.createElement("style");
+      style.id = "leaflet-zfix";
+      style.textContent = ".leaflet-top, .leaflet-bottom { z-index: 500 !important; }";
+      document.head.appendChild(style);
+    }
     function init() {
       if (!containerRef.current || mapRef.current) return;
       const L = window.L;

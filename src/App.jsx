@@ -360,6 +360,9 @@ export default function App() {
   async function handleConfirmAnalysis() {
     if (!analysisPreview) { setSubmitStatus({ kind: "error", message: "目前沒有可確認寫入的分析結果。" }); return; }
     if (!analysisPreview.citySlug) { setSubmitStatus({ kind: "error", message: "請先確認城市（citySlug 不可為空），再寫入資料庫。" }); return; }
+    if ((analysisPreview.confidence || 0) === 0 && analysisPreview.needsReview) {
+      setSubmitStatus({ kind: "error", message: "信心值為 0%，請手動補充城市或類型提示後重新分析，再寫入資料庫。" }); return;
+    }
     const selectedItems = analysisPreview.items.filter((i) => selectedAnalysisItemIds.has(i.id));
     if (selectedItems.length === 0 && analysisPreview.contentKind !== "source_only") {
       setSubmitStatus({ kind: "error", message: "請至少選取一個項目後再寫入。" }); return;
@@ -472,7 +475,7 @@ export default function App() {
             submitStatusStyle={submitStatusStyle}
             onAnalyze={handleAnalyzeUrl}
             onConfirm={handleConfirmAnalysis}
-            onClose={{ open: () => setInputExpanded(true), close: () => { setInputExpanded(false); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); } }}
+            onClose={{ open: () => setInputExpanded(true), close: () => { setInputExpanded(false); setSubmitUrl(""); setSubmitTitle(""); setSubmitNotes(""); setSubmitType("auto"); setSubmitCitySlug(""); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); } }}
             selectedItems={[...selectedAnalysisItemIds]} setSelectedItems={(updater) => setSelectedAnalysisItemIds((prev) => new Set(typeof updater === "function" ? updater([...prev]) : updater))}
           />
         </div>
