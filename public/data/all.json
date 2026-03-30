@@ -232,6 +232,34 @@
       "notes": "reason: 活動旨在讓遊客探索京都的隱藏魅力。"
     },
     {
+      "id": "33324c5d-f0b3-810a-aab5-ed0d847c0e27",
+      "city": "京都",
+      "citySlug": "kyoto",
+      "area": "上京區",
+      "name": "空蝉亭",
+      "category": "餐廳",
+      "description": "提供頂級品種的豬肉料理，包括林SPF豬肉和金華豬，特別推薦菲力。",
+      "sourceId": "33324c5d-f0b3-81c8-b6ed-e7a78c68c353",
+      "sourceTitle": "京都・推薦的京都美食空蝉亭，提供頂級豬肉料理。",
+      "sourceUrl": "https://www.instagram.com/reel/DWd9zoPk4JH/?igsh=ZnJreTNwemY3NW9s",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "日本美食",
+        "京都美食",
+        "炸豬排"
+      ],
+      "lat": 35.0116,
+      "lng": 135.7681,
+      "confidence": "推定",
+      "thumbnail": "🥩",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E7%A9%BA%E8%9D%89%E4%BA%AD%20%E4%BA%AC%E9%83%BD",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 推薦的餐廳，提供高品質的豬肉料理。"
+    },
+    {
       "id": "33124c5d-f0b3-8172-88d1-d7178f17aea9",
       "city": "京都",
       "citySlug": "kyoto",
@@ -557,6 +585,31 @@
     }
   ],
   "sources": [
+    {
+      "id": "33324c5d-f0b3-81c8-b6ed-e7a78c68c353",
+      "title": "京都・推薦的京都美食空蝉亭，提供頂級豬肉料理。",
+      "url": "https://www.instagram.com/reel/DWd9zoPk4JH/?igsh=ZnJreTNwemY3NW9s",
+      "platform": "Instagram",
+      "sourceType": "景點美食",
+      "status": "已匯入",
+      "note": "推薦的京都美食空蝉亭，提供頂級豬肉料理。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "kyoto"
+      ],
+      "relatedCityIds": [
+        [
+          "kyoto"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33324c5d-f0b3-810a-aab5-ed0d847c0e27"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
     {
       "id": "33324c5d-f0b3-81ec-9864-cda68f7243e1",
       "title": "京都・推薦的京都美食空蝉亭，提供頂級豬肉料理。",
@@ -1019,10 +1072,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-30T08:32:57.027Z",
+    "lastSyncedAt": "2026-03-30T09:55:40.612Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 19
+    "count": 20
   }
 }
