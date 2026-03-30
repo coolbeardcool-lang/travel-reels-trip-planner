@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "generate:city-aliases": "node scripts/generate-city-aliases.mjs",
+    "geocode:missing": "node scripts/geocode-missing.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
