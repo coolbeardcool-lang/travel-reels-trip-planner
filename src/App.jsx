@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { BASE_URL, COLORS, CATEGORY_THEME, ANALYZE_API_PATH, CONFIRM_ANALYSIS_API_PATH, CONTENT_MODES, ANALYZE_TYPE_OPTIONS, Z } from "./config/theme.js";
 import { normalizeCitySlugValue, normalizeAnalysisPayload } from "./utils/normalize.js";
-import { distanceScore, estimateTransport, buildRecommendation } from "./utils/geo.js";
+import { distanceScore, estimateTransport, buildRecommendation, nearbyItems } from "./utils/geo.js";
 import { formatEventWindow, prettyAnalysisKind } from "./utils/format.js";
 import { fetchCityIndex, fetchCityIndexMeta, fetchCityDataset, cityIndexPath } from "./services/cityApi.js";
 import { useResponsiveColumns } from "./hooks/useResponsiveColumns.js";
@@ -63,6 +63,13 @@ export default function App() {
   const [userLocation, setUserLocation] = useState(null);
   const [locating, setLocating] = useState(false);
   const [mapViewTab, setMapViewTab] = useState("list");
+  const [nearbyMode, setNearbyMode] = useState(false);
+  const [nearbyRadius, setNearbyRadius] = useState(2); // km
+
+  const [clipboardPrompt, setClipboardPrompt] = useState(null);
+  const [urlQueue, setUrlQueue] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("trt:urlQueue") || "[]"); } catch { return []; }
+  });
 
   const hasCitySelected = selectedCitySlug !== "unselected";
 
@@ -89,6 +96,28 @@ export default function App() {
       if (spotsParam) setPendingRouteIds({ ids: spotsParam.split(","), order: orderParam ? orderParam.split(",") : null });
     }
   }, []);
+
+  // iOS 剪貼簿偵測：app 回到前景時檢查是否有社群平台 URL
+  const SOCIAL_URL_RE = /^https?:\/\/(www\.)?(instagram\.com|threads\.net|facebook\.com|fb\.watch|tiktok\.com|youtube\.com|youtu\.be)\//i;
+  const handleClipboardCheck = useCallback(async () => {
+    if (submitUrl || inputExpanded) return; // already has URL or panel open
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && SOCIAL_URL_RE.test(text.trim()) && !submittedUrls.has(text.trim())) {
+        setClipboardPrompt(text.trim());
+      }
+    } catch {
+      // clipboard permission denied — silent fail
+    }
+  }, [submitUrl, inputExpanded, submittedUrls]);
+
+  useEffect(() => {
+    const onFocus = () => handleClipboardCheck();
+    window.addEventListener("focus", onFocus);
+    // also check on initial mount (after share target check)
+    const timer = setTimeout(handleClipboardCheck, 500);
+    return () => { window.removeEventListener("focus", onFocus); clearTimeout(timer); };
+  }, [handleClipboardCheck]);
 
   // 載入城市索引
   useEffect(() => {
@@ -192,15 +221,22 @@ export default function App() {
       ? (filteredEvents.length ? filteredEvents : loadedEvents)
       : (filteredSpots.length ? filteredSpots : loadedSpots);
 
+  // Nearby mode: filter items by GPS distance
+  const nearbyResults = useMemo(() => {
+    if (!nearbyMode || !userLocation) return null;
+    return nearbyItems(activeCollection, userLocation, nearbyRadius);
+  }, [nearbyMode, userLocation, activeCollection, nearbyRadius]);
+
+  const effectiveCollection = nearbyResults || activeCollection;
 
   const effectiveVisibleIds = useMemo(() => {
-    if (visibleItemIds === null) return new Set(activeCollection.map((i) => i.id));
+    if (visibleItemIds === null) return new Set(effectiveCollection.map((i) => i.id));
     return visibleItemIds;
-  }, [visibleItemIds, activeCollection]);
+  }, [visibleItemIds, effectiveCollection]);
 
   const visibleItems = useMemo(() =>
-    activeCollection.filter((i) => effectiveVisibleIds.has(i.id)),
-    [activeCollection, effectiveVisibleIds]
+    effectiveCollection.filter((i) => effectiveVisibleIds.has(i.id)),
+    [effectiveCollection, effectiveVisibleIds]
   );
 
   const routeItems = useMemo(() => {
@@ -231,7 +267,7 @@ export default function App() {
 
   function toggleItemVisible(id) {
     setVisibleItemIds((prev) => {
-      const base = prev ?? new Set(activeCollection.map((i) => i.id));
+      const base = prev ?? new Set(effectiveCollection.map((i) => i.id));
       const next = new Set(base);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
@@ -307,6 +343,32 @@ export default function App() {
       (pos) => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocating(false); },
       () => { alert("無法取得定位，請確認已允許位置權限。"); setLocating(false); }
     );
+  }
+
+  // URL queue: save now, analyze later
+  function handleSaveToQueue(url) {
+    if (!url?.trim()) return;
+    const cleanUrl = url.trim();
+    setUrlQueue((prev) => {
+      if (prev.some((q) => q.url === cleanUrl)) return prev;
+      const updated = [...prev, { url: cleanUrl, addedAt: new Date().toISOString() }];
+      try { localStorage.setItem("trt:urlQueue", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }
+
+  function handleRemoveFromQueue(url) {
+    setUrlQueue((prev) => {
+      const updated = prev.filter((q) => q.url !== url);
+      try { localStorage.setItem("trt:urlQueue", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }
+
+  function handleLoadFromQueue(url) {
+    setSubmitUrl(url);
+    setInputExpanded(true);
+    handleRemoveFromQueue(url);
   }
 
   // 手動更新資料
@@ -501,6 +563,24 @@ export default function App() {
           )}
         </div>
 
+        {/* 剪貼簿偵測提示 */}
+        {clipboardPrompt && !inputExpanded && !submitUrl && (
+          <div style={{ position: "fixed", bottom: 80, right: 24, zIndex: Z.floatingPanel + 1, maxWidth: isMobile ? "calc(100vw - 48px)" : 380, background: COLORS.card, borderRadius: 18, padding: "14px 18px", boxShadow: "0 8px 28px rgba(0,0,0,0.18)", border: `1px solid ${COLORS.border}` }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>偵測到社群連結</div>
+            <div style={{ fontSize: 12, color: COLORS.subtext, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 10 }}>{clipboardPrompt}</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" onClick={() => { setSubmitUrl(clipboardPrompt); setInputExpanded(true); setClipboardPrompt(null); }}
+                style={{ flex: 1, padding: "8px 12px", borderRadius: 12, border: "none", background: COLORS.primary, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                分析此連結
+              </button>
+              <button type="button" onClick={() => setClipboardPrompt(null)}
+                style={{ padding: "8px 12px", borderRadius: 12, border: `1px solid ${COLORS.border}`, background: "#fff", fontSize: 13, cursor: "pointer" }}>
+                忽略
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* 浮動貼網址入口 */}
         <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: Z.floatingPanel, maxWidth: isMobile ? "calc(100vw - 48px)" : 420 }}>
           <UrlAnalyzerPanel
@@ -521,6 +601,10 @@ export default function App() {
             onConfirm={handleConfirmAnalysis}
             onClose={{ open: () => setInputExpanded(true), close: resetSubmitForm }}
             selectedItems={[...selectedAnalysisItemIds]} setSelectedItems={(updater) => setSelectedAnalysisItemIds((prev) => new Set(typeof updater === "function" ? updater([...prev]) : updater))}
+            urlQueue={urlQueue}
+            onSaveToQueue={handleSaveToQueue}
+            onRemoveFromQueue={handleRemoveFromQueue}
+            onLoadFromQueue={handleLoadFromQueue}
           />
         </div>
 
@@ -553,7 +637,7 @@ export default function App() {
             selectedCategories={selectedCategories}
             toggleCategory={toggleCategory}
             mapViewTab={mapViewTab} setMapViewTab={setMapViewTab}
-            activeCollection={activeCollection}
+            activeCollection={effectiveCollection}
             activeItemId={activeItemId} setActiveItemId={setActiveItemId}
             effectiveVisibleIds={effectiveVisibleIds}
             visibleItems={visibleItems}
@@ -561,6 +645,11 @@ export default function App() {
             setAllVisible={setAllVisible}
             loadedSpots={loadedSpots}
             loadedEvents={loadedEvents}
+            nearbyMode={nearbyMode} setNearbyMode={setNearbyMode}
+            nearbyRadius={nearbyRadius} setNearbyRadius={setNearbyRadius}
+            userLocation={userLocation}
+            locating={locating}
+            handleGetLocation={handleGetLocation}
           />
 
           <RoutePlannerSection

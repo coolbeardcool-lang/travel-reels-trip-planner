@@ -35,6 +35,7 @@ export function UrlAnalyzerPanel({
   submitStatusStyle,
   onAnalyze, onConfirm, onClose,
   selectedItems, setSelectedItems,
+  urlQueue = [], onSaveToQueue, onRemoveFromQueue, onLoadFromQueue,
 }) {
   if (!shouldShowInput) {
     return (
@@ -85,13 +86,17 @@ export function UrlAnalyzerPanel({
         <textarea value={submitNotes} onChange={(e) => setSubmitNotes(e.target.value)}
           placeholder="可選：補充提示"
           style={{ width: "100%", minHeight: 80, borderRadius: 18, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.10)", color: "#ffffff", padding: 16, outline: "none", resize: "vertical", boxSizing: "border-box" }} />
-        <div style={{ display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+        <div style={{ display: "grid", gap: 10, gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr" }}>
           <PrimaryButton type="submit" disabled={isAnalyzing || isConfirming}>
             {isAnalyzing ? "分析中…" : "先分析網址"}
           </PrimaryButton>
           <PrimaryButton type="button" secondary onClick={onConfirm}
             disabled={!analysisPreview || isAnalyzing || isConfirming || ((analysisPreview?.confidence || 0) === 0 && analysisPreview?.needsReview)}>
             {isConfirming ? "寫入中…" : "確認後寫入"}
+          </PrimaryButton>
+          <PrimaryButton type="button" secondary onClick={() => { onSaveToQueue(submitUrl); setSubmitUrl(""); }}
+            disabled={!submitUrl?.trim() || isAnalyzing || isConfirming}>
+            稍後分析
           </PrimaryButton>
         </div>
       </form>
@@ -187,6 +192,24 @@ export function UrlAnalyzerPanel({
                 目前沒有拆出明確的景點或活動項目，確認後會先以來源資料寫入待整理清單。
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* URL Queue: saved for later */}
+      {urlQueue.length > 0 && (
+        <div style={{ marginTop: 16, borderRadius: 18, background: "rgba(255,255,255,0.08)", padding: 14 }}>
+          <div style={{ fontSize: 12, color: "#d6d3d1", marginBottom: 8 }}>待分析佇列（{urlQueue.length}）</div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {urlQueue.map((q) => (
+              <div key={q.url} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ flex: 1, fontSize: 12, color: "#f5f5f4", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.url}</div>
+                <button type="button" onClick={() => onLoadFromQueue(q.url)}
+                  style={{ fontSize: 11, borderRadius: 8, padding: "3px 8px", background: "rgba(255,255,255,0.15)", color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>分析</button>
+                <button type="button" onClick={() => onRemoveFromQueue(q.url)}
+                  style={{ fontSize: 11, borderRadius: 8, padding: "3px 8px", background: "rgba(255,255,255,0.08)", color: "#a8a29e", border: "none", cursor: "pointer" }}>移除</button>
+              </div>
+            ))}
           </div>
         </div>
       )}
