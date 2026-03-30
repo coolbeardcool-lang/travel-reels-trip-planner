@@ -24,6 +24,15 @@ export const COLORS = {
   warningText: "#c2410c",
 };
 
+// Z-index layer table — all z-index values must reference these constants
+export const Z = {
+  leafletControls: 500,   // Leaflet zoom/attribution (overridden via CSS in LeafletMap.jsx)
+  mapOverlay: 600,        // Map empty-state overlay inside map container
+  floatingPanel: 1000,    // UrlAnalyzerPanel floating form
+  writeOverlay: 2000,     // Full-screen WriteOverlay (progress/result)
+  modal: 1400,            // Future modals / dialogs
+};
+
 export const CATEGORY_THEME = {
   景點: { bg: "#e0f2fe", color: "#0369a1" },
   餐廳: { bg: "#ffe4e6", color: "#be123c" },

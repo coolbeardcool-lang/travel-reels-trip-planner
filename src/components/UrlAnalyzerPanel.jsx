@@ -89,7 +89,8 @@ export function UrlAnalyzerPanel({
           <PrimaryButton type="submit" disabled={isAnalyzing || isConfirming}>
             {isAnalyzing ? "分析中…" : "先分析網址"}
           </PrimaryButton>
-          <PrimaryButton type="button" secondary onClick={onConfirm} disabled={!analysisPreview || isAnalyzing || isConfirming}>
+          <PrimaryButton type="button" secondary onClick={onConfirm}
+            disabled={!analysisPreview || isAnalyzing || isConfirming || ((analysisPreview?.confidence || 0) === 0 && analysisPreview?.needsReview)}>
             {isConfirming ? "寫入中…" : "確認後寫入"}
           </PrimaryButton>
         </div>
@@ -121,9 +122,19 @@ export function UrlAnalyzerPanel({
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 12, background: "rgba(255,255,255,0.12)", color: "#fff" }}>
-                信心 {Math.round((analysisPreview.confidence || 0) * 100)}%
-              </span>
+              {(() => {
+                const pct = Math.round((analysisPreview.confidence || 0) * 100);
+                const isZero = pct === 0;
+                const isLow = pct > 0 && pct <= 50;
+                const bg = isZero ? COLORS.errorBg : isLow ? COLORS.warningBg : COLORS.successBg;
+                const fg = isZero ? COLORS.errorText : isLow ? COLORS.warningText : COLORS.successText;
+                return (
+                  <span title={isZero ? "建議補充提示後重新分析" : undefined}
+                    style={{ borderRadius: 999, padding: "6px 10px", fontSize: 12, background: bg, color: fg, fontWeight: isZero ? 700 : 400 }}>
+                    {isZero ? "⚠ " : ""}信心 {pct}%
+                  </span>
+                );
+              })()}
               <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 12, background: analysisPreview.needsReview ? COLORS.warningBg : COLORS.successBg, color: analysisPreview.needsReview ? COLORS.warningText : COLORS.successText }}>
                 {analysisPreview.needsReview ? "建議人工確認" : "可直接寫入"}
               </span>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { COLORS, CATEGORY_THEME } from "../config/theme.js";
+import { COLORS, CATEGORY_THEME, Z } from "../config/theme.js";
 
 export function WriteOverlay({ status, dispatched, submittedItems, result, onClose, onReload }) {
   const [countdown, setCountdown] = useState(90);
@@ -25,7 +25,7 @@ export function WriteOverlay({ status, dispatched, submittedItems, result, onClo
   const totalWritten = resultSpots.length;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: Z.writeOverlay, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div style={{ background: "#fff", borderRadius: 28, padding: 28, maxWidth: 480, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,0.3)" }}>
 
         {status === "writing" && (

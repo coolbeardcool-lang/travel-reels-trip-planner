@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { BASE_URL, COLORS, CATEGORY_THEME, ANALYZE_API_PATH, CONFIRM_ANALYSIS_API_PATH, CONTENT_MODES, ANALYZE_TYPE_OPTIONS } from "./config/theme.js";
+import { BASE_URL, COLORS, CATEGORY_THEME, ANALYZE_API_PATH, CONFIRM_ANALYSIS_API_PATH, CONTENT_MODES, ANALYZE_TYPE_OPTIONS, Z } from "./config/theme.js";
 import { normalizeCitySlugValue, normalizeAnalysisPayload } from "./utils/normalize.js";
 import { distanceScore, estimateTransport, buildRecommendation } from "./utils/geo.js";
 import { formatEventWindow, prettyAnalysisKind } from "./utils/format.js";
@@ -65,6 +65,13 @@ export default function App() {
   const [mapViewTab, setMapViewTab] = useState("list");
 
   const hasCitySelected = selectedCitySlug !== "unselected";
+
+  function resetSubmitForm() {
+    setInputExpanded(false);
+    setSubmitUrl(""); setSubmitTitle(""); setSubmitType("auto"); setSubmitCitySlug(""); setSubmitNotes("");
+    setAnalysisPreview(null);
+    setSubmitStatus({ kind: "idle", message: "" });
+  }
 
   // iPhone Web Share Target + 行程分享還原
   useEffect(() => {
@@ -399,10 +406,7 @@ export default function App() {
         });
       }
       setWriteOverlay({ status: "syncing", dispatched: Boolean(payload.dispatched), submittedItems: selectedItems, result: payload });
-      setInputExpanded(false);
-      setSubmitUrl(""); setSubmitTitle(""); setSubmitType("auto"); setSubmitCitySlug(""); setSubmitNotes("");
-      setAnalysisPreview(null);
-      setSubmitStatus({ kind: "idle", message: "" });
+      resetSubmitForm();
     } catch (error) {
       setSubmitStatus({ kind: "error", message: error instanceof Error ? error.message : "寫入失敗。" });
     } finally {
@@ -458,7 +462,7 @@ export default function App() {
         </div>
 
         {/* 浮動貼網址入口 */}
-        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000, maxWidth: isMobile ? "calc(100vw - 48px)" : 420 }}>
+        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: Z.floatingPanel, maxWidth: isMobile ? "calc(100vw - 48px)" : 420 }}>
           <UrlAnalyzerPanel
             isMobile={isMobile}
             cityIndex={cityIndex}
@@ -475,7 +479,7 @@ export default function App() {
             submitStatusStyle={submitStatusStyle}
             onAnalyze={handleAnalyzeUrl}
             onConfirm={handleConfirmAnalysis}
-            onClose={{ open: () => setInputExpanded(true), close: () => { setInputExpanded(false); setSubmitUrl(""); setSubmitTitle(""); setSubmitNotes(""); setSubmitType("auto"); setSubmitCitySlug(""); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); } }}
+            onClose={{ open: () => setInputExpanded(true), close: resetSubmitForm }}
             selectedItems={[...selectedAnalysisItemIds]} setSelectedItems={(updater) => setSelectedAnalysisItemIds((prev) => new Set(typeof updater === "function" ? updater([...prev]) : updater))}
           />
         </div>

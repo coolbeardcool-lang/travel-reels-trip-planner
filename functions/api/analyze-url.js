@@ -723,7 +723,7 @@ async function callOpenAI(apiKey, url, mergedText, contentKindHint, platformHint
 2. 每個 item 必須給 priority 欄位（1=最值得關注，數字越大越次要），由最可能讓旅客感興趣的排在最前面。
 3. 不確定時請填 null、空陣列，或 needsReview=true。
 4. 不要猜測日期、座標、地圖連結、官網連結。
-5. 若同一來源提到多個獨立地點，請全部拆成獨立 item；但若是同一地點的子項目（如市場內的多個攤位、套餐的多道菜、同一店家的多項商品），請合併為一個 item，並在 description 中補充子項目細節。
+5. 若同一來源提到多個獨立地點，請全部拆成獨立 item，每個 item 對應一個實體店家或景點；但若是同一店家的分店（相同店名、不同地址/區域），每個分店各為獨立 item，並在 area 填入各自所在區域；同一店家同一地點的子項目（如套餐多道菜、市場內的攤位），請合併為一個 item 並在 description 補充細節。名稱來自社群貼文 caption 或留言時，每行獨立意義的店名各為一個 item，不要將多行合併或截斷。
 6. 若同時有景點與活動，contentKind 請填 "mixed"，且每個 item 都要有 itemKind。
 7. 每個 item 都要附 evidence 陣列，指出資訊來源。
 8. 若資料太弱，不要硬造 item，可回傳空 items，並將 contentKind 設為 "source_only"。
@@ -809,7 +809,16 @@ ${String(mergedText || "").slice(0, 2000)}
   }
 
   const content = data?.choices?.[0]?.message?.content || "{}";
-  return JSON.parse(content);
+  const parsed = JSON.parse(content);
+  if (Array.isArray(parsed.items)) {
+    parsed.items = parsed.items.filter((item) => {
+      const name = String(item?.name || "").trim();
+      if (name.length < 2) return false;
+      if (/[\r\n]/.test(name)) return false;
+      return true;
+    });
+  }
+  return parsed;
 }
 
 export async function onRequestPost(context) {

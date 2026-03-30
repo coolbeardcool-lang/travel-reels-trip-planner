@@ -1,5 +1,5 @@
 import React from "react";
-import { COLORS, CATEGORY_THEME, CONTENT_MODES } from "../config/theme.js";
+import { COLORS, CATEGORY_THEME, CONTENT_MODES, Z } from "../config/theme.js";
 import { chipStyle } from "./ui/chipStyle.js";
 import { SectionCard } from "./ui/SectionCard.jsx";
 import { LeafletMap } from "./LeafletMap.jsx";
@@ -108,6 +108,29 @@ export function MapSection({
               }) : <div style={{ padding: 16, fontSize: 13, color: COLORS.subtext }}>目前無資料</div>}
             </div>
             <div style={{ height: 460, position: "relative", display: isMobile && mapViewTab === "list" ? "none" : "block" }}>
+              {(() => {
+                const visibleWithCoords = activeCollection.filter((i) => effectiveVisibleIds.has(i.id) && i.lat && i.lng).length;
+                const hasVisible = effectiveVisibleIds.size > 0;
+                if (activeCollection.length === 0) {
+                  return (
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: COLORS.cardMuted, zIndex: Z.mapOverlay, borderRadius: 0 }}>
+                      <div style={{ fontSize: 32 }}>🗺️</div>
+                      <div style={{ marginTop: 8, fontWeight: 700, color: COLORS.text }}>尚無景點資料</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext }}>先貼網址分析並寫入，景點就會出現在地圖上。</div>
+                    </div>
+                  );
+                }
+                if (hasVisible && visibleWithCoords === 0) {
+                  return (
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(255,247,237,0.92)", zIndex: Z.mapOverlay, borderRadius: 0 }}>
+                      <div style={{ fontSize: 32 }}>📍</div>
+                      <div style={{ marginTop: 8, fontWeight: 700, color: COLORS.warningText }}>座標補齊中…</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext, textAlign: "center", maxWidth: 200 }}>景點座標尚未補齊，系統每日自動更新，稍後重新整理即可。</div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               <LeafletMap
                 items={activeCollection}
                 visibleIds={effectiveVisibleIds}
