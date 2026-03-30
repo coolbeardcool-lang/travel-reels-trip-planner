@@ -58,7 +58,6 @@ async function geocodeWithNominatim(name, area, citySlug, cityLabel) {
     if (!Array.isArray(results) || results.length === 0) return null;
 
     // Pick best result: prefer one within viewbox range of city center
-    const cityData = CITY_DATA_MAP[citySlug];
     let best = results[0];
     if (cityData?.lat && results.length > 1) {
       const inRange = results.find((r) => {
