@@ -1,0 +1,46 @@
+name: Geocode Missing Coordinates
+
+on:
+  # 每天凌晨 3:00 UTC（台灣時間上午 11:00）自動執行
+  schedule:
+    - cron: "0 3 * * *"
+  # 手動觸發（可在 Actions 頁面按 Run workflow）
+  workflow_dispatch:
+
+permissions:
+  contents: none
+
+jobs:
+  geocode:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Geocode missing lat/lng via Nominatim
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_SPOTS_DATA_SOURCE_ID: ${{ secrets.NOTION_SPOTS_DATA_SOURCE_ID }}
+          NOTION_EVENTS_DATA_SOURCE_ID: ${{ secrets.NOTION_EVENTS_DATA_SOURCE_ID }}
+        run: node scripts/geocode-missing.mjs
+
+      - name: Trigger Notion sync to refresh JSON
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: "sync_notion_after_reel_submit",
+            });
+            console.log("✅ Notion sync triggered");
