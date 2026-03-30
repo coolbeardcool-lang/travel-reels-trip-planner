@@ -575,7 +575,7 @@ async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
     // 若 geocoding 取得真實座標，且現有記錄仍是推定，則更新座標
     const existConf = existing.properties?.Confidence?.select?.name;
     if (confidence === "已確認" && existConf !== "已確認") {
-      patch.Confidence = { rich_text: [{ text: { content: "已確認" } }] };
+      patch.Confidence = { select: { name: "已確認" } };
       patch.MapUrl = { url: mapUrl };
       if (lat !== null) patch.Lat = { number: lat };
       if (lng !== null) patch.Lng = { number: lng };
