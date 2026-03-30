@@ -1,68 +1,59 @@
-# Quick-Access: src/App.jsx (1394 lines)
+# Quick-Access: src/App.jsx (554 lines)
 
 ## Purpose
-Main frontend single-file application — contains ALL logic, state, UI components, API calls, and utilities.
+Main frontend application shell — orchestrates state, data loading, and component composition.
+Components, hooks, utils, and services have been extracted into separate modules.
 
 ## Section Map
 
 | Lines | Section | Responsibility |
 |-------|---------|---------------|
-| 1-8 | Imports & API constants | BASE_URL, API paths, content modes, type options |
-| 10-37 | Theme constants | COLORS, CATEGORY_THEME |
-| 39-51 | normalizeCitySlugValue | City slug alias mapping (JP/TW/KR cities) |
-| 53-60 | cityIndexPath, cityDataPaths | URL builders for data fetching |
-| 62-83 | normalizeCity, normalizeSource | Normalize raw city/source objects |
-| 85-89 | filterByCitySlug | Filter items by city |
-| 92-160 | normalizeSpot, normalizeEvent, normalizeCityIndexPayload, normalizeCityPayload | Data normalization pipeline |
-| 162-183 | fetchCityIndex, fetchCityIndexMeta, fetchCityDataset | Async data fetching |
-| 185-213 | normalizeAnalysisPayload | Normalize API analysis response |
-| 216-265 | distanceScore, haversineKm, estimateTransport, buildRecommendation, formatEventWindow, prettyAnalysisKind | Geo/route utilities |
-| 267-325 | chipStyle, MetricCard, SectionCard, PrimaryButton, useResponsiveColumns | Shared UI components & hook |
-| 327-393 | LeafletMap | Map component with dynamic Leaflet loading |
-| 395-467 | SuccessView | Post-confirmation success display |
-| 469-519 | App() state declarations | ~30 useState hooks |
-| 523-606 | App() useEffect hooks | URL params, city index load, stats load, city data load, pending route |
-| 608-659 | App() useMemo computations | Filtering, sorting, route building |
-| 661-838 | App() event handlers | toggleCategory, drag&drop, save/load route, share, geolocation, sync, analyze, confirm |
-| 860-1393 | App() JSX return | Main render tree |
+| 1-13 | Imports | Config, utils, services, hooks, components |
+| 15-66 | State declarations | ~25 useState hooks grouped by concern |
+| 67-74 | resetSubmitForm | Clear analysis form state |
+| 76-91 | URL params effect | Web Share Target + route sharing restore |
+| 93-108 | City index load | Fetch city index + sync meta |
+| 110-121 | Global stats load | Fetch all.json for spot/event counts |
+| 123-149 | City data load | Fetch city dataset, reset filters on city change |
+| 151-168 | Analysis + route effects | Preview selection init, pending route apply |
+| 170-226 | Derived state (useMemo) | Filtering, sorting, route building |
+| 228-325 | Event handlers | Category toggle, drag-drop, save/load route, share, geolocation, sync |
+| 327-415 | Analysis flow | handleAnalyzeUrl, handleConfirmAnalysis |
+| 426-554 | JSX return | Layout shell, component composition |
 
-## JSX Sections in Return
+## Extracted Modules
 
-| Lines | UI Section |
-|-------|-----------|
-| 863-898 | Sync status bar (top-right fixed) |
-| 902-1011 | Floating URL input + analysis preview panel |
-| 1013-1096 | City entrance cards |
-| 1098-1241 | Map section (search, filters, list+map, item details) |
-| 1243-1390 | Route planner (drag-reorder, transport estimates, save/share) |
+| Module | File | Responsibility |
+|--------|------|---------------|
+| Theme/config | `src/config/theme.js` | Colors, z-index, API paths, constants |
+| Normalize | `src/utils/normalize.js` | City/spot/event/analysis normalization |
+| Geo | `src/utils/geo.js` | Haversine, distance scoring, transport estimation |
+| Format | `src/utils/format.js` | Date/event formatting |
+| City API | `src/services/cityApi.js` | Fetch city index/dataset |
+| Responsive | `src/hooks/useResponsiveColumns.js` | Mobile breakpoint detection |
+| CitySection | `src/components/CitySection.jsx` | City grid + stats |
+| MapSection | `src/components/MapSection.jsx` | Map + filters + item details |
+| RoutePlanner | `src/components/RoutePlannerSection.jsx` | Route building + drag-drop |
+| UrlAnalyzer | `src/components/UrlAnalyzerPanel.jsx` | URL input + analysis preview |
+| WriteOverlay | `src/components/WriteOverlay.jsx` | Post-submit sync progress |
+| SyncStatusBar | `src/components/SyncStatusBar.jsx` | Sync timestamp + refresh |
 
 ## Key State Groups
-- **City selection**: cityIndex, selectedCitySlug, selectedContentMode
+- **City**: cityIndex, selectedCitySlug, selectedContentMode
 - **Data**: loadedSpots, loadedEvents, sources, globalStats
 - **Filtering**: search, selectedCategories, baseArea, timeOfDay
-- **Map interaction**: activeItemId, visibleItemIds, mapViewTab
-- **Route planning**: routeOrder, dragSourceId/dragOverId, savedRoutes, userLocation
-- **URL analysis flow**: submitUrl/Title/Type/CitySlug/Notes, analysisPreview, submitStatus, isAnalyzing, isConfirming, confirmResult, showSuccess
+- **Map**: activeItemId, visibleItemIds, mapViewTab
+- **Route**: routeOrder, dragSourceId/dragOverId, savedRoutes, userLocation
+- **Analysis**: submitUrl/Title/Type/CitySlug/Notes, analysisPreview, submitStatus, writeOverlay
 
 ## Common Edit Patterns
-- Adding a new field to spots/events → normalizeSpot/normalizeEvent (L92-140) + item card JSX
-- Changing theme/colors → COLORS (L10-27) or CATEGORY_THEME (L29-37)
-- Modifying analysis flow → handleAnalyzeUrl (L761-798), handleConfirmAnalysis (L800-838)
-- Adjusting route logic → buildRecommendation (L243), routeItems useMemo (L639-659)
-- Adding city aliases → normalizeCitySlugValue aliasMap (L43-49)
+- Add spot/event field → `src/utils/normalize.js` normalizeSpot/normalizeEvent
+- Change theme → `src/config/theme.js`
+- Modify analysis flow → handleAnalyzeUrl/handleConfirmAnalysis (App.jsx L327-415)
+- Route logic → `src/utils/geo.js` + routeItems useMemo (App.jsx L206-226)
+- City aliases → `src/utils/citySlugMap.js`
 
 ## Fragile Areas
-- State coupling: ~30 useState in one component, many cross-dependent
-- JSX deeply nested inline styles — easy to break layout
-- Route drag&drop logic (L679-700) — manual array splice
-
-## Recommended Split Targets
-1. config/theme → COLORS, CATEGORY_THEME, constants
-2. utils/normalize → all normalize* functions
-3. utils/geo → haversineKm, distanceScore, estimateTransport, buildRecommendation
-4. services/cityApi → fetch*, cityIndexPath, cityDataPaths, normalizeAnalysisPayload
-5. components/ui → MetricCard, SectionCard, PrimaryButton, chipStyle
-6. components/LeafletMap → as-is
-7. components/SuccessView → as-is
-8. hooks/useResponsiveColumns → as-is
-9. components/SyncStatusBar, UrlAnalyzer, CityEntrance, MapSection, RoutePlanner → JSX sections
+- Drag-drop: manual array splice in handleDrop (L256-267)
+- State coupling: ~25 useState still in App.jsx (manageable but dense)
+- WriteOverlay close triggers reloadKey → full city data refetch

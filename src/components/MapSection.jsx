@@ -16,6 +16,9 @@ export function MapSection({
   effectiveVisibleIds, visibleItems,
   toggleItemVisible, setAllVisible,
   loadedSpots, loadedEvents,
+  nearbyMode, setNearbyMode,
+  nearbyRadius, setNearbyRadius,
+  userLocation, locating, handleGetLocation,
 }) {
   return (
     <SectionCard
@@ -64,6 +67,35 @@ export function MapSection({
         </div>
       </div>
 
+      {/* 附近模式控制列 */}
+      {hasCitySelected && (
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+          <button type="button"
+            onClick={() => {
+              if (!nearbyMode && !userLocation) handleGetLocation();
+              setNearbyMode((v) => !v);
+            }}
+            disabled={locating}
+            style={{ borderRadius: 999, padding: "8px 16px", border: `1px solid ${nearbyMode ? COLORS.primary : COLORS.border}`, background: nearbyMode ? COLORS.primary : "#fff", color: nearbyMode ? "#fff" : COLORS.text, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+            {locating ? "定位中…" : nearbyMode ? "關閉附近模式" : "我在這裡"}
+          </button>
+          {nearbyMode && (
+            <>
+              <select value={nearbyRadius} onChange={(e) => setNearbyRadius(Number(e.target.value))}
+                style={{ borderRadius: 12, border: `1px solid ${COLORS.border}`, padding: "6px 10px", fontSize: 12 }}>
+                <option value={0.5}>500m 內</option>
+                <option value={1}>1km 內</option>
+                <option value={2}>2km 內</option>
+                <option value={5}>5km 內</option>
+              </select>
+              <span style={{ fontSize: 12, color: COLORS.subtext }}>
+                找到 {activeCollection.length} 個{activeCollection.length > 0 && activeCollection[0]?.distanceKm != null ? "景點" : "結果"}
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
       {hasCitySelected ? (
         <div>
           <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -98,10 +130,14 @@ export function MapSection({
                       onChange={(e) => { e.stopPropagation(); toggleItemVisible(item.id); }}
                       onClick={(e) => e.stopPropagation()}
                       style={{ cursor: "pointer", width: 15, height: 15, flexShrink: 0 }} />
-                    <span style={{ fontSize: 20, flexShrink: 0 }}>{item.thumbnail}</span>
+                    <span style={{ fontSize: 20, flexShrink: 0, opacity: item._optimistic ? 0.5 : 1 }}>{item.thumbnail}</span>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: active ? 800 : 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? COLORS.primary : checked ? COLORS.text : COLORS.subtext }}>{item.name}</div>
-                      <div style={{ fontSize: 11, color: COLORS.subtext }}>{item.area}</div>
+                      <div style={{ fontWeight: active ? 800 : 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? COLORS.primary : checked ? COLORS.text : COLORS.subtext }}>
+                        {item.name}{item._optimistic && <span style={{ marginLeft: 4, fontSize: 10, color: COLORS.subtext, fontWeight: 400 }}>同步中</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: COLORS.subtext }}>
+                        {item.area}{item.distanceKm != null && <span style={{ marginLeft: 4 }}>({item.distanceKm < 1 ? `${Math.round(item.distanceKm * 1000)}m` : `${item.distanceKm.toFixed(1)}km`})</span>}
+                      </div>
                     </div>
                   </div>
                 );
@@ -156,7 +192,11 @@ export function MapSection({
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
                           <span style={chipStyle(item.category)}>{item.category}</span>
                           <span style={{ borderRadius: 999, border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11 }}>{item.bestTime}</span>
-                          {item.confidence && (
+                          {item._optimistic ? (
+                            <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: "#e0f2fe", color: "#0369a1" }}>
+                              同步中
+                            </span>
+                          ) : item.confidence && (
                             <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: item.confidence === "已確認" ? "#dcfce7" : "#fef9c3", color: item.confidence === "已確認" ? "#15803d" : "#92400e" }}>
                               {item.confidence === "已確認" ? "🟢 已確認" : "🟡 推定"}
                             </span>

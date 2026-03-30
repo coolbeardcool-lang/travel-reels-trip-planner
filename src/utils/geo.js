@@ -25,6 +25,22 @@ export function estimateTransport(from, to) {
   return { icon: "🚇", label: "電車/地鐵", minutes: Math.round(km * 2.5 + 8), km };
 }
 
+/**
+ * Filter and sort items by distance from a reference point.
+ * @param {Array} items - spots/events with lat/lng
+ * @param {{ lat: number, lng: number }} location - reference point (user GPS)
+ * @param {number} radiusKm - max distance in km (default 2)
+ * @returns {Array} items within radius, sorted by distance, with `distanceKm` field
+ */
+export function nearbyItems(items, location, radiusKm = 2) {
+  if (!location?.lat || !location?.lng) return [];
+  return items
+    .filter((item) => item.lat && item.lng)
+    .map((item) => ({ ...item, distanceKm: haversineKm(location, item) }))
+    .filter((item) => item.distanceKm <= radiusKm)
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+}
+
 export function buildRecommendation(spots, baseArea, currentTime) {
   return [...spots]
     .map((s) => {

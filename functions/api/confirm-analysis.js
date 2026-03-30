@@ -33,10 +33,12 @@ async function geocodeWithNominatim(name, area, citySlug, cityLabel) {
     const params = new URLSearchParams({
       q: queryParts.join(", "),
       format: "json",
-      limit: "1",
-      "accept-language": "zh,en",
+      limit: "3",
+      "accept-language": "zh,ja,ko,en",
     });
     if (countryCode) params.set("countrycodes", countryCode);
+    // Add structured hint for better non-English name resolution
+    if (cityLabel) params.set("city", cityLabel);
 
     // 用城市中心座標設定 viewbox（±0.5 度範圍），提升結果準確度
     const cityData = CITY_DATA_MAP[citySlug];
@@ -55,9 +57,19 @@ async function geocodeWithNominatim(name, area, citySlug, cityLabel) {
     const results = await resp.json();
     if (!Array.isArray(results) || results.length === 0) return null;
 
-    const { lat, lon } = results[0];
-    const parsedLat = parseFloat(lat);
-    const parsedLng = parseFloat(lon);
+    // Pick best result: prefer one within viewbox range of city center
+    const cityData = CITY_DATA_MAP[citySlug];
+    let best = results[0];
+    if (cityData?.lat && results.length > 1) {
+      const inRange = results.find((r) => {
+        const rlat = parseFloat(r.lat), rlng = parseFloat(r.lon);
+        return Math.abs(rlat - cityData.lat) < 1 && Math.abs(rlng - cityData.lng) < 1;
+      });
+      if (inRange) best = inRange;
+    }
+
+    const parsedLat = parseFloat(best.lat);
+    const parsedLng = parseFloat(best.lon);
     if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) return null;
     return { lat: parsedLat, lng: parsedLng };
   } catch {

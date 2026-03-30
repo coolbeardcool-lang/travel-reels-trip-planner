@@ -1,7 +1,7 @@
 # AI Prompt Quality Contract
 
 **Source file**: `functions/api/analyze-url.js` (system prompt passed to Claude)
-**Last updated**: 2026-03-29
+**Last updated**: 2026-03-30
 
 This document is the canonical reference for quality rules enforced through the AI analysis prompt.
 When adding a second AI endpoint, copy these rules into the new prompt and keep this doc in sync.
@@ -24,10 +24,13 @@ dishes within a restaurant), merge them into a single item. Add sub-item details
 Do not emit multiple items for sub-locations. This was the root cause of numbered list explosion in Seoul data.
 
 ## Coordinates Rule (lat/lng)
-- If the AI has high confidence about a location (landmark, chain store, market, station) → fill `lat`/`lng` to 4 decimal places
-- If uncertain → leave `null`; Nominatim will attempt geocoding as fallback
+- AI should **proactively provide coordinates** for all items where location can be reasonably inferred (not just high-confidence landmarks)
+- Known landmarks, chain stores, markets, stations → fill `lat`/`lng` to 4 decimal places
+- General restaurants/shops where area + name allows reasonable inference → also fill coordinates (even if lower precision)
+- Only leave `null` when location is completely unknown
 - AI-provided coords are labeled `confidence: 已確認` (same as Nominatim-verified)
-- Nominatim is only called when `lat`/`lng` are null/0 after AI analysis — reducing API calls for well-known spots
+- Nominatim is only called when `lat`/`lng` are null/0 after AI analysis — reducing API calls
+- Nominatim now queries with `limit=3` and picks the result closest to city center, improving non-English name resolution
 
 ## CitySlug Rule
 `citySlug` must resolve to a known English slug. Chinese city names are acceptable input and will be
