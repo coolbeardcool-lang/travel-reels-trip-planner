@@ -11,7 +11,11 @@
       "商圈",
       "夜生活"
     ],
-    "heroArea": "新世界／通天閣"
+    "heroArea": "新世界／通天閣",
+    "defaultMapLat": 34.6937,
+    "defaultMapLng": 135.5023,
+    "coverImageUrl": "",
+    "timezone": "Asia/Tokyo"
   },
   "spots": [
     {
@@ -37,7 +41,7 @@
       "lng": 135.5056,
       "confidence": "已確認",
       "thumbnail": "🍢",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=串かつ八重勝+新世界",
+      "mapUrl": "https://www.google.com/maps?q=34.6525,135.5056",
       "published": true,
       "priorityScore": 95,
       "lastReviewedAt": "2026-03-28",
@@ -66,7 +70,7 @@
       "lng": 135.5057,
       "confidence": "已確認",
       "thumbnail": "🍢",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=Nonkiya+大阪",
+      "mapUrl": "https://www.google.com/maps?q=34.6529,135.5057",
       "published": true,
       "priorityScore": 90,
       "lastReviewedAt": "2026-03-28",
@@ -95,7 +99,7 @@
       "lng": 135.5059,
       "confidence": "已確認",
       "thumbnail": "🍜",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=立ち食いうどんそば+松屋+大阪",
+      "mapUrl": "https://www.google.com/maps?q=34.6531,135.5059",
       "published": true,
       "priorityScore": 85,
       "lastReviewedAt": "2026-03-28",
@@ -131,46 +135,13 @@
       "notes": "分店位置待後續確認"
     }
   ],
-  "events": [
-    {
-      "id": "33124c5d-f0b3-8141-aa51-e4a23e51d331",
-      "city": "大阪",
-      "citySlug": "osaka",
-      "area": "中之島",
-      "name": "大阪美食市集示意活動",
-      "category": "活動",
-      "description": "示意用活動資料，正式版可放快閃市集、祭典、展覽等日期型內容。",
-      "sourceId": "大阪新世界街邊美食 Reel",
-      "sourceTitle": "",
-      "sourceUrl": "https://www.instagram.com/reel/DV_M4ayDcf-/",
-      "tags": [
-        "市集",
-        "美食",
-        "週末"
-      ],
-      "lat": 34.6925,
-      "lng": 135.4904,
-      "thumbnail": "🎫",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%B8%AD%E4%B9%8B%E5%B3%B6+%E5%A4%A7%E9%98%AA",
-      "startsOn": "2026-04-12",
-      "endsOn": "2026-04-14",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "ticketType": "免費入場",
-      "priceNote": "餐飲另計",
-      "officialUrl": "https://www.instagram.com/reel/DV_M4ayDcf-/",
-      "status": "待整理",
-      "recurringType": "一次性",
-      "published": true,
-      "lastReviewedAt": "2026-03-28"
-    }
-  ],
+  "events": [],
   "sources": [],
   "meta": {
-    "lastSyncedAt": "2026-03-29T03:44:29.823Z",
+    "lastSyncedAt": "2026-03-30T08:12:48.918Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 5
+    "count": 4
   }
 }

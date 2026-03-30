@@ -11,7 +11,11 @@
       "甜點",
       "散步"
     ],
-    "heroArea": "佛光寺周邊"
+    "heroArea": "佛光寺周邊",
+    "defaultMapLat": 35.0116,
+    "defaultMapLng": 135.7681,
+    "coverImageUrl": "",
+    "timezone": "Asia/Tokyo"
   },
   "spots": [
     {
@@ -37,7 +41,7 @@
       "lng": 135.7575,
       "confidence": "已確認",
       "thumbnail": "🍵",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=麓壽庵+kyoto",
+      "mapUrl": "https://www.google.com/maps?q=35.0107,135.7575",
       "published": true,
       "priorityScore": 93,
       "lastReviewedAt": "2026-03-28",
@@ -66,7 +70,7 @@
       "lng": 135.7596,
       "confidence": "已確認",
       "thumbnail": "🛍️",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=D%26DEPARTMENT+KYOTO",
+      "mapUrl": "https://www.google.com/maps?q=35.0018,135.7596",
       "published": true,
       "priorityScore": 92,
       "lastReviewedAt": "2026-03-28",
@@ -95,7 +99,7 @@
       "lng": 135.7582,
       "confidence": "已確認",
       "thumbnail": "🐾",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=平等寺+因幡堂+京都",
+      "mapUrl": "https://www.google.com/maps?q=35.0013,135.7582",
       "published": true,
       "priorityScore": 88,
       "lastReviewedAt": "2026-03-28",
@@ -129,48 +133,104 @@
       "priorityScore": 70,
       "lastReviewedAt": "2026-03-28",
       "notes": ""
+    },
+    {
+      "id": "33224c5d-f0b3-81cd-9a0f-de8a2c261476",
+      "city": "京都",
+      "citySlug": "kyoto",
+      "area": "京都",
+      "name": "京都隱藏亮點計畫",
+      "category": "活動",
+      "description": "邀請所有遊客更深入體驗京都，發現前人未至之地的魅力。",
+      "sourceId": "33224c5d-f0b3-81e3-b6fe-f330dfcb9e2d",
+      "sourceTitle": "京都・京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "sourceUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "京都",
+        "活動",
+        "旅遊"
+      ],
+      "lat": 35.011447,
+      "lng": 135.758608,
+      "confidence": "推定",
+      "thumbnail": "🎫",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BA%AC%E9%83%BD%E9%9A%B1%E8%97%8F%E4%BA%AE%E9%BB%9E%E8%A8%88%E7%95%AB%20%E4%BA%AC%E9%83%BD",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 活動旨在讓遊客探索京都的隱藏魅力。"
     }
   ],
   "events": [
     {
-      "id": "33124c5d-f0b3-8154-89af-e12917b19cc4",
+      "id": "33224c5d-f0b3-813c-8828-e8dd01316f08",
       "city": "京都",
       "citySlug": "kyoto",
-      "area": "東山周邊",
-      "name": "京都夜櫻點燈示意活動",
+      "area": "京都",
+      "name": "京都隱藏亮點計畫",
       "category": "活動",
-      "description": "示意用活動資料。正式版會由 Notion Events 資料庫同步，適合做期間限定活動展示。",
-      "sourceId": "京都夜櫻活動範例",
-      "sourceTitle": "",
-      "sourceUrl": "https://example.com/kyoto-night-event",
+      "description": "邀請所有遊客更深入體驗京都，發現前人未至之地的魅力。",
+      "sourceId": "33224c5d-f0b3-81e3-b6fe-f330dfcb9e2d",
+      "sourceTitle": "京都・京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "sourceUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
       "tags": [
-        "夜櫻",
-        "期間限定",
-        "春季"
+        "京都",
+        "活動",
+        "旅遊"
       ],
-      "lat": 35.0037,
-      "lng": 135.7788,
+      "lat": 35.011447,
+      "lng": 135.758608,
       "thumbnail": "🎫",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E6%9D%B1%E5%B1%B1+%E4%BA%AC%E9%83%BD",
-      "startsOn": "2026-03-25",
-      "endsOn": "2026-04-10",
-      "startTime": "18:00",
-      "endTime": "21:00",
-      "ticketType": "現場購票",
-      "priceNote": "示意資料",
-      "officialUrl": "https://example.com/kyoto-night-event",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BA%AC%E9%83%BD%E9%9A%B1%E8%97%8F%E4%BA%AE%E9%BB%9E%E8%A8%88%E7%95%AB%20%E4%BA%AC%E9%83%BD",
+      "startsOn": null,
+      "endsOn": null,
+      "startTime": "",
+      "endTime": "",
+      "ticketType": "",
+      "priceNote": "",
+      "officialUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
       "status": "待整理",
       "recurringType": "一次性",
       "published": true,
-      "lastReviewedAt": "2026-03-28"
+      "lastReviewedAt": null
     }
   ],
-  "sources": [],
+  "sources": [
+    {
+      "id": "33224c5d-f0b3-81e3-b6fe-f330dfcb9e2d",
+      "title": "京都・京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "url": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "platform": "Website",
+      "sourceType": "活動資訊",
+      "status": "已匯入",
+      "note": "京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "kyoto"
+      ],
+      "relatedCityIds": [
+        [
+          "kyoto"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-81cd-9a0f-de8a2c261476"
+      ],
+      "relatedEventIds": [
+        "33224c5d-f0b3-813c-8828-e8dd01316f08"
+      ],
+      "published": true,
+      "lastReviewedAt": null
+    }
+  ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T03:44:29.823Z",
+    "lastSyncedAt": "2026-03-30T08:12:48.917Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 5
+    "count": 6
   }
 }

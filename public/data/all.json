@@ -11,223 +11,139 @@
   },
   "spots": [
     {
-      "id": "33224c5d-f0b3-81c2-984a-f1f9a1b5a392",
-      "city": "changhua",
+      "id": "33224c5d-f0b3-81c0-b2fe-f6b6baac4a58",
+      "city": "彰化",
       "citySlug": "changhua",
-      "area": "彰化縣花壇鄉",
-      "name": "1.安昌肉圓（彰化縣花壇鄉中正路203號攤位2.3）",
-      "category": "小吃",
-      "description": "",
-      "sourceId": "33224c5d-f0b3-819f-9df1-f1e203f6790a",
-      "sourceTitle": "Instagram 景點・changhua",
+      "area": "花壇",
+      "name": "文德宮龍泉豆花",
+      "category": "餐廳",
+      "description": "提供豆花的甜品店。",
+      "sourceId": "33224c5d-f0b3-810a-91d3-d290d581cafe",
+      "sourceTitle": "彰化・花壇的美食推薦",
       "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
       "bestTime": "下午",
       "stayMinutes": 30,
       "tags": [
-        "小吃",
-        "彰化縣花壇鄉",
-        "changhua"
+        "豆花",
+        "甜品"
       ],
       "lat": 0,
       "lng": 0,
       "confidence": "推定",
-      "thumbnail": "🍢",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=1.%E5%AE%89%E6%98%8C%E8%82%89%E5%9C%93%EF%BC%88%E5%BD%B0%E5%8C%96%E7%B8%A3%E8%8A%B1%E5%A3%87%E9%84%89%E4%B8%AD%E6%AD%A3%E8%B7%AF203%E8%99%9F%E6%94%A4%E4%BD%8D2.3%EF%BC%89%20changhua",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E6%96%87%E5%BE%B7%E5%AE%AE%E9%BE%8D%E6%B3%89%E8%B1%86%E8%8A%B1%20%E5%BD%B0%E5%8C%96",
       "published": true,
       "priorityScore": 0,
       "lastReviewedAt": null,
-      "notes": "reason: Derived from source text segment only."
+      "notes": "reason: 適合喜愛甜品的旅客"
     },
     {
-      "id": "33224c5d-f0b3-81e6-a967-d968cc862c84",
-      "city": "changhua",
+      "id": "33224c5d-f0b3-819f-960e-ccd6014b0925",
+      "city": "彰化",
       "citySlug": "changhua",
-      "area": "彰化縣花壇鄉",
-      "name": "2.阿來羊肉（彰化縣花壇鄉花壇街288巷22號）",
-      "category": "小吃",
-      "description": "",
-      "sourceId": "33224c5d-f0b3-819f-9df1-f1e203f6790a",
-      "sourceTitle": "Instagram 景點・changhua",
+      "area": "花壇",
+      "name": "安昌肉圓",
+      "category": "餐廳",
+      "description": "知名的肉圓攤位，提供美味的肉圓。",
+      "sourceId": "33224c5d-f0b3-810a-91d3-d290d581cafe",
+      "sourceTitle": "彰化・花壇的美食推薦",
       "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
       "bestTime": "下午",
       "stayMinutes": 30,
       "tags": [
-        "小吃",
-        "彰化縣花壇鄉",
-        "changhua"
+        "肉圓",
+        "小吃"
       ],
-      "lat": 0,
-      "lng": 0,
+      "lat": 24.0252126,
+      "lng": 120.53882,
       "confidence": "推定",
-      "thumbnail": "🍢",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=2.%E9%98%BF%E4%BE%86%E7%BE%8A%E8%82%89%EF%BC%88%E5%BD%B0%E5%8C%96%E7%B8%A3%E8%8A%B1%E5%A3%87%E9%84%89%E8%8A%B1%E5%A3%87%E8%A1%97288%E5%B7%B722%E8%99%9F%EF%BC%89%20changhua",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E5%AE%89%E6%98%8C%E8%82%89%E5%9C%93%20%E5%BD%B0%E5%8C%96",
       "published": true,
       "priorityScore": 0,
       "lastReviewedAt": null,
-      "notes": "reason: Derived from source text segment only."
+      "notes": "reason: 受到旅客喜愛的美食"
     },
     {
-      "id": "33224c5d-f0b3-81bc-8f77-d872a2988323",
-      "city": "changhua",
+      "id": "33224c5d-f0b3-81b5-ad7f-e4dfed382a94",
+      "city": "彰化",
       "citySlug": "changhua",
-      "area": "花壇市",
-      "name": "3.花壇市場素食麵（彰化縣花壇鄉花壇街215號）",
-      "category": "小吃",
-      "description": "",
-      "sourceId": "33224c5d-f0b3-819f-9df1-f1e203f6790a",
-      "sourceTitle": "Instagram 景點・changhua",
+      "area": "花壇",
+      "name": "花壇市場素食麵",
+      "category": "餐廳",
+      "description": "提供素食麵的餐廳。",
+      "sourceId": "33224c5d-f0b3-810a-91d3-d290d581cafe",
+      "sourceTitle": "彰化・花壇的美食推薦",
       "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
       "bestTime": "下午",
       "stayMinutes": 30,
       "tags": [
-        "小吃",
-        "花壇市",
-        "changhua"
+        "素食",
+        "麵"
       ],
       "lat": 0,
       "lng": 0,
       "confidence": "推定",
-      "thumbnail": "🍢",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=3.%E8%8A%B1%E5%A3%87%E5%B8%82%E5%A0%B4%E7%B4%A0%E9%A3%9F%E9%BA%B5%EF%BC%88%E5%BD%B0%E5%8C%96%E7%B8%A3%E8%8A%B1%E5%A3%87%E9%84%89%E8%8A%B1%E5%A3%87%E8%A1%97215%E8%99%9F%EF%BC%89%20changhua",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E8%8A%B1%E5%A3%87%E5%B8%82%E5%A0%B4%E7%B4%A0%E9%A3%9F%E9%BA%B5%20%E5%BD%B0%E5%8C%96",
       "published": true,
       "priorityScore": 0,
       "lastReviewedAt": null,
-      "notes": "reason: Derived from source text segment only."
+      "notes": "reason: 素食者的選擇"
     },
     {
-      "id": "33224c5d-f0b3-812d-9f01-cd3e6ee632a4",
-      "city": "changhua",
+      "id": "33224c5d-f0b3-811b-a0ca-da47fd5d4302",
+      "city": "彰化",
       "citySlug": "changhua",
-      "area": "changhua",
-      "name": "也太好吃了吧！",
-      "category": "景點",
-      "description": "",
-      "sourceId": "33224c5d-f0b3-819f-9df1-f1e203f6790a",
-      "sourceTitle": "Instagram 景點・changhua",
+      "area": "花壇",
+      "name": "阿宏豬腳爌肉專賣店",
+      "category": "餐廳",
+      "description": "專賣豬腳和爌肉的餐廳。",
+      "sourceId": "33224c5d-f0b3-810a-91d3-d290d581cafe",
+      "sourceTitle": "彰化・花壇的美食推薦",
       "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
       "bestTime": "下午",
       "stayMinutes": 30,
       "tags": [
-        "景點",
-        "changhua"
+        "豬腳",
+        "爌肉"
       ],
       "lat": 0,
       "lng": 0,
       "confidence": "推定",
-      "thumbnail": "📍",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%B9%9F%E5%A4%AA%E5%A5%BD%E5%90%83%E4%BA%86%E5%90%A7%EF%BC%81%20changhua",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E9%98%BF%E5%AE%8F%E8%B1%AC%E8%85%B3%E7%88%8C%E8%82%89%E5%B0%88%E8%B3%A3%E5%BA%97%20%E5%BD%B0%E5%8C%96",
       "published": true,
       "priorityScore": 0,
       "lastReviewedAt": null,
-      "notes": "reason: Derived from source text segment only."
+      "notes": "reason: 適合喜愛豬腳的旅客"
     },
     {
-      "id": "33224c5d-f0b3-811e-9971-c766f3a45544",
-      "city": "changhua",
+      "id": "33224c5d-f0b3-81fc-8135-ce09b2f2ca0e",
+      "city": "彰化",
       "citySlug": "changhua",
-      "area": "changhua",
-      "name": "豆比登登登 on Instagram: \"花壇的東西",
-      "category": "景點",
-      "description": "",
-      "sourceId": "33224c5d-f0b3-819f-9df1-f1e203f6790a",
-      "sourceTitle": "Instagram 景點・changhua",
+      "area": "花壇",
+      "name": "阿來羊肉",
+      "category": "餐廳",
+      "description": "提供羊肉料理的餐廳。",
+      "sourceId": "33224c5d-f0b3-810a-91d3-d290d581cafe",
+      "sourceTitle": "彰化・花壇的美食推薦",
       "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
       "bestTime": "下午",
       "stayMinutes": 30,
       "tags": [
-        "景點",
-        "changhua"
+        "羊肉",
+        "餐廳"
       ],
-      "lat": 0,
-      "lng": 0,
+      "lat": 24.0251659,
+      "lng": 120.5386078,
       "confidence": "推定",
-      "thumbnail": "📍",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E8%B1%86%E6%AF%94%E7%99%BB%E7%99%BB%E7%99%BB%20on%20Instagram%3A%20%22%E8%8A%B1%E5%A3%87%E7%9A%84%E6%9D%B1%E8%A5%BF%20changhua",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E9%98%BF%E4%BE%86%E7%BE%8A%E8%82%89%20%E5%BD%B0%E5%8C%96",
       "published": true,
       "priorityScore": 0,
       "lastReviewedAt": null,
-      "notes": "reason: Derived from source text segment only."
-    },
-    {
-      "id": "33224c5d-f0b3-814e-b16c-d4d971782b7c",
-      "city": "changhua",
-      "citySlug": "changhua",
-      "area": "changhua",
-      "name": "店家資訊：",
-      "category": "景點",
-      "description": "",
-      "sourceId": "33224c5d-f0b3-819f-9df1-f1e203f6790a",
-      "sourceTitle": "Instagram 景點・changhua",
-      "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
-      "bestTime": "下午",
-      "stayMinutes": 30,
-      "tags": [
-        "景點",
-        "changhua"
-      ],
-      "lat": 0,
-      "lng": 0,
-      "confidence": "推定",
-      "thumbnail": "📍",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E5%BA%97%E5%AE%B6%E8%B3%87%E8%A8%8A%EF%BC%9A%20changhua",
-      "published": true,
-      "priorityScore": 0,
-      "lastReviewedAt": null,
-      "notes": "reason: Derived from source text segment only."
-    },
-    {
-      "id": "33224c5d-f0b3-8181-b022-c016c8926b6e",
-      "city": "changhua",
-      "citySlug": "changhua",
-      "area": "changhua",
-      "name": "直接愛上花壇😍",
-      "category": "景點",
-      "description": "",
-      "sourceId": "33224c5d-f0b3-819f-9df1-f1e203f6790a",
-      "sourceTitle": "Instagram 景點・changhua",
-      "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
-      "bestTime": "下午",
-      "stayMinutes": 30,
-      "tags": [
-        "景點",
-        "changhua"
-      ],
-      "lat": 0,
-      "lng": 0,
-      "confidence": "推定",
-      "thumbnail": "📍",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E7%9B%B4%E6%8E%A5%E6%84%9B%E4%B8%8A%E8%8A%B1%E5%A3%87%F0%9F%98%8D%20changhua",
-      "published": true,
-      "priorityScore": 0,
-      "lastReviewedAt": null,
-      "notes": "reason: Derived from source text segment only."
-    },
-    {
-      "id": "33224c5d-f0b3-8138-9569-fd0ce0828118",
-      "city": "changhua",
-      "citySlug": "changhua",
-      "area": "changhua",
-      "name": "這次吃完一輪",
-      "category": "景點",
-      "description": "",
-      "sourceId": "33224c5d-f0b3-819f-9df1-f1e203f6790a",
-      "sourceTitle": "Instagram 景點・changhua",
-      "sourceUrl": "https://www.instagram.com/reel/DWMB274EjKQ",
-      "bestTime": "下午",
-      "stayMinutes": 30,
-      "tags": [
-        "景點",
-        "changhua"
-      ],
-      "lat": 0,
-      "lng": 0,
-      "confidence": "推定",
-      "thumbnail": "📍",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E9%80%99%E6%AC%A1%E5%90%83%E5%AE%8C%E4%B8%80%E8%BC%AA%20changhua",
-      "published": true,
-      "priorityScore": 0,
-      "lastReviewedAt": null,
-      "notes": "reason: Derived from source text segment only."
+      "notes": "reason: 羊肉料理的選擇"
     },
     {
       "id": "33124c5d-f0b3-81ab-aac6-f21d6e9828b8",
@@ -252,7 +168,7 @@
       "lng": 135.7582,
       "confidence": "已確認",
       "thumbnail": "🐾",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=平等寺+因幡堂+京都",
+      "mapUrl": "https://www.google.com/maps?q=35.0013,135.7582",
       "published": true,
       "priorityScore": 88,
       "lastReviewedAt": "2026-03-28",
@@ -288,6 +204,34 @@
       "notes": ""
     },
     {
+      "id": "33224c5d-f0b3-81cd-9a0f-de8a2c261476",
+      "city": "京都",
+      "citySlug": "kyoto",
+      "area": "京都",
+      "name": "京都隱藏亮點計畫",
+      "category": "活動",
+      "description": "邀請所有遊客更深入體驗京都，發現前人未至之地的魅力。",
+      "sourceId": "33224c5d-f0b3-81e3-b6fe-f330dfcb9e2d",
+      "sourceTitle": "京都・京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "sourceUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "京都",
+        "活動",
+        "旅遊"
+      ],
+      "lat": 35.011447,
+      "lng": 135.758608,
+      "confidence": "推定",
+      "thumbnail": "🎫",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BA%AC%E9%83%BD%E9%9A%B1%E8%97%8F%E4%BA%AE%E9%BB%9E%E8%A8%88%E7%95%AB%20%E4%BA%AC%E9%83%BD",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 活動旨在讓遊客探索京都的隱藏魅力。"
+    },
+    {
       "id": "33124c5d-f0b3-8172-88d1-d7178f17aea9",
       "city": "京都",
       "citySlug": "kyoto",
@@ -310,7 +254,7 @@
       "lng": 135.7575,
       "confidence": "已確認",
       "thumbnail": "🍵",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=麓壽庵+kyoto",
+      "mapUrl": "https://www.google.com/maps?q=35.0107,135.7575",
       "published": true,
       "priorityScore": 93,
       "lastReviewedAt": "2026-03-28",
@@ -339,7 +283,7 @@
       "lng": 135.7596,
       "confidence": "已確認",
       "thumbnail": "🛍️",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=D%26DEPARTMENT+KYOTO",
+      "mapUrl": "https://www.google.com/maps?q=35.0018,135.7596",
       "published": true,
       "priorityScore": 92,
       "lastReviewedAt": "2026-03-28",
@@ -368,7 +312,7 @@
       "lng": 135.5059,
       "confidence": "已確認",
       "thumbnail": "🍜",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=立ち食いうどんそば+松屋+大阪",
+      "mapUrl": "https://www.google.com/maps?q=34.6531,135.5059",
       "published": true,
       "priorityScore": 85,
       "lastReviewedAt": "2026-03-28",
@@ -426,7 +370,7 @@
       "lng": 135.5056,
       "confidence": "已確認",
       "thumbnail": "🍢",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=串かつ八重勝+新世界",
+      "mapUrl": "https://www.google.com/maps?q=34.6525,135.5056",
       "published": true,
       "priorityScore": 95,
       "lastReviewedAt": "2026-03-28",
@@ -455,91 +399,177 @@
       "lng": 135.5057,
       "confidence": "已確認",
       "thumbnail": "🍢",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=Nonkiya+大阪",
+      "mapUrl": "https://www.google.com/maps?q=34.6529,135.5057",
       "published": true,
       "priorityScore": 90,
       "lastReviewedAt": "2026-03-28",
       "notes": ""
+    },
+    {
+      "id": "33224c5d-f0b3-81a8-8599-d83ad6163288",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "弘大周邊",
+      "name": "牛火 韓牛燒烤",
+      "category": "餐廳",
+      "description": "主打1++等級的韓牛，油花漂亮，肉質軟嫩多汁，提供代烤服務。",
+      "sourceId": "33224c5d-f0b3-81b1-a58e-c75c7f2fded6",
+      "sourceTitle": "首爾・弘大區的韓牛餐廳介紹",
+      "sourceUrl": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "韓國美食",
+        "弘大美食",
+        "首爾燒肉",
+        "韓牛"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🥩",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9A%B0%ED%99%94%20%ED%99%8D%EB%8C%80%20%ED%95%9C%EC%9A%B0%20%EB%A7%9B%EC%A7%91%20%7C%20%E7%89%9B%E7%81%AB%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 介紹了一間值得體驗的韓牛餐廳"
+    },
+    {
+      "id": "33224c5d-f0b3-81fb-8656-dc0bcdd00807",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "弘大入口",
+      "name": "保承會館",
+      "category": "餐廳",
+      "description": "專門提供血腸和水煮豬肉湯飯的餐廳，適合獨旅者用餐。",
+      "sourceId": "33224c5d-f0b3-817c-9d05-c7422bda5a25",
+      "sourceTitle": "首爾・推薦的獨旅餐廳保承會館，專門提供血腸和水煮豬肉湯飯。",
+      "sourceUrl": "https://hikorealife.com/%E9%A6%96%E7%88%BE%E5%BC%98%E5%A4%A7%E5%85%A5%E5%8F%A3%E5%9C%A8%E5%9C%B0%E9%9F%93%E5%9C%8B%E5%A5%BD%E5%91%B3-%E4%BF%9D%E6%89%BF%E6%9C%83%E9%A4%A8%EB%B3%B4%EC%8A%B9%ED%9A%8C%EA%B4%80-%E8%A1%80/",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "韓國料理",
+        "獨旅",
+        "湯飯"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BF%9D%E6%89%BF%E6%9C%83%E9%A4%A8%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 推薦的獨旅餐廳"
+    },
+    {
+      "id": "33224c5d-f0b3-811e-a003-d76dc26a3b48",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "望遠洞",
+      "name": "望遠市場",
+      "category": "小吃",
+      "description": "首爾人氣傳統市場，以手工可樂餅、年糕排骨、刀削麵等街頭小吃著稱，適合午後慢逛。",
+      "sourceId": "33224c5d-f0b3-8152-b354-f3778742d994",
+      "sourceTitle": "Instagram 景點・首爾",
+      "sourceUrl": "https://www.instagram.com/reel/DGNUCr8TLbY/?igsh=MTdnOGo2dWNmamFiZg==",
+      "bestTime": "下午",
+      "stayMinutes": 60,
+      "tags": [
+        "傳統市場",
+        "可樂餅",
+        "年糕排骨",
+        "刀削麵",
+        "在地美食"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🏪",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E6%9C%9B%E9%81%A0%E5%B8%82%E5%A0%B4%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": "2026-03-29",
+      "notes": "reason: Derived from source text segment only."
+    },
+    {
+      "id": "33224c5d-f0b3-81f1-8001-ea4ffc161927",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "Mapo-gu",
+      "name": "우화 홍대 한우 맛집 | 牛火",
+      "category": "餐廳",
+      "description": "主打1++等級的韓牛，油花漂亮，肉質軟嫩多汁，提供代烤服務。",
+      "sourceId": "33224c5d-f0b3-81cb-baf9-cb418dc410b1",
+      "sourceTitle": "首爾・弘大區的韓牛餐廳介紹",
+      "sourceUrl": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "韓國美食",
+        "弘大美食",
+        "首爾燒肉",
+        "韓牛"
+      ],
+      "lat": 0,
+      "lng": 0,
+      "confidence": "推定",
+      "thumbnail": "🍽️",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%EC%9A%B0%ED%99%94%20%ED%99%8D%EB%8C%80%20%ED%95%9C%EC%9A%B0%20%EB%A7%9B%EC%A7%91%20%7C%20%E7%89%9B%E7%81%AB%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 介紹了一家值得一試的韓牛餐廳"
     }
   ],
   "events": [
     {
-      "id": "33124c5d-f0b3-8154-89af-e12917b19cc4",
+      "id": "33224c5d-f0b3-813c-8828-e8dd01316f08",
       "city": "京都",
       "citySlug": "kyoto",
-      "area": "東山周邊",
-      "name": "京都夜櫻點燈示意活動",
+      "area": "京都",
+      "name": "京都隱藏亮點計畫",
       "category": "活動",
-      "description": "示意用活動資料。正式版會由 Notion Events 資料庫同步，適合做期間限定活動展示。",
-      "sourceId": "京都夜櫻活動範例",
-      "sourceTitle": "",
-      "sourceUrl": "https://example.com/kyoto-night-event",
+      "description": "邀請所有遊客更深入體驗京都，發現前人未至之地的魅力。",
+      "sourceId": "33224c5d-f0b3-81e3-b6fe-f330dfcb9e2d",
+      "sourceTitle": "京都・京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "sourceUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
       "tags": [
-        "夜櫻",
-        "期間限定",
-        "春季"
+        "京都",
+        "活動",
+        "旅遊"
       ],
-      "lat": 35.0037,
-      "lng": 135.7788,
+      "lat": 35.011447,
+      "lng": 135.758608,
       "thumbnail": "🎫",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E6%9D%B1%E5%B1%B1+%E4%BA%AC%E9%83%BD",
-      "startsOn": "2026-03-25",
-      "endsOn": "2026-04-10",
-      "startTime": "18:00",
-      "endTime": "21:00",
-      "ticketType": "現場購票",
-      "priceNote": "示意資料",
-      "officialUrl": "https://example.com/kyoto-night-event",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BA%AC%E9%83%BD%E9%9A%B1%E8%97%8F%E4%BA%AE%E9%BB%9E%E8%A8%88%E7%95%AB%20%E4%BA%AC%E9%83%BD",
+      "startsOn": null,
+      "endsOn": null,
+      "startTime": "",
+      "endTime": "",
+      "ticketType": "",
+      "priceNote": "",
+      "officialUrl": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
       "status": "待整理",
       "recurringType": "一次性",
       "published": true,
-      "lastReviewedAt": "2026-03-28"
-    },
-    {
-      "id": "33124c5d-f0b3-8141-aa51-e4a23e51d331",
-      "city": "大阪",
-      "citySlug": "osaka",
-      "area": "中之島",
-      "name": "大阪美食市集示意活動",
-      "category": "活動",
-      "description": "示意用活動資料，正式版可放快閃市集、祭典、展覽等日期型內容。",
-      "sourceId": "大阪新世界街邊美食 Reel",
-      "sourceTitle": "",
-      "sourceUrl": "https://www.instagram.com/reel/DV_M4ayDcf-/",
-      "tags": [
-        "市集",
-        "美食",
-        "週末"
-      ],
-      "lat": 34.6925,
-      "lng": 135.4904,
-      "thumbnail": "🎫",
-      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%B8%AD%E4%B9%8B%E5%B3%B6+%E5%A4%A7%E9%98%AA",
-      "startsOn": "2026-04-12",
-      "endsOn": "2026-04-14",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "ticketType": "免費入場",
-      "priceNote": "餐飲另計",
-      "officialUrl": "https://www.instagram.com/reel/DV_M4ayDcf-/",
-      "status": "待整理",
-      "recurringType": "一次性",
-      "published": true,
-      "lastReviewedAt": "2026-03-28"
+      "lastReviewedAt": null
     }
   ],
   "sources": [
     {
-      "id": "33224c5d-f0b3-81a9-ace2-df6dd868168e",
-      "title": "Instagram 來源",
-      "url": "https://www.instagram.com/reel/DWbB04-hJd9",
-      "platform": "Instagram",
-      "sourceType": "手動整理",
+      "id": "33324c5d-f0b3-81e9-b9ef-ebb05d084443",
+      "title": "Website 景點・首爾",
+      "url": "https://www.threads.com/@staf0951/post/DWd1ylRCaKS",
+      "platform": "Website",
+      "sourceType": "景點美食",
       "status": "已匯入",
       "note": "",
       "capturedAt": null,
       "authorOrAccount": "",
-      "cityHints": [],
+      "cityHints": [
+        "seoul"
+      ],
       "relatedCityIds": [
         []
       ],
@@ -549,9 +579,224 @@
       "lastReviewedAt": null
     },
     {
-      "id": "33224c5d-f0b3-819f-9df1-f1e203f6790a",
-      "title": "Instagram 景點・changhua",
+      "id": "33224c5d-f0b3-81da-9a18-e455d5d1c6a0",
+      "title": "首爾・推薦的厚切牛舌店及其美食",
+      "url": "https://www.instagram.com/reel/DQWT4Jhkr3f/?igsh=ZHAybHBka25sM3lu",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "推薦的厚切牛舌店及其美食",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-81bb-afa8-dce2bbb71bf0",
+      "title": "Instagram 來源・大阪",
+      "url": "https://www.instagram.com/reel/DWbB04-hJd9",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "osaka"
+      ],
+      "relatedCityIds": [
+        [
+          "osaka"
+        ]
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-8120-86fb-cb2382d2f49b",
+      "title": "首爾・延南洞的光雞餐廳提供美味的人蔘雞，適合單人用餐。",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWMD8DVEx6E/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "延南洞的光雞餐廳提供美味的人蔘雞，適合單人用餐。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-81c7-afb5-ec7658a72a0b",
+      "title": "首爾・弘大區域的一間韓牛燒肉餐廳，提供高品質的肉品與服務。",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "弘大區域的一間韓牛燒肉餐廳，提供高品質的肉品與服務。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        []
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-81e3-b6fe-f330dfcb9e2d",
+      "title": "京都・京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "url": "https://pikminbloom.com/zh_hant/news/nov24-totteokinokyoto",
+      "platform": "Website",
+      "sourceType": "活動資訊",
+      "status": "已匯入",
+      "note": "京都隱藏亮點計畫邀請遊客透過明信片漫步探索京都。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "kyoto"
+      ],
+      "relatedCityIds": [
+        [
+          "kyoto"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-81cd-9a0f-de8a2c261476"
+      ],
+      "relatedEventIds": [
+        "33224c5d-f0b3-813c-8828-e8dd01316f08"
+      ],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-817c-9d05-c7422bda5a25",
+      "title": "首爾・推薦的獨旅餐廳保承會館，專門提供血腸和水煮豬肉湯飯。",
+      "url": "https://hikorealife.com/%E9%A6%96%E7%88%BE%E5%BC%98%E5%A4%A7%E5%85%A5%E5%8F%A3%E5%9C%A8%E5%9C%B0%E9%9F%93%E5%9C%8B%E5%A5%BD%E5%91%B3-%E4%BF%9D%E6%89%BF%E6%9C%83%E9%A4%A8%EB%B3%B4%EC%8A%B9%ED%9A%8C%EA%B4%80-%E8%A1%80/",
+      "platform": "Website",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "推薦的獨旅餐廳保承會館，專門提供血腸和水煮豬肉湯飯。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        [
+          "seoul"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-81fb-8656-dc0bcdd00807"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-8177-a73b-da2a4af7134f",
+      "title": "Instagram 來源・大阪",
+      "url": "https://www.instagram.com/reel/DWbB04-hJd9",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "大阪"
+      ],
+      "relatedCityIds": [
+        [
+          "大阪"
+        ]
+      ],
+      "relatedSpotIds": [],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-81cb-baf9-cb418dc410b1",
+      "title": "首爾・弘大區的韓牛餐廳介紹",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "弘大區的韓牛餐廳介紹",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        [
+          "seoul"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-81f1-8001-ea4ffc161927"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-810a-91d3-d290d581cafe",
+      "title": "彰化・花壇的美食推薦",
       "url": "https://www.instagram.com/reel/DWMB274EjKQ",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "花壇的美食推薦",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "彰化"
+      ],
+      "relatedCityIds": [
+        [
+          "彰化"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-819f-960e-ccd6014b0925",
+        "33224c5d-f0b3-81fc-8135-ce09b2f2ca0e",
+        "33224c5d-f0b3-81b5-ad7f-e4dfed382a94",
+        "33224c5d-f0b3-811b-a0ca-da47fd5d4302",
+        "33224c5d-f0b3-81c0-b2fe-f6b6baac4a58"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-8152-b354-f3778742d994",
+      "title": "Instagram 景點・首爾",
+      "url": "https://www.instagram.com/reel/DGNUCr8TLbY/?igsh=MTdnOGo2dWNmamFiZg==",
       "platform": "Instagram",
       "sourceType": "景點美食",
       "status": "已匯入",
@@ -559,23 +804,67 @@
       "capturedAt": null,
       "authorOrAccount": "",
       "cityHints": [
-        "changhua"
+        "seoul"
       ],
       "relatedCityIds": [
         [
-          "changhua"
+          "seoul"
         ]
       ],
       "relatedSpotIds": [
-        "33224c5d-f0b3-811e-9971-c766f3a45544",
-        "33224c5d-f0b3-812d-9f01-cd3e6ee632a4",
-        "33224c5d-f0b3-8138-9569-fd0ce0828118",
-        "33224c5d-f0b3-8181-b022-c016c8926b6e",
-        "33224c5d-f0b3-814e-b16c-d4d971782b7c",
-        "33224c5d-f0b3-81c2-984a-f1f9a1b5a392",
-        "33224c5d-f0b3-81e6-a967-d968cc862c84",
-        "33224c5d-f0b3-81bc-8f77-d872a2988323"
+        "33224c5d-f0b3-811e-a003-d76dc26a3b48",
+        "33224c5d-f0b3-81ca-a668-e70b8a3f1029",
+        "33224c5d-f0b3-8157-896b-db66447d4408",
+        "33224c5d-f0b3-8185-9586-da2435af1eb8"
       ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-81b1-a58e-c75c7f2fded6",
+      "title": "首爾・弘大區的韓牛餐廳介紹",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWWiMwgkycB/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "弘大區的韓牛餐廳介紹",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        [
+          "seoul"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33224c5d-f0b3-81a8-8599-d83ad6163288"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
+    {
+      "id": "33224c5d-f0b3-810f-8fa0-d86e74080950",
+      "title": "Instagram 來源・大阪",
+      "url": "https://www.instagram.com/reel/DWbB04-hJd9",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "大阪"
+      ],
+      "relatedCityIds": [
+        [
+          "大阪"
+        ]
+      ],
+      "relatedSpotIds": [],
       "relatedEventIds": [],
       "published": true,
       "lastReviewedAt": null
@@ -611,7 +900,7 @@
       "url": "https://www.instagram.com/reel/DWWQYkuAfHD/",
       "platform": "Instagram Reel",
       "sourceType": "影片",
-      "status": "部分辨識",
+      "status": "待整理",
       "note": "已放入 D&DEPARTMENT KYOTO、平等寺（因幡堂）、麓壽庵；其餘點位待後續補齊。",
       "capturedAt": "2026-03-28",
       "authorOrAccount": "未知",
@@ -663,7 +952,7 @@
       "url": "https://www.instagram.com/reel/DWOiXYxkf97/",
       "platform": "Instagram Reel",
       "sourceType": "影片",
-      "status": "部分辨識",
+      "status": "待整理",
       "note": "已整理出吉次牛舌與心齋橋區域線索；分店點位先以推定方式放入。",
       "capturedAt": "2026-03-28",
       "authorOrAccount": "未知",
@@ -709,10 +998,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-29T03:44:29.837Z",
+    "lastSyncedAt": "2026-03-30T08:12:48.987Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 18
+    "count": 19
   }
 }
