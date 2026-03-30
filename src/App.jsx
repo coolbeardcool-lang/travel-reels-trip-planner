@@ -473,7 +473,7 @@ export default function App() {
             onAnalyze={handleAnalyzeUrl}
             onConfirm={handleConfirmAnalysis}
             onClose={{ open: () => setInputExpanded(true), close: () => { setInputExpanded(false); setAnalysisPreview(null); setSubmitStatus({ kind: "idle", message: "" }); } }}
-            selectedItems={[...selectedAnalysisItemIds]} setSelectedItems={(ids) => setSelectedAnalysisItemIds(new Set(ids))}
+            selectedItems={[...selectedAnalysisItemIds]} setSelectedItems={(updater) => setSelectedAnalysisItemIds((prev) => new Set(typeof updater === "function" ? updater([...prev]) : updater))}
           />
         </div>
 
