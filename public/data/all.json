@@ -463,6 +463,34 @@
       "notes": "reason: 介紹了一間值得體驗的韓牛餐廳"
     },
     {
+      "id": "33324c5d-f0b3-81b9-8f0f-d53f8da5b3a1",
+      "city": "首爾",
+      "citySlug": "seoul",
+      "area": "延南洞",
+      "name": "光雞 (GWANGGYE)",
+      "category": "餐廳",
+      "description": "這間在地人才知道的人蔘雞，原味溫潤清甜，人蔘香很順，青陽辣椒微辣超開胃，雞肉嫩到一夾直接骨肉分離，附飯可無限續，整體吃起來清爽不負擔。",
+      "sourceId": "33324c5d-f0b3-81c2-a71e-fc57da46c98c",
+      "sourceTitle": "首爾・延南洞的光雞餐廳提供美味的人蔘雞，適合單人用餐。",
+      "sourceUrl": "https://www.instagram.com/sasa_finger_licking/reel/DWMD8DVEx6E/",
+      "bestTime": "下午",
+      "stayMinutes": 30,
+      "tags": [
+        "韓國美食",
+        "首爾美食",
+        "延南洞美食"
+      ],
+      "lat": 37.5665,
+      "lng": 126.978,
+      "confidence": "推定",
+      "thumbnail": "🍜",
+      "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E5%85%89%E9%9B%9E%20(GWANGGYE)%20%E9%A6%96%E7%88%BE",
+      "published": true,
+      "priorityScore": 0,
+      "lastReviewedAt": null,
+      "notes": "reason: 提供美味的人蔘雞，適合單人用餐。"
+    },
+    {
       "id": "33224c5d-f0b3-81fb-8656-dc0bcdd00807",
       "city": "首爾",
       "citySlug": "seoul",
@@ -585,6 +613,31 @@
     }
   ],
   "sources": [
+    {
+      "id": "33324c5d-f0b3-81c2-a71e-fc57da46c98c",
+      "title": "首爾・延南洞的光雞餐廳提供美味的人蔘雞，適合單人用餐。",
+      "url": "https://www.instagram.com/sasa_finger_licking/reel/DWMD8DVEx6E/",
+      "platform": "Instagram",
+      "sourceType": "手動整理",
+      "status": "已匯入",
+      "note": "延南洞的光雞餐廳提供美味的人蔘雞，適合單人用餐。",
+      "capturedAt": null,
+      "authorOrAccount": "",
+      "cityHints": [
+        "seoul"
+      ],
+      "relatedCityIds": [
+        [
+          "seoul"
+        ]
+      ],
+      "relatedSpotIds": [
+        "33324c5d-f0b3-81b9-8f0f-d53f8da5b3a1"
+      ],
+      "relatedEventIds": [],
+      "published": true,
+      "lastReviewedAt": null
+    },
     {
       "id": "33324c5d-f0b3-81c8-b6ed-e7a78c68c353",
       "title": "京都・推薦的京都美食空蝉亭，提供頂級豬肉料理。",
@@ -1072,10 +1125,10 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-30T10:10:19.079Z",
+    "lastSyncedAt": "2026-03-30T10:12:34.673Z",
     "notionDataSourceId": "all",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 20
+    "count": 21
   }
 }
