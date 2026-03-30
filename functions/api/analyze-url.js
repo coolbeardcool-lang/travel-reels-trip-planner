@@ -722,7 +722,7 @@ async function callOpenAI(apiKey, url, mergedText, contentKindHint, platformHint
 1. 盡量列出內容中所有提到的景點、餐廳、活動、地點，即使只有簡短提及也要列出。
 2. 每個 item 必須給 priority 欄位（1=最值得關注，數字越大越次要），由最可能讓旅客感興趣的排在最前面。
 3. 不確定時請填 null、空陣列，或 needsReview=true。
-4. 不要猜測日期、座標、地圖連結、官網連結。
+4. 座標（lat/lng）：若你對該地點的位置有高度把握（知名景點、連鎖店、市場、車站），請直接填入十進位座標（精確至小數點後4位）；不確定時填 null，勿猜測。
 5. 若同一來源提到多個獨立地點，請全部拆成獨立 item，每個 item 對應一個實體店家或景點；但若是同一店家的分店（相同店名、不同地址/區域），每個分店各為獨立 item，並在 area 填入各自所在區域；同一店家同一地點的子項目（如套餐多道菜、市場內的攤位），請合併為一個 item 並在 description 補充細節。名稱來自社群貼文 caption 或留言時，每行獨立意義的店名各為一個 item，不要將多行合併或截斷。
 6. 若同時有景點與活動，contentKind 請填 "mixed"，且每個 item 都要有 itemKind。
 7. 每個 item 都要附 evidence 陣列，指出資訊來源。
@@ -766,8 +766,8 @@ ${String(mergedText || "").slice(0, 2000)}
       "ends_on": null,
       "start_time": "",
       "end_time": "",
-      "lat": null,
-      "lng": null,
+      "lat": 35.6762,
+      "lng": 139.6503,
       "map_url": null,
       "official_url": null,
       "venue_name": null,

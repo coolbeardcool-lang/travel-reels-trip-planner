@@ -23,6 +23,12 @@ dishes within a restaurant), merge them into a single item. Add sub-item details
 
 Do not emit multiple items for sub-locations. This was the root cause of numbered list explosion in Seoul data.
 
+## Coordinates Rule (lat/lng)
+- If the AI has high confidence about a location (landmark, chain store, market, station) → fill `lat`/`lng` to 4 decimal places
+- If uncertain → leave `null`; Nominatim will attempt geocoding as fallback
+- AI-provided coords are labeled `confidence: 已確認` (same as Nominatim-verified)
+- Nominatim is only called when `lat`/`lng` are null/0 after AI analysis — reducing API calls for well-known spots
+
 ## CitySlug Rule
 `citySlug` must resolve to a known English slug. Chinese city names are acceptable input and will be
 normalized via `CITY_SLUG_MAP`. Unknown cities fall back to `lowercase-with-dashes`.

@@ -268,36 +268,48 @@ export async function onRequestPost(context) {
     // Per-request dedup cache: avoids repeated Notion queries for same citySlug
     const existingCache = new Map();
 
-    // ── Nominatim Geocoding ────────────────────────────────
-    // 對沒有座標的 item 補查 lat/lng，每次請求間隔 1.1 秒
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const hasCoords = Number.isFinite(item?.lat) && item.lat !== 0
-                     && Number.isFinite(item?.lng) && item.lng !== 0;
-      if (!hasCoords && item?.name) {
-        const itemCitySlug = String(item?.citySlug || item?.city_slug || citySlug || "");
+    // ── Geocoding（單一 pass）─────────────────────────────
+    // 優先順序：AI 提供座標 → Nominatim → 城市中心（推定）
+    // AI 已有座標的 item 跳過 Nominatim，節省 API 呼叫次數
+    let nominatimCallCount = 0;
+    for (const item of items) {
+      const aiHasCoords = Number.isFinite(item?.lat) && item.lat !== 0
+                       && Number.isFinite(item?.lng) && item.lng !== 0;
+      if (aiHasCoords) {
+        item._confidence = "已確認"; // AI 訓練資料知道此地點位置
+      } else if (item?.name) {
+        const itemCitySlug = normalizeCitySlug(String(item?.citySlug || item?.city_slug || citySlug || "")) || "";
         const cityLabel = CITY_DATA_MAP[itemCitySlug]?.label || itemCitySlug;
-        if (i > 0) await sleep(1100); // 遵守 Nominatim 1 req/sec 限制
+        if (nominatimCallCount > 0) await sleep(1100); // 遵守 Nominatim 1 req/sec 限制
+        nominatimCallCount++;
         const geo = await geocodeWithNominatim(item.name, item.area, itemCitySlug, cityLabel);
         if (geo) {
           item.lat = geo.lat;
           item.lng = geo.lng;
+          item._confidence = "已確認";
+        } else {
+          item._confidence = "推定";
         }
+      } else {
+        item._confidence = "推定";
       }
     }
 
     if (items.length && (env.NOTION_SPOTS_DATA_SOURCE_ID || env.NOTION_EVENTS_DATA_SOURCE_ID)) {
-      let geoCallCount = 0;
       for (const item of items) {
         const itemCitySlug = normalizeCitySlug(String(item?.citySlug || item?.city_slug || citySlug || "")) || "";
-        // Nominatim 1 req/sec 限制
-        if (geoCallCount > 0) await delay(1100);
-        const geoResult = await geocodeSpot(
-          item.name, item.area,
-          CITY_DATA_MAP[itemCitySlug]?.label,
-          CITY_DATA_MAP[itemCitySlug]
-        );
-        geoCallCount++;
+        const cityData = CITY_DATA_MAP[itemCitySlug];
+        const lat = Number.isFinite(item?.lat) && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
+        const lng = Number.isFinite(item?.lng) && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
+        const confidence = item._confidence || "推定";
+        const geoResult = {
+          lat,
+          lng,
+          confidence,
+          mapUrl: confidence === "已確認" && lat && lng
+            ? `https://www.google.com/maps?q=${lat},${lng}`
+            : null,
+        };
         const spotPage = await upsertSpotPage({
           env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle, geoResult, cache: existingCache,
         });
