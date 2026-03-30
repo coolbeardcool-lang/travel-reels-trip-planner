@@ -152,8 +152,8 @@
         "活動",
         "旅遊"
       ],
-      "lat": 0,
-      "lng": 0,
+      "lat": 35.011447,
+      "lng": 135.758608,
       "confidence": "推定",
       "thumbnail": "🎫",
       "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BA%AC%E9%83%BD%E9%9A%B1%E8%97%8F%E4%BA%AE%E9%BB%9E%E8%A8%88%E7%95%AB%20%E4%BA%AC%E9%83%BD",
@@ -180,8 +180,8 @@
         "活動",
         "旅遊"
       ],
-      "lat": 0,
-      "lng": 0,
+      "lat": 35.011447,
+      "lng": 135.758608,
       "thumbnail": "🎫",
       "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E4%BA%AC%E9%83%BD%E9%9A%B1%E8%97%8F%E4%BA%AE%E9%BB%9E%E8%A8%88%E7%95%AB%20%E4%BA%AC%E9%83%BD",
       "startsOn": null,
@@ -227,7 +227,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-03-30T00:11:46.131Z",
+    "lastSyncedAt": "2026-03-30T00:19:11.922Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
