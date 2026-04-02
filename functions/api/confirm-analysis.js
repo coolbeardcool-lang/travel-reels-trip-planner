@@ -1,10 +1,7 @@
-import { NOTION_VERSION } from "./confirm-analysis/constants.js";
+import { NOTION_VERSION, CITY_DATA_MAP, normalizeCitySlug } from "./confirm-analysis/constants.js";
 import { sleep, geocodeWithNominatim } from "./confirm-analysis/geo.js";
 import { findExistingRecord, buildMergedPatch } from "./confirm-analysis/dedup.js";
-import { cleanText, joinClean, normalizeTags, guessThumbnail, normalizeName } from "./confirm-analysis/text.js";
-import { CITY_DATA_MAP, normalizeCitySlug } from "./confirm-analysis/constants.js";
-
-// functions/api/confirm-analysis.js
+import { cleanText, joinClean, normalizeTags, guessThumbnail } from "./confirm-analysis/text.js";
 
 async function notionPatchPage(env, pageId, properties) {
   const resp = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
@@ -31,7 +28,6 @@ async function notionCreatePage(env, payload) {
     },
     body: JSON.stringify(payload),
   });
-
   const jsonBody = await resp.json();
   if (!resp.ok) throw new Error(jsonBody?.message || "寫入 Notion 失敗。");
   return jsonBody;
@@ -58,24 +54,15 @@ export async function onRequestPost(context) {
   try {
     const env = context.env;
     const body = await context.request.json();
-
     const url = String(body?.url || "").trim();
     const sourceTitle = String(body?.sourceTitle || "").trim() || "未命名來源";
     const notes = String(body?.notes || "").trim();
     const analysis = body?.analysis || {};
 
-    if (!url || !/^https?:\/\//i.test(url)) {
-      return json({ message: "url 不可空白，且必須是 http/https 網址。" }, 400);
-    }
-    if (!analysis || typeof analysis !== "object") {
-      return json({ message: "缺少 analysis，請先完成分析。" }, 400);
-    }
-    if (!analysis.contentKind || !analysis.sourcePlatform) {
-      return json({ message: "analysis 格式不完整，請重新分析。" }, 400);
-    }
-    if (!env.NOTION_TOKEN || !env.NOTION_SOURCES_DATA_SOURCE_ID) {
-      return json({ message: "Notion 環境變數尚未設定。" }, 500);
-    }
+    if (!url || !/^https?:\/\//i.test(url)) return json({ message: "url 不可空白，且必須是 http/https 網址。" }, 400);
+    if (!analysis || typeof analysis !== "object") return json({ message: "缺少 analysis，請先完成分析。" }, 400);
+    if (!analysis.contentKind || !analysis.sourcePlatform) return json({ message: "analysis 格式不完整，請重新分析。" }, 400);
+    if (!env.NOTION_TOKEN || !env.NOTION_SOURCES_DATA_SOURCE_ID) return json({ message: "Notion 環境變數尚未設定。" }, 500);
 
     const platform = String(analysis.sourcePlatform || "Website");
     const contentKind = String(analysis.contentKind || "source_only");
@@ -86,19 +73,11 @@ export async function onRequestPost(context) {
 
     let cityEnsureError = null;
     if (citySlug && env.NOTION_CITIES_WRITE_ID) {
-      try {
-        await ensureCityExists(env, citySlug);
-      } catch (e) {
-        cityEnsureError = e?.message || String(e);
-      }
+      try { await ensureCityExists(env, citySlug); } catch (e) { cityEnsureError = e?.message || String(e); }
     }
 
-    const sourcePage = await createSourcePage({
-      env, sourceTitle, url, platform, notes,
-      summary, contentKind, citySlug, confidence, items,
-    });
+    const sourcePage = await createSourcePage({ env, sourceTitle, url, platform, notes, summary, contentKind, citySlug, confidence, items });
     const sourcePageId = sourcePage?.id || null;
-
     const created = { sourcePageId, spots: [], events: [] };
     const spotPageIds = [];
     const eventPageIds = [];
@@ -134,12 +113,7 @@ export async function onRequestPost(context) {
         const lat = Number.isFinite(item?.lat) && item.lat !== 0 ? item.lat : (cityData?.lat || 0);
         const lng = Number.isFinite(item?.lng) && item.lng !== 0 ? item.lng : (cityData?.lng || 0);
         const confidenceLabel = item._confidence || "推定";
-        const geoResult = {
-          lat,
-          lng,
-          confidence: confidenceLabel,
-          mapUrl: confidenceLabel === "已確認" && lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : null,
-        };
+        const geoResult = { lat, lng, confidence: confidenceLabel, mapUrl: confidenceLabel === "已確認" && lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : null };
         const spotPage = await upsertSpotPage({ env, item, citySlug: itemCitySlug, sourceUrl: url, sourcePageId, sourceTitle, geoResult, cache: existingCache });
         const spotId = spotPage?.id || null;
         if (spotId) spotPageIds.push(spotId);
@@ -273,7 +247,7 @@ async function ensureCityExists(env, citySlug) {
   }
 }
 
-async function createSourcePage({ env, sourceTitle, url, platform, notes, summary, contentKind, citySlug, confidence, items }) {
+async function createSourcePage({ env, sourceTitle, url, platform, notes, summary, contentKind, citySlug }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
   const kindLabel = contentKind === "event" ? "活動" : contentKind === "spot" ? "景點" : "來源";
@@ -299,7 +273,6 @@ async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
   const cityLabel = cityData?.label || citySlug;
   const normalizedTagList = Array.isArray(item.tags) ? item.tags.map((t) => String(t || "").trim()).filter(Boolean) : [];
   const tags = normalizedTagList.length ? normalizedTagList.join(", ") : [item.category || "景點", item.area || "", citySlug || ""].filter(Boolean).join(", ");
-
   const geo = geoResult || {};
   const lat = geo.lat && geo.lat !== 0 ? geo.lat : (Number.isFinite(item?.lat) && item.lat !== 0 ? item.lat : null);
   const lng = geo.lng && geo.lng !== 0 ? geo.lng : (Number.isFinite(item?.lng) && item.lng !== 0 ? item.lng : null);
@@ -307,7 +280,6 @@ async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
   const mapQuery = encodeURIComponent(`${item.name} ${cityLabel}`);
   const mapUrl = geo.mapUrl || item.map_url || `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
   const priorityScore = Number.isFinite(item?.itemConfidence) ? Math.round(item.itemConfidence * 100) : Number.isFinite(item?.item_confidence) ? Math.round(item.item_confidence * 100) : 0;
-
   const qualityWarnings = [];
   if (item.name && !/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(item.name)) qualityWarnings.push("quality-warn: name has no CJK characters");
   if (item.area && !/[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(item.area)) qualityWarnings.push("quality-warn: area has no CJK characters");
@@ -348,12 +320,11 @@ async function upsertSpotPage({ env, item, citySlug, sourceUrl, sourcePageId, so
     if (Object.keys(patch).length > 0) await notionPatchPage(env, existing.id, patch);
     return { id: existing.id, action: "merged" };
   }
-
   const created = await notionCreatePage(env, { parent: { data_source_id: env.NOTION_SPOTS_DATA_SOURCE_ID }, properties });
   return { ...created, action: "created" };
 }
 
-async function upsertEventPage({ env, item, citySlug, sourceUrl, sourcePageId, sourceTitle, cache }) {
+async function upsertEventPage({ env, item, citySlug, sourceUrl, sourcePageId, cache }) {
   const cityData = CITY_DATA_MAP[citySlug];
   const cityLabel = cityData?.label || citySlug;
   const normalizedTagList = normalizeTags(item.tags);
@@ -394,14 +365,10 @@ async function upsertEventPage({ env, item, citySlug, sourceUrl, sourcePageId, s
     if (Object.keys(patch).length > 0) await notionPatchPage(env, existing.id, patch);
     return { id: existing.id, action: "merged" };
   }
-
   const created = await notionCreatePage(env, { parent: { data_source_id: env.NOTION_EVENTS_DATA_SOURCE_ID }, properties });
   return { ...created, action: "created" };
 }
 
 function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
+  return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8" } });
 }
