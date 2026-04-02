@@ -4,6 +4,21 @@ import { chipStyle } from "./ui/chipStyle.js";
 import { SectionCard } from "./ui/SectionCard.jsx";
 import { LeafletMap } from "./LeafletMap.jsx";
 import { formatEventWindow } from "../utils/format.js";
+import { useResolvedLocations } from "../hooks/useResolvedLocations.js";
+
+function hasCoords(item) {
+  return Number.isFinite(item?.lat) && Number.isFinite(item?.lng) && item.lat !== 0 && item.lng !== 0;
+}
+
+function locationBadge(item) {
+  if (item._locationResolvedBy === "geocode-cache") {
+    return { label: "📡 動態定位", bg: "#fef9c3", color: "#92400e" };
+  }
+  if (item._locationResolvedBy === "city-fallback") {
+    return { label: "🏙️ 城市中心", bg: "#e0e7ff", color: "#3730a3" };
+  }
+  return null;
+}
 
 export function MapSection({
   isMobile, selectedCity, hasCitySelected,
@@ -20,9 +35,24 @@ export function MapSection({
   nearbyRadius, setNearbyRadius,
   userLocation, locating, handleGetLocation,
 }) {
+  const { resolvedItems, isResolving } = useResolvedLocations({
+    items: activeCollection,
+    visibleIds: effectiveVisibleIds,
+  });
+
+  const resolvedItemMap = React.useMemo(
+    () => new Map(resolvedItems.map((item) => [item.id, item])),
+    [resolvedItems]
+  );
+
+  const detailItems = React.useMemo(
+    () => visibleItems.map((item) => resolvedItemMap.get(item.id) || item),
+    [visibleItems, resolvedItemMap]
+  );
+
   return (
     <SectionCard
-      title={selectedCity ? `${selectedCity.label} 旅遊地圖` : "城市地圖"}
+      title={selectedCity ? `${selectedCity.label} 旅遊地圖` : "城市地傖"}
       right={
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <input value={search} onChange={(e) => setSearch(e.target.value)}
@@ -67,7 +97,6 @@ export function MapSection({
         </div>
       </div>
 
-      {/* 附近模式控制列 */}
       {hasCitySelected && (
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
           <button type="button"
@@ -115,11 +144,16 @@ export function MapSection({
             <button type="button" onClick={() => setAllVisible(false)}
               style={{ fontSize: 12, padding: "4px 10px", borderRadius: 8, border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer", fontWeight: 600 }}>全取消</button>
             <span style={{ fontSize: 12, color: COLORS.subtext }}>已選 {effectiveVisibleIds.size} / {activeCollection.length}</span>
-          </div>
+            {isResolving && (
+              <span style={{ fontSize: 12, color: COLORS.infoText, background: COLORS.infoBg, borderRadius: 999, padding: "4px 10px", fontWeight: 600 }}>
+                正在解析地址…
+              </span>
+            )}
+          </div
 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "220px 1fr", borderRadius: 20, overflow: "hidden", border: `1px solid ${COLORS.border}`, height: 460 }}>
             <div style={{ overflowY: "auto", height: 460, borderRight: isMobile ? "none" : `1px solid ${COLORS.border}`, display: isMobile && mapViewTab === "map" ? "none" : "block" }}>
-              {activeCollection.length ? activeCollection.map((item) => {
+              {resolvedItems.length ? resolvedItems.map((item) => {
                 const active = activeItemId === item.id;
                 const checked = effectiveVisibleIds.has(item.id);
                 return (
@@ -133,7 +167,7 @@ export function MapSection({
                     <span style={{ fontSize: 20, flexShrink: 0, opacity: item._optimistic ? 0.5 : 1 }}>{item.thumbnail}</span>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: active ? 800 : 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? COLORS.primary : checked ? COLORS.text : COLORS.subtext }}>
-                        {item.name}{item._optimistic && <span style={{ marginLeft: 4, fontSize: 10, color: COLORS.subtext, fontWeight: 400 }}>同步中</span>}
+                        {item.name}{item._optimistic && <span style={{ marginLeft: 4, fontSize: 10, color: COLORS.subtext, fontWeight: 400 }}>同正中</span>}
                       </div>
                       <div style={{ fontSize: 11, color: COLORS.subtext }}>
                         {item.area}{item.distanceKm != null && <span style={{ marginLeft: 4 }}>({item.distanceKm < 1 ? `${Math.round(item.distanceKm * 1000)}m` : `${item.distanceKm.toFixed(1)}km`})</span>}
@@ -141,34 +175,34 @@ export function MapSection({
                     </div>
                   </div>
                 );
-              }) : <div style={{ padding: 16, fontSize: 13, color: COLORS.subtext }}>目前無資料</div>}
+              }) : <div style={{ padding: 16, fontSize: 13, color: COLORS.subtext }}>目前無訳亖</div>}
             </div>
             <div style={{ height: 460, position: "relative", display: isMobile && mapViewTab === "list" ? "none" : "block" }}>
               {(() => {
-                const visibleWithCoords = activeCollection.filter((i) => effectiveVisibleIds.has(i.id) && i.lat && i.lng).length;
+                const visibleWithCoords = resolvedItems.filter((i) => effectiveVisibleIds.has(i.id) && hasCoords(i)).length;
                 const hasVisible = effectiveVisibleIds.size > 0;
                 if (activeCollection.length === 0) {
                   return (
                     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: COLORS.cardMuted, zIndex: Z.mapOverlay, borderRadius: 0 }}>
-                      <div style={{ fontSize: 32 }}>🗺️</div>
-                      <div style={{ marginTop: 8, fontWeight: 700, color: COLORS.text }}>尚無景點資料</div>
-                      <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext }}>先貼網址分析並寫入，景點就會出現在地圖上。</div>
+                      <div style={{ fontSize: 32 }}>🗮���</div>
+                      <div style={{ marginTop: 8, fontWeight: 700, color: COLORS.text }}>尚無景點賄料</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext }}>先貼綐址分析並寯入，景點就會出現在地圖上。</div>
                     </div>
                   );
                 }
-                if (hasVisible && visibleWithCoords === 0) {
+                if (hasVisible && visibleWithCoords === 0 && isResolving) {
                   return (
-                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(255,247,237,0.92)", zIndex: Z.mapOverlay, borderRadius: 0 }}>
-                      <div style={{ fontSize: 32 }}>📍</div>
-                      <div style={{ marginTop: 8, fontWeight: 700, color: COLORS.warningText }}>座標補齊中…</div>
-                      <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext, textAlign: "center", maxWidth: 200 }}>景點座標尚未補齊，系統每日自動更新，稍後重新整理即可。</div>
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(239,246,255,0.92)", zIndex: Z.mapOverlay, borderRadius: 0 }}>
+                      <div style={{ fontSize: 32 }}>📡</div>
+                      <div style={{ marginTop: 8, fontWeight: 700, color: COLORS.infoText }}>正在解析地址…</div>
+                      <div style={{ marginTop: 4, fontSize: 12, color: COLORS.subtext, textAlign: "center", maxWidth: 220 }}>系統會用店名、區域(��城市即偂解析位置，不回寪主寃料。</div>
                     </div>
                   );
                 }
                 return null;
               })()}
               <LeafletMap
-                items={activeCollection}
+                items={resolvedItems}
                 visibleIds={effectiveVisibleIds}
                 activeItemId={activeItemId}
                 onSelectItem={setActiveItemId}
@@ -176,63 +210,71 @@ export function MapSection({
             </div>
           </div>
 
-          {visibleItems.length > 0 && (
+          {detailItems.length > 0 && (
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.subtext, marginBottom: 10 }}>
-                已選景點詳情（{visibleItems.length} 筆）
+                已選景點詣情（{detailItems.length} 筆）
               </div>
               <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)" }}>
-                {visibleItems.map((item) => (
-                  <div key={item.id}
-                    style={{ border: `1px solid ${activeItemId === item.id ? COLORS.primary : COLORS.border}`, borderRadius: 20, background: COLORS.card, padding: 16, cursor: "pointer" }}
-                    onClick={() => setActiveItemId(item.id)}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <div style={{ fontSize: 32 }}>{item.thumbnail}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                          <span style={chipStyle(item.category)}>{item.category}</span>
-                          <span style={{ borderRadius: 999, border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11 }}>{item.bestTime}</span>
-                          {item._optimistic ? (
-                            <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: "#e0f2fe", color: "#0369a1" }}>
-                              同步中
+                {detailItems.map((item) => {
+                  const badge = locationBadge(item);
+                  return (
+                    <div key={item.id}
+                      style={{ border: `1px solid ${activeItemId === item.id ? COLORS.primary : COLORS.border}`, borderRadius: 20, background: COLORS.card, padding: 16, cursor: "pointer" }}
+                      onClick={() => setActiveItemId(item.id)}>
+                      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                        <div style={{ fontSize: 32 }}>{item.thumbnail}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                            <span style={chipStyle(item.category)}>{item.category}</span>
+                            <span style={{ borderRadius: 999, border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11 }}>{item.bestTime}</span>
+                            {item._optimistic ? (
+                              <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: "#e0f2fe", color: "#0369a1" }}>
+                                住步中
                             </span>
-                          ) : item.confidence && (
-                            <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: item.confidence === "已確認" ? "#dcfce7" : "#fef9c3", color: item.confidence === "已確認" ? "#15803d" : "#92400e" }}>
-                              {item.confidence === "已確認" ? "🟢 已確認" : "🟡 推定"}
-                            </span>
-                          )}
+                            ) : item.confidence && (
+                              <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: item.confidence === "已確認" ? "#dcfce7" : "#fef9c3", color: item.confidence === "已確認" ? "#15803d" : "#92400e" }}>
+                                {item.confidence === "已確認" ? "🟢 已確認" : "🟡 推定"}
+                              </span>
+                            )}
+                            {badge && (
+                              <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: badge.bg, color: badge.color }}>
+                                {badge.label}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontWeight: 900, fontSize: 15 }}>{item.name}</div>
+                          <div style={{ fontSize: 12, color: COLORS.subtext, marginTop: 2 }}>{item.city}・{item.area}</div>
                         </div>
-                        <div style={{ fontWeight: 900, fontSize: 15 }}>{item.name}</div>
-                        <div style={{ fontSize: 12, color: COLORS.subtext, marginTop: 2 }}>{item.city}・{item.area}</div>
+                      </div>
+                      {item.description && (
+                        <div style={{ marginTop: 10, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{item.description}</div>
+                      )}
+                      {item.startsOn && (
+                        <div style={{ marginTop: 10, borderRadius: 12, background: COLORS.warningBg, color: COLORS.warningText, padding: 10, fontSize: 12 }}>
+                          {formatEventWindow(item)} ｜ {item.ticketType || "未設定票務"}{item.priceNote ? ` ／ ${item.priceNote}` : ""}
+                        </div>
+                      )}
+                      <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <span style={{ fontSize: 12, color: COLORS.subtext, background: COLORS.cardMuted, borderRadius: 8, padding: "4px 8px" }}>⏱ {item.stayMinutes} 分</span>
+                        {item.mapUrl && (
+                          <a href={item.mapUrl} target="_blank" rel="noreferrer"
+                            style={{ fontSize: 12, color: "#1a73e8", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
+                            onClick={(e) => e.stopPropagation()}>
+                            📍 Google Maps
+                          </a>
+                        )}
+                        {item.sourceUrl && (
+                          <a href={item.sourceUrl} target="_blank" rel="noreferrer"
+                            style={{ fontSize: 12, color: COLORS.subtext, textDecoration: "none" }}
+                            onClick={(e) => e.stopPropagation()}>
+                            → 原始來源
+                          </a>
+                        )}
                       </div>
                     </div>
-                    {item.description && (
-                      <div style={{ marginTop: 10, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{item.description}</div>
-                    )}
-                    {item.startsOn && (
-                      <div style={{ marginTop: 10, borderRadius: 12, background: COLORS.warningBg, color: COLORS.warningText, padding: 10, fontSize: 12 }}>
-                        {formatEventWindow(item)} ｜ {item.ticketType || "未設定票務"}{item.priceNote ? ` ／ ${item.priceNote}` : ""}
-                      </div>
-                    )}
-                    <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                      <span style={{ fontSize: 12, color: COLORS.subtext, background: COLORS.cardMuted, borderRadius: 8, padding: "4px 8px" }}>⏱ {item.stayMinutes} 分</span>
-                      {item.mapUrl && (
-                        <a href={item.mapUrl} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 12, color: "#1a73e8", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
-                          onClick={(e) => e.stopPropagation()}>
-                          📍 Google Maps
-                        </a>
-                      )}
-                      {item.sourceUrl && (
-                        <a href={item.sourceUrl} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 12, color: COLORS.subtext, textDecoration: "none" }}
-                          onClick={(e) => e.stopPropagation()}>
-                          → 原始來源
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -240,7 +282,7 @@ export function MapSection({
       ) : (
         <div style={{ border: `1px dashed ${COLORS.border}`, borderRadius: 24, background: COLORS.cardMuted, padding: 28, textAlign: "center", color: COLORS.subtext }}>
           <div style={{ fontSize: 20, fontWeight: 900, color: COLORS.text }}>請先選擇城市</div>
-          <div style={{ marginTop: 10, lineHeight: 1.8 }}>選好城市後，頁面才會載入對應的景點與活動資料。</div>
+          <div style={{ marginTop: 10, lineHeight: 1.8 }}>選好城市後，頁面才會載入對應的景點與宪动誓料胋。</div>
         </div>
       )}
     </SectionCard>
