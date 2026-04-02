@@ -10,6 +10,25 @@ function getCacheKey(item) {
   return String(item?.id || "");
 }
 
+function getResolvedMeta(resolvedBy) {
+  if (resolvedBy === "stored") {
+    return {
+      confidenceLabel: "已確認",
+      sourceLabel: "原始座標",
+    };
+  }
+  if (resolvedBy === "city-fallback") {
+    return {
+      confidenceLabel: "推定",
+      sourceLabel: "城市中心",
+    };
+  }
+  return {
+    confidenceLabel: "推定",
+    sourceLabel: "動態定位",
+  };
+}
+
 export function useResolvedLocations({ items, visibleIds }) {
   const [resolvedMap, setResolvedMap] = useState({});
   const [isResolving, setIsResolving] = useState(false);
@@ -18,16 +37,26 @@ export function useResolvedLocations({ items, visibleIds }) {
   const resolvedItems = useMemo(() => {
     return items.map((item) => {
       if (hasCoords(item)) {
-        return { ...item, _locationResolvedBy: "stored", _locationConfidence: item.confidence === "已確認" ? "stored" : "derived" };
+        const meta = getResolvedMeta("stored");
+        return {
+          ...item,
+          confidence: item.confidence || meta.confidenceLabel,
+          _locationResolvedBy: "stored",
+          _locationConfidence: "stored",
+          _locationSourceLabel: meta.sourceLabel,
+        };
       }
       const resolved = resolvedMap[getCacheKey(item)];
       if (!resolved || !Number.isFinite(resolved.lat) || !Number.isFinite(resolved.lng)) return item;
+      const meta = getResolvedMeta(resolved.resolvedBy);
       return {
         ...item,
         lat: resolved.lat,
         lng: resolved.lng,
+        confidence: item.confidence || meta.confidenceLabel,
         _locationResolvedBy: resolved.resolvedBy,
         _locationConfidence: resolved.confidence,
+        _locationSourceLabel: meta.sourceLabel,
         _locationQueryUsed: resolved.queryUsed || "",
       };
     });

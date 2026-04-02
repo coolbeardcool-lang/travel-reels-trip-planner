@@ -1,5 +1,40 @@
 import React from "react";
 
+function hasCoords(item) {
+  return Number.isFinite(item?.lat) && Number.isFinite(item?.lng) && item.lat !== 0 && item.lng !== 0;
+}
+
+function getMarkerMode(item, active) {
+  if (active) {
+    return {
+      bgColor: "#1c1917",
+      borderColor: "#1c1917",
+      label: item._locationSourceLabel || "目前選取",
+    };
+  }
+
+  switch (item._locationResolvedBy) {
+    case "stored":
+      return {
+        bgColor: "#dcfce7",
+        borderColor: "#15803d",
+        label: item._locationSourceLabel || "原始座標",
+      };
+    case "city-fallback":
+      return {
+        bgColor: "#e0e7ff",
+        borderColor: "#4338ca",
+        label: item._locationSourceLabel || "城市中心",
+      };
+    default:
+      return {
+        bgColor: "#fef9c3",
+        borderColor: "#ca8a04",
+        label: item._locationSourceLabel || "動態定位",
+      };
+  }
+}
+
 export function LeafletMap({ items, visibleIds, activeItemId, onSelectItem }) {
   const containerRef = React.useRef(null);
   const mapRef = React.useRef(null);
@@ -13,11 +48,10 @@ export function LeafletMap({ items, visibleIds, activeItemId, onSelectItem }) {
       link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
       document.head.appendChild(link);
     }
-    // 將 Leaflet controls z-index 降至 500，避免蓋過浮動分析面板（Z.floatingPanel=1000）
     if (!document.getElementById("leaflet-zfix")) {
       const style = document.createElement("style");
       style.id = "leaflet-zfix";
-      style.textContent = ".leaflet-top, .leaflet-bottom { z-index: 500 !important; }"; // Z.leafletControls
+      style.textContent = ".leaflet-top, .leaflet-bottom { z-index: 500 !important; }";
       document.head.appendChild(style);
     }
     function init() {
@@ -38,6 +72,7 @@ export function LeafletMap({ items, visibleIds, activeItemId, onSelectItem }) {
       document.head.appendChild(s);
     } else {
       const t = setInterval(() => { if (window.L) { clearInterval(t); init(); } }, 100);
+      return () => clearInterval(t);
     }
     return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
   }, []);
@@ -49,19 +84,18 @@ export function LeafletMap({ items, visibleIds, activeItemId, onSelectItem }) {
       const map = mapRef.current;
       Object.values(markersRef.current).forEach((m) => map.removeLayer(m));
       markersRef.current = {};
-      const toShow = items.filter((i) => visibleIds.has(i.id) && i.lat && i.lng);
+      const toShow = items.filter((i) => visibleIds.has(i.id) && hasCoords(i));
       toShow.forEach((item) => {
         const active = item.id === activeItemId;
-        const confirmed = item.confidence === "已確認";
-        const bgColor = active ? "#1c1917" : (confirmed ? "#dcfce7" : "#fef9c3");
-        const borderColor = active ? "#1c1917" : (confirmed ? "#15803d" : "#ca8a04");
+        const markerMode = getMarkerMode(item, active);
         const icon = L.divIcon({
-          html: `<div style="width:36px;height:36px;background:${bgColor};border:2.5px solid ${borderColor};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 3px 10px rgba(0,0,0,.25)">${item.thumbnail}</div>`,
+          html: `<div style="width:36px;height:36px;background:${markerMode.bgColor};border:2.5px solid ${markerMode.borderColor};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 3px 10px rgba(0,0,0,.25)">${item.thumbnail}</div>`,
           className: "", iconSize: [36, 36], iconAnchor: [18, 18],
         });
+        const tooltip = `${item.name}${markerMode.label ? ` · ${markerMode.label}` : ""}`;
         const marker = L.marker([item.lat, item.lng], { icon })
           .addTo(map)
-          .bindTooltip(item.name, { permanent: false, direction: "top" });
+          .bindTooltip(tooltip, { permanent: false, direction: "top" });
         marker.on("click", () => onSelectItem(item.id));
         markersRef.current[item.id] = marker;
       });
@@ -72,7 +106,7 @@ export function LeafletMap({ items, visibleIds, activeItemId, onSelectItem }) {
     }
     if (window.L && mapRef.current) update();
     else { const t = setTimeout(update, 800); return () => clearTimeout(t); }
-  }, [items, visibleIds, activeItemId]);
+  }, [items, visibleIds, activeItemId, onSelectItem]);
 
   return <div ref={containerRef} style={{ height: "100%", width: "100%", minHeight: 420 }} />;
 }
