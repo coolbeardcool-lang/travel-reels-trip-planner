@@ -5,6 +5,21 @@ import { SectionCard } from "./ui/SectionCard.jsx";
 import { LeafletMap } from "./LeafletMap.jsx";
 import { formatEventWindow } from "../utils/format.js";
 
+function getLocationBadge(item) {
+  switch (item?._locationResolvedBy) {
+    case "stored":
+      return { label: item._locationSourceLabel || "原始座標", bg: "#dcfce7", color: "#15803d" };
+    case "city-fallback":
+      return { label: item._locationSourceLabel || "城市中心", bg: "#e0e7ff", color: "#4338ca" };
+    case "geocode-cache":
+      return { label: item._locationSourceLabel || "動態定位", bg: "#fef9c3", color: "#92400e" };
+    default:
+      return item?._locationSourceLabel
+        ? { label: item._locationSourceLabel, bg: "#fef9c3", color: "#92400e" }
+        : null;
+  }
+}
+
 export function MapSection({
   isMobile, selectedCity, hasCitySelected,
   cityIndex, selectedCitySlug, setSelectedCitySlug,
@@ -67,7 +82,6 @@ export function MapSection({
         </div>
       </div>
 
-      {/* 附近模式控制列 */}
       {hasCitySelected && (
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
           <button type="button"
@@ -122,6 +136,7 @@ export function MapSection({
               {activeCollection.length ? activeCollection.map((item) => {
                 const active = activeItemId === item.id;
                 const checked = effectiveVisibleIds.has(item.id);
+                const locationBadge = getLocationBadge(item);
                 return (
                   <div key={item.id}
                     style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: `1px solid ${COLORS.border}`, background: active ? COLORS.primarySoft : "#fff", cursor: "pointer" }}
@@ -135,8 +150,15 @@ export function MapSection({
                       <div style={{ fontWeight: active ? 800 : 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? COLORS.primary : checked ? COLORS.text : COLORS.subtext }}>
                         {item.name}{item._optimistic && <span style={{ marginLeft: 4, fontSize: 10, color: COLORS.subtext, fontWeight: 400 }}>同步中</span>}
                       </div>
-                      <div style={{ fontSize: 11, color: COLORS.subtext }}>
-                        {item.area}{item.distanceKm != null && <span style={{ marginLeft: 4 }}>({item.distanceKm < 1 ? `${Math.round(item.distanceKm * 1000)}m` : `${item.distanceKm.toFixed(1)}km`})</span>}
+                      <div style={{ fontSize: 11, color: COLORS.subtext, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                        <span>
+                          {item.area}{item.distanceKm != null && <span style={{ marginLeft: 4 }}>({item.distanceKm < 1 ? `${Math.round(item.distanceKm * 1000)}m` : `${item.distanceKm.toFixed(1)}km`})</span>}
+                        </span>
+                        {locationBadge && (
+                          <span style={{ borderRadius: 999, padding: "2px 6px", fontSize: 10, fontWeight: 700, background: locationBadge.bg, color: locationBadge.color }}>
+                            {locationBadge.label}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -182,57 +204,65 @@ export function MapSection({
                 已選景點詳情（{visibleItems.length} 筆）
               </div>
               <div style={{ display: "grid", gap: 12, gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)" }}>
-                {visibleItems.map((item) => (
-                  <div key={item.id}
-                    style={{ border: `1px solid ${activeItemId === item.id ? COLORS.primary : COLORS.border}`, borderRadius: 20, background: COLORS.card, padding: 16, cursor: "pointer" }}
-                    onClick={() => setActiveItemId(item.id)}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <div style={{ fontSize: 32 }}>{item.thumbnail}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                          <span style={chipStyle(item.category)}>{item.category}</span>
-                          <span style={{ borderRadius: 999, border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11 }}>{item.bestTime}</span>
-                          {item._optimistic ? (
-                            <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: "#e0f2fe", color: "#0369a1" }}>
-                              同步中
-                            </span>
-                          ) : item.confidence && (
-                            <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: item.confidence === "已確認" ? "#dcfce7" : "#fef9c3", color: item.confidence === "已確認" ? "#15803d" : "#92400e" }}>
-                              {item.confidence === "已確認" ? "🟢 已確認" : "🟡 推定"}
-                            </span>
-                          )}
+                {visibleItems.map((item) => {
+                  const locationBadge = getLocationBadge(item);
+                  return (
+                    <div key={item.id}
+                      style={{ border: `1px solid ${activeItemId === item.id ? COLORS.primary : COLORS.border}`, borderRadius: 20, background: COLORS.card, padding: 16, cursor: "pointer" }}
+                      onClick={() => setActiveItemId(item.id)}>
+                      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                        <div style={{ fontSize: 32 }}>{item.thumbnail}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                            <span style={chipStyle(item.category)}>{item.category}</span>
+                            <span style={{ borderRadius: 999, border: `1px solid ${COLORS.border}`, padding: "4px 8px", fontSize: 11 }}>{item.bestTime}</span>
+                            {item._optimistic ? (
+                              <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: "#e0f2fe", color: "#0369a1" }}>
+                                同步中
+                              </span>
+                            ) : item.confidence && (
+                              <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 600, background: item.confidence === "已確認" ? "#dcfce7" : "#fef9c3", color: item.confidence === "已確認" ? "#15803d" : "#92400e" }}>
+                                {item.confidence === "已確認" ? "🟢 已確認" : "🟡 推定"}
+                              </span>
+                            )}
+                            {locationBadge && (
+                              <span style={{ borderRadius: 999, padding: "4px 8px", fontSize: 11, fontWeight: 700, background: locationBadge.bg, color: locationBadge.color }}>
+                                {locationBadge.label}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontWeight: 900, fontSize: 15 }}>{item.name}</div>
+                          <div style={{ fontSize: 12, color: COLORS.subtext, marginTop: 2 }}>{item.city}・{item.area}</div>
                         </div>
-                        <div style={{ fontWeight: 900, fontSize: 15 }}>{item.name}</div>
-                        <div style={{ fontSize: 12, color: COLORS.subtext, marginTop: 2 }}>{item.city}・{item.area}</div>
+                      </div>
+                      {item.description && (
+                        <div style={{ marginTop: 10, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{item.description}</div>
+                      )}
+                      {item.startsOn && (
+                        <div style={{ marginTop: 10, borderRadius: 12, background: COLORS.warningBg, color: COLORS.warningText, padding: 10, fontSize: 12 }}>
+                          {formatEventWindow(item)} ｜ {item.ticketType || "未設定票務"}{item.priceNote ? ` ／ ${item.priceNote}` : ""}
+                        </div>
+                      )}
+                      <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <span style={{ fontSize: 12, color: COLORS.subtext, background: COLORS.cardMuted, borderRadius: 8, padding: "4px 8px" }}>⏱ {item.stayMinutes} 分</span>
+                        {item.mapUrl && (
+                          <a href={item.mapUrl} target="_blank" rel="noreferrer"
+                            style={{ fontSize: 12, color: "#1a73e8", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
+                            onClick={(e) => e.stopPropagation()}>
+                            📍 Google Maps
+                          </a>
+                        )}
+                        {item.sourceUrl && (
+                          <a href={item.sourceUrl} target="_blank" rel="noreferrer"
+                            style={{ fontSize: 12, color: COLORS.subtext, textDecoration: "none" }}
+                            onClick={(e) => e.stopPropagation()}>
+                            → 原始來源
+                          </a>
+                        )}
                       </div>
                     </div>
-                    {item.description && (
-                      <div style={{ marginTop: 10, fontSize: 13, color: COLORS.subtext, lineHeight: 1.7 }}>{item.description}</div>
-                    )}
-                    {item.startsOn && (
-                      <div style={{ marginTop: 10, borderRadius: 12, background: COLORS.warningBg, color: COLORS.warningText, padding: 10, fontSize: 12 }}>
-                        {formatEventWindow(item)} ｜ {item.ticketType || "未設定票務"}{item.priceNote ? ` ／ ${item.priceNote}` : ""}
-                      </div>
-                    )}
-                    <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                      <span style={{ fontSize: 12, color: COLORS.subtext, background: COLORS.cardMuted, borderRadius: 8, padding: "4px 8px" }}>⏱ {item.stayMinutes} 分</span>
-                      {item.mapUrl && (
-                        <a href={item.mapUrl} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 12, color: "#1a73e8", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
-                          onClick={(e) => e.stopPropagation()}>
-                          📍 Google Maps
-                        </a>
-                      )}
-                      {item.sourceUrl && (
-                        <a href={item.sourceUrl} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 12, color: COLORS.subtext, textDecoration: "none" }}
-                          onClick={(e) => e.stopPropagation()}>
-                          → 原始來源
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
