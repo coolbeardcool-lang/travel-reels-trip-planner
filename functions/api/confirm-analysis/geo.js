@@ -34,8 +34,7 @@ export async function geocodeWithNominatim(name, area, citySlug, cityLabel) {
     let best = results[0];
     if (cityData?.lat && results.length > 1) {
       const inRange = results.find((r) => {
-        const rlat = parseFloat(r.lat);
-        const rlng = parseFloat(r.lon);
+        const rlat = parseFloat(r.lat), rlng = parseFloat(r.lon);
         return Math.abs(rlat - cityData.lat) < 1 && Math.abs(rlng - cityData.lng) < 1;
       });
       if (inRange) best = inRange;

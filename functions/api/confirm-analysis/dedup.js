@@ -1,15 +1,23 @@
+import { NOTION_VERSION } from "./constants.js";
 import { normalizeName } from "./text.js";
-import { notionQueryDataSource } from "./notion.js";
 
-export async function queryExistingByCity(env, dbId, citySlug, filterType, cache) {
+async function queryExistingByCity(env, dbId, citySlug, filterType, cache) {
   const key = `${dbId}:${citySlug}`;
   if (cache.has(key)) return cache.get(key);
   try {
     const filter = filterType === "select"
       ? { property: "CitySlug", select: { equals: citySlug } }
       : { property: "CitySlug", rich_text: { equals: citySlug } };
-    const data = await notionQueryDataSource(env, dbId, { page_size: 100, filter });
-    const results = data.results || [];
+    const res = await fetch(`https://api.notion.com/v1/data_sources/${dbId}/query`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.NOTION_TOKEN}`,
+        "Content-Type": "application/json",
+        "Notion-Version": NOTION_VERSION,
+      },
+      body: JSON.stringify({ page_size: 100, filter }),
+    });
+    const results = res.ok ? ((await res.json()).results || []) : [];
     cache.set(key, results);
     return results;
   } catch {
@@ -47,6 +55,7 @@ export function buildMergedPatch(newProps, existingPage, kind = "spot") {
     const existThumb = (ep.Thumbnail?.rich_text || []).map((t) => t.plain_text || "").join("");
     const newThumb = (newProps.Thumbnail?.rich_text || []).map((t) => t.plain_text || "").join("");
     if (newThumb && newThumb !== "📍" && (!existThumb || existThumb === "📍")) patch.Thumbnail = newProps.Thumbnail;
+
     const existScore = ep.PriorityScore?.number || 0;
     const newScore = newProps.PriorityScore?.number || 0;
     if (newScore > existScore) patch.PriorityScore = newProps.PriorityScore;
