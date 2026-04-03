@@ -15,15 +15,15 @@ Finish the current low-token refactor wave, then shift into data-quality stabili
 - [x] Add `scripts/check-data-quality.mjs`
 - [x] Add `npm run check:data-quality`
 - [x] Fix city index mismatch for cities already present in `public/data/all.json`
-- [ ] Run the checker and review the first issue list
+- [x] Review the first issue list and write down cleanup priorities
 
 ## Phase 3 — First-pass data cleanup
-- [ ] Flatten nested `relatedCityIds`
-- [ ] Normalize `cityHints` / `relatedCityIds` to slug values
-- [ ] Review duplicate sources grouped by `url + title`
-- [ ] Review relation fields that mix IDs and display names
-- [ ] Review areas that still use English admin tokens like `Mapo-gu`
-- [ ] Review high-value spots/events that still have `lat/lng = 0`
+- [x] Add `scripts/clean-data-phase3.mjs`
+- [x] Define semantic source merge rules (not raw string concatenation)
+- [x] Define relation normalization rules (flatten + slug + ID resolution)
+- [ ] Apply cleaned `public/data/all.json` output
+- [ ] Run `npm run check:data-quality` after cleanup output is applied
+- [ ] Review remaining `zero-coordinates`
 
 ## Phase 4 — Optional second-wave refactor
 - [ ] Split `confirm-analysis.js` further (`ensureCityExists`, upserts, relation update)
@@ -33,4 +33,7 @@ Finish the current low-token refactor wave, then shift into data-quality stabili
 ---
 
 ## Current recommendation
-Do not continue broad structural refactors until the data checker is in place and the first issue list has been reviewed.
+Do not continue broad structural refactors until:
+1. Phase 3 cleanup has been applied to `public/data/all.json`
+2. `npm run check:data-quality` has been run on the cleaned output
+3. build / smoke validation has been completed in an executable environment
