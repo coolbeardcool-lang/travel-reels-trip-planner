@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "generate:city-aliases": "node scripts/generate-city-aliases.mjs",
     "geocode:missing": "node scripts/geocode-missing.mjs",
+    "check:data-quality": "node scripts/check-data-quality.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

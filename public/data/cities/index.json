@@ -1,6 +1,24 @@
 {
   "cities": [
     {
+      "slug": "changhua",
+      "label": "彰化",
+      "emoji": "🥢",
+      "region": "台灣",
+      "description": "花壇周邊在地小吃與傳統市場美食可作為慢速吃逛路線。",
+      "status": "active",
+      "spotlight": [
+        "小吃",
+        "市場",
+        "在地美食"
+      ],
+      "heroArea": "花壇",
+      "coverImageUrl": "",
+      "timezone": "Asia/Taipei",
+      "defaultMapLat": 24.0252,
+      "defaultMapLng": 120.5388
+    },
+    {
       "slug": "kyoto",
       "label": "京都",
       "emoji": "⛩️",
@@ -60,6 +78,6 @@
     "notionDataSourceId": "33124c5d-f0b3-8087-84f4-000b2b0702f9",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
-    "count": 3
+    "count": 4
   }
 }
