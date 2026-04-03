@@ -1,0 +1,137 @@
+{
+  "city": {
+    "slug": "osaka",
+    "label": "大阪"
+  },
+  "spots": [
+    {
+      "id": "hotel_osaka",
+      "city": "大阪",
+      "citySlug": "osaka",
+      "area": "大阪・心齋橋",
+      "name": "Shinsaibashi Grand Hotel Osaka",
+      "category": "住宿",
+      "description": "大阪後兩晚飯店，適合串心齋橋、道頓堀與大阪補線。",
+      "sourceId": "github-fy26-kansai-data-osaka",
+      "sourceTitle": "GitHub repo・FY26 Kansai outing plan（大阪資料匯入）",
+      "sourceUrl": "https://github.com/coolbeardcool-lang/Fy26-travelplanning/blob/main/data.js",
+      "bestTime": "晚上",
+      "stayMinutes": 720,
+      "tags": [
+        "住宿",
+        "飯店",
+        "心齋橋"
+      ],
+      "lat": 34.6719,
+      "lng": 135.5053,
+      "confidence": "已確認",
+      "thumbnail": "🏨",
+      "mapUrl": "https://www.google.com/maps?q=34.6719,135.5053",
+      "published": true,
+      "priorityScore": 70,
+      "lastReviewedAt": "2026-04-03",
+      "notes": "Imported from Fy26-travelplanning/data.js"
+    },
+    {
+      "id": "tsutenkaku",
+      "city": "大阪",
+      "citySlug": "osaka",
+      "area": "大阪・新世界",
+      "name": "通天閣",
+      "category": "景點",
+      "description": "換宿後最容易接的大阪代表地標。",
+      "sourceId": "github-fy26-kansai-data-osaka",
+      "sourceTitle": "GitHub repo・FY26 Kansai outing plan（大阪資料匯入）",
+      "sourceUrl": "https://matcha-jp.com/jp/18878",
+      "bestTime": "下午",
+      "stayMinutes": 45,
+      "tags": [
+        "通天閣",
+        "新世界",
+        "地標"
+      ],
+      "lat": 34.6525,
+      "lng": 135.5063,
+      "confidence": "已確認",
+      "thumbnail": "🗼",
+      "mapUrl": "https://www.google.com/maps?q=34.6525,135.5063",
+      "published": true,
+      "priorityScore": 92,
+      "lastReviewedAt": "2026-04-03",
+      "notes": "Imported from Fy26-travelplanning/data.js"
+    },
+    {
+      "id": "osaka_castle",
+      "city": "大阪",
+      "citySlug": "osaka",
+      "area": "大阪城公園",
+      "name": "大阪城",
+      "category": "景點",
+      "description": "大阪補線的大景點，可依體力安排停留長短。",
+      "sourceId": "github-fy26-kansai-data-osaka",
+      "sourceTitle": "GitHub repo・FY26 Kansai outing plan（大阪資料匯入）",
+      "sourceUrl": "https://matcha-jp.com/tw/7826",
+      "bestTime": "下午",
+      "stayMinutes": 75,
+      "tags": [
+        "大阪城",
+        "城郭",
+        "公園"
+      ],
+      "lat": 34.6873,
+      "lng": 135.5262,
+      "confidence": "已確認",
+      "thumbnail": "🏯",
+      "mapUrl": "https://www.google.com/maps?q=34.6873,135.5262",
+      "published": true,
+      "priorityScore": 95,
+      "lastReviewedAt": "2026-04-03",
+      "notes": "Imported from Fy26-travelplanning/data.js"
+    },
+    {
+      "id": "ytv",
+      "city": "大阪",
+      "citySlug": "osaka",
+      "area": "大阪城公園／OBP",
+      "name": "讀賣電視台 ytv／10plaza",
+      "category": "景點",
+      "description": "大阪柯南粉很適合補的官方感點位。",
+      "sourceId": "github-fy26-kansai-data-osaka",
+      "sourceTitle": "GitHub repo・FY26 Kansai outing plan（大阪資料匯入）",
+      "sourceUrl": "https://ambassador.ytv.co.jp/news/4/72.html",
+      "bestTime": "下午",
+      "stayMinutes": 45,
+      "tags": [
+        "ytv",
+        "柯南",
+        "大阪城公園"
+      ],
+      "lat": 34.6924,
+      "lng": 135.5318,
+      "confidence": "已確認",
+      "thumbnail": "🎬",
+      "mapUrl": "https://www.google.com/maps?q=34.6924,135.5318",
+      "published": true,
+      "priorityScore": 78,
+      "lastReviewedAt": "2026-04-03",
+      "notes": "Imported from Fy26-travelplanning/data.js"
+    }
+  ],
+  "events": [],
+  "sources": [
+    {
+      "id": "github-fy26-kansai-data-osaka",
+      "title": "GitHub repo・FY26 Kansai outing plan（大阪資料匯入）",
+      "url": "https://github.com/coolbeardcool-lang/Fy26-travelplanning/blob/main/data.js",
+      "platform": "GitHub",
+      "sourceType": "行程資料",
+      "status": "已匯入",
+      "note": "由 Fy26-travelplanning repo 的 data.js 匯入大阪點位，保留原始路線規劃中的景點與住宿節點。"
+    }
+  ],
+  "meta": {
+    "importedFrom": "coolbeardcool-lang/Fy26-travelplanning",
+    "path": "data.js",
+    "count": 4
+  }
+}
