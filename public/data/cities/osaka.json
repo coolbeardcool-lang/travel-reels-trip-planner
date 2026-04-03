@@ -138,7 +138,7 @@
   "events": [],
   "sources": [],
   "meta": {
-    "lastSyncedAt": "2026-04-03T05:54:54.907Z",
+    "lastSyncedAt": "2026-04-03T06:52:39.535Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
