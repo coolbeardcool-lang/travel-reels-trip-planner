@@ -3,3 +3,8 @@ dist/
 .env
 .env.local
 .env.*.local
+
+# Claude session artifacts
+state/compaction/
+state/session-log/
+.claude/hooks/__pycache__/
