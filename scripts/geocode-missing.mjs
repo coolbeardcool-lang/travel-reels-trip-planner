@@ -68,6 +68,7 @@ function getProp(page, key) {
     case "rich_text": return getPlainText(prop.rich_text);
     case "number":    return prop.number;
     case "select":    return prop.select?.name || "";
+    case "url":       return prop.url || "";
     default:          return null;
   }
 }
@@ -124,17 +125,41 @@ async function patchLatLng(pageId, lat, lng) {
 }
 
 // ── Nominatim ──────────────────────────────────────────────
-async function geocode(name, area, citySlug) {
-  const cityData = CITY_DATA[citySlug] || null;
-  const cityLabel = cityData?.label || citySlug;
-  const countryCode = COUNTRY_CODES[citySlug] || null;
 
-  const queryParts = [name, area, cityLabel].filter(Boolean);
+/** Pick the Nominatim result closest to city center from up to 3 candidates. */
+function pickClosest(results, cityData) {
+  if (!results?.length) return null;
+  if (results.length === 1 || !cityData) {
+    const lat = parseFloat(results[0].lat);
+    const lng = parseFloat(results[0].lon);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  }
+  let best = null, bestDist = Infinity;
+  for (const r of results) {
+    const lat = parseFloat(r.lat);
+    const lng = parseFloat(r.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    const dist = Math.hypot(lat - cityData.lat, lng - cityData.lng);
+    if (dist < bestDist) { bestDist = dist; best = { lat, lng }; }
+  }
+  return best;
+}
+
+/** Extract search query text from a Google Maps URL, if present. */
+function extractMapQuery(mapUrl) {
+  if (!mapUrl) return null;
+  try {
+    const u = new URL(mapUrl);
+    return u.searchParams.get("query") || null;
+  } catch { return null; }
+}
+
+async function nominatimSearch(query, countryCode, cityData) {
   const params = new URLSearchParams({
-    q: queryParts.join(", "),
+    q: query,
     format: "json",
-    limit: "1",
-    "accept-language": "zh,en",
+    limit: "3",
+    "accept-language": "zh,ko,en",
   });
   if (countryCode) params.set("countrycodes", countryCode);
   if (cityData) {
@@ -142,17 +167,48 @@ async function geocode(name, area, citySlug) {
     params.set("viewbox", `${cityData.lng - d},${cityData.lat + d},${cityData.lng + d},${cityData.lat - d}`);
     params.set("bounded", "0");
   }
-
   const res = await fetch(
     `https://nominatim.openstreetmap.org/search?${params}`,
     { headers: { "User-Agent": NOMINATIM_UA } }
   );
   if (!res.ok) return null;
   const data = await res.json();
-  if (!data?.length) return null;
-  const lat = parseFloat(data[0].lat);
-  const lng = parseFloat(data[0].lon);
-  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  return pickClosest(data, cityData);
+}
+
+/**
+ * Multi-strategy geocoding:
+ * 1. Full name + area + city (original)
+ * 2. Google Maps query text (often has native-language name)
+ * 3. Area + city only (neighborhood-level fallback)
+ */
+async function geocode(name, area, citySlug, mapUrl) {
+  const cityData = CITY_DATA[citySlug] || null;
+  const cityLabel = cityData?.label || citySlug;
+  const countryCode = COUNTRY_CODES[citySlug] || null;
+
+  // Strategy 1: full name + area + city
+  const fullQuery = [name, area, cityLabel].filter(Boolean).join(", ");
+  const result1 = await nominatimSearch(fullQuery, countryCode, cityData);
+  if (result1) return { ...result1, strategy: "exact" };
+
+  // Strategy 2: Google Maps query (often Korean/Japanese native text)
+  const mapQuery = extractMapQuery(mapUrl);
+  if (mapQuery) {
+    await sleep(1100);
+    const result2 = await nominatimSearch(mapQuery, countryCode, cityData);
+    if (result2) return { ...result2, strategy: "mapUrl" };
+  }
+
+  // Strategy 3: area + city only (neighborhood-level)
+  if (area) {
+    await sleep(1100);
+    const areaQuery = [area, cityLabel].filter(Boolean).join(", ");
+    const result3 = await nominatimSearch(areaQuery, countryCode, cityData);
+    if (result3) return { ...result3, strategy: "area" };
+  }
+
+  return null;
 }
 
 // ── 主流程 ─────────────────────────────────────────────────
@@ -174,16 +230,18 @@ async function processCollection(label, dataSourceId) {
     const name     = getProp(page, "Name") || "";
     const area     = getProp(page, "Area") || "";
     const citySlug = (getProp(page, "CitySlug") || "").toLowerCase();
+    const mapUrl   = getProp(page, "MapUrl") || "";
 
     process.stdout.write(`   [${i + 1}/${missing.length}] ${name} (${citySlug})… `);
 
     if (i > 0) await sleep(1100); // Nominatim 1 req/sec 限制
 
-    const geo = await geocode(name, area, citySlug);
+    const geo = await geocode(name, area, citySlug, mapUrl);
     if (geo) {
+      const tag = geo.strategy === "area" ? " [area-level]" : geo.strategy === "mapUrl" ? " [mapUrl]" : "";
       try {
         await patchLatLng(page.id, geo.lat, geo.lng);
-        console.log(`✅ (${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)})`);
+        console.log(`✅ (${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)})${tag}`);
         updated++;
       } catch (e) {
         console.log(`❌ Notion 寫入失敗：${e.message}`);

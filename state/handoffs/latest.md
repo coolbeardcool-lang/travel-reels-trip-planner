@@ -1,33 +1,30 @@
 # Handoff State
 
 ## Task
-Architecture review + all improvements + iOS Shortcut setup page
+Architecture review + improvements + bug fixes
 
 ## Completed
 - [x] Architecture review: 5 risks + 5 improvements (ADR-001)
-- [x] Optimistic update: submitted items appear immediately
-- [x] iOS clipboard auto-detect: social URL detection on app focus
-- [x] Geocoding: AI prompt broadened + Nominatim limit=3 with best-pick
-- [x] Nearby mode: "I'm here" button with radius filter in MapSection
-- [x] Offline: vite-plugin-pwa with SW, city data + map tile caching
-- [x] URL queue: "稍後分析" saves URL, queue shown in panel
-- [x] iOS Shortcut setup page: public/ios-shortcut-setup.html + link in header
-- [x] Quick-access notes updated (app-jsx.md reflects ~690 lines)
-- [x] ADR-001 updated (line count corrected)
-- [x] All tests pass (93/93)
+- [x] Optimistic update, iOS clipboard detect, nearby mode, offline PWA, URL queue
+- [x] iOS Shortcut setup page + quick-access notes
+- [x] Geocoding improvement: multi-strategy fallback in geocode-missing.mjs
 
 ## In Progress
-- None
+- [ ] Analysis bug: OPENAI_API_KEY not set in Cloudflare Pages env vars (user action required)
 
-## Pending
-- None
+## Pending / Staged (batch with future changes)
+- [ ] Update skill definitions (output-schema missing "mixed", field name mismatches)
+- [ ] Add ESLint with no-redeclare rule for src/ + functions/
+
+## Known Data Issues
+- **Seoul duplicate**: "牛火 韓牛燒烤" (id: 33224c5d-...8599) and "우화 홍대 한우 맛집 | 牛火" (id: 33224c5d-...8001) are the same restaurant from the same IG Reel. Needs dedup in Notion.
+- **Seoul missing coords**: 4/5 spots at lat=0,lng=0. Improved geocode script should help on next run.
 
 ## Files Touched (this session)
-- public/ios-shortcut-setup.html (new)
-- src/App.jsx (shortcut link in header)
-- docs/quick-access/app-jsx.md (rewritten, ~690 lines)
-- docs/decisions/001-architecture-review.md (line count fix)
+- scripts/geocode-missing.mjs (multi-strategy geocoding, url type support, limit=3 best-pick)
 - state/handoffs/latest.md (updated)
 
 ## Next Best Step
-- Deploy and test on iPhone (clipboard detect, shortcut setup, nearby mode, offline)
+1. User: set `OPENAI_API_KEY` in Cloudflare Pages Settings → Environment Variables → Production
+2. User: manually trigger `geocode-missing.yml` workflow OR wait for next scheduled run
+3. User: dedup "牛火" entries in Notion Seoul
