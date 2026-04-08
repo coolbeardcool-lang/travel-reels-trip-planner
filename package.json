@@ -11,6 +11,7 @@
     "geocode:missing": "node scripts/geocode-missing.mjs",
     "check:data-quality": "node scripts/check-data-quality.mjs",
     "clean:data-phase3": "node scripts/clean-data-phase3.mjs",
+    "lint": "eslint src/ functions/ scripts/",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -19,10 +20,13 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^10.2.0",
+    "globals": "^17.4.0",
     "jsdom": "^29.0.1",
     "vite": "^5.4.0",
     "vite-plugin-pwa": "^1.2.0",

@@ -2,6 +2,12 @@
 
 Return the result in JSON-like structure using the following shape.
 
+> **API compatibility note**: The `confirm-analysis` endpoint expects camelCase
+> field names (`contentKind`, `sourcePlatform`, `citySlug`, `itemKind`, etc.).
+> The backend normalize layer accepts both snake_case and camelCase.
+> When passing results to the API, use camelCase. This schema uses snake_case
+> for readability.
+
 ## Top-level object
 
 ```json
@@ -17,7 +23,7 @@ Return the result in JSON-like structure using the following shape.
   "source_record": {
     "source_title": "string",
     "source_platform": "Instagram | Threads | Facebook | YouTube | TikTok | Website",
-    "content_kind": "spot | event | source_only",
+    "content_kind": "spot | event | mixed | source_only",
     "city_slug": "string or null",
     "area": "string or null",
     "confidence": 0.0,

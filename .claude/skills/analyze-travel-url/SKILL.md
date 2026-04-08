@@ -119,11 +119,14 @@ Prefer additive fields over renaming existing fields.
 ## Output contract
 Return five sections in this order:
 
-1. `extraction_summary`
-2. `source_record`
-3. `items`
-4. `write_recommendations`
-5. `schema_recommendations`
+1. `extraction_summary` — skill-only, for reasoning transparency
+2. `source_record` — maps to `confirm-analysis` top-level fields (camelCase: `sourceTitle`, `sourcePlatform`, `contentKind`, `citySlug`, etc.)
+3. `items` — array of spot/event items, passed as `analysis.items` to `confirm-analysis`
+4. `write_recommendations` — skill-only, for target routing decisions
+5. `schema_recommendations` — skill-only, proposed if current schema is insufficient
+
+> Sections 1, 4, 5 are for analysis documentation only.
+> Sections 2 and 3 are the data payload for the `confirm-analysis` API.
 
 ## Hard rules
 - Split multiple locations into separate items.
