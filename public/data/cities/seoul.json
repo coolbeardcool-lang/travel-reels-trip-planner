@@ -295,7 +295,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-07-15T14:13:26.622Z",
+    "lastSyncedAt": "2026-07-15T19:38:50.816Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
