@@ -123,8 +123,8 @@
         "刀削麵",
         "在地美食"
       ],
-      "lat": 0,
-      "lng": 0,
+      "lat": 37.5566206,
+      "lng": 126.9060503,
       "confidence": "推定",
       "thumbnail": "🏪",
       "mapUrl": "https://www.google.com/maps/search/?api=1&query=%E6%9C%9B%E9%81%A0%E5%B8%82%E5%A0%B4%20%E9%A6%96%E7%88%BE",
@@ -295,7 +295,7 @@
     }
   ],
   "meta": {
-    "lastSyncedAt": "2026-11-02T06:21:48.192Z",
+    "lastSyncedAt": "2026-11-02T10:42:57.356Z",
     "notionDataSourceId": "33124c5d-f0b3-80d7-a47c-000bbfd2d6d3",
     "generatedBy": "github-actions",
     "sourceMode": "Notion 主資料庫 → GitHub Actions 產出靜態 JSON → GitHub Pages 前端讀取",
